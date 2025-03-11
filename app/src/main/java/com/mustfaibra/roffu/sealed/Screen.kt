@@ -5,7 +5,7 @@ import androidx.annotation.StringRes
 import com.mustfaibra.roffu.R
 
 sealed class Screen(
-    val route: String,
+    val                              route: String,
     @StringRes val title: Int? = null,
     @DrawableRes val icon: Int? = null,
 ) {
@@ -57,6 +57,13 @@ sealed class Screen(
         title = R.string.cart,
         icon = R.drawable.ic_shopping_bag,
     )
+    object BarcodeScanner : Screen(
+        route = "barcode-scanner",
+        title = R.string.barcode_scanner,
+        icon = R.drawable.ic_barcode
+    )
+
+
     object Checkout : Screen(
         route = "checkout",
         title = R.string.checkout,

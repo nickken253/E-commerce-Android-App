@@ -22,6 +22,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -35,6 +36,8 @@ import com.mustfaibra.roffu.components.CustomSnackBar
 import com.mustfaibra.roffu.models.CartItem
 import com.mustfaibra.roffu.models.User
 import com.mustfaibra.roffu.providers.LocalNavHost
+import com.mustfaibra.roffu.repositories.ProductsRepository
+import com.mustfaibra.roffu.screens.barcode.BarcodeScannerScreen
 import com.mustfaibra.roffu.screens.bookmarks.BookmarksScreen
 import com.mustfaibra.roffu.screens.cart.CartScreen
 import com.mustfaibra.roffu.screens.checkout.CheckoutScreen
@@ -61,8 +64,12 @@ fun HolderScreen(
     holderViewModel: HolderViewModel = hiltViewModel(),
 ) {
     val destinations = remember {
-        listOf(Screen.Home, Screen.Notifications, Screen.Bookmark, Screen.Profile)
+        listOf(Screen.Home,  Screen.Bookmark, Screen.Cart, Screen.Profile)
     }
+
+
+
+
 
     /** Our navigation controller that the MainActivity provides */
     val controller = LocalNavHost.current
@@ -136,7 +143,7 @@ fun HolderScreen(
             bottomNavigationContent = {
                 if (
                     currentRouteAsState in destinations.map { it.route }
-                    || currentRouteAsState == Screen.Cart.route
+                    || currentRouteAsState == Screen.BarcodeScanner.route
                 ) {
                     AppBottomNav(
                         activeRoute = currentRouteAsState,
@@ -316,6 +323,16 @@ fun ScaffoldSection(
                         onBookmarkStateChanged = onUpdateBookmarkRequest,
                     )
                 }
+
+                composable(Screen.BarcodeScanner.route) {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    BarcodeScannerScreen(
+                        navController = controller,
+                        onBookmarkStateChanged = { productId ->
+                            // Xử lý sự kiện thêm sản phẩm vào bookmark
+                        }
+                    )
+                }
                 composable(Screen.Cart.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     CartScreen(
@@ -328,6 +345,9 @@ fun ScaffoldSection(
                         },
                     )
                 }
+
+
+
                 composable(Screen.Checkout.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     user.whatIfNotNull(
