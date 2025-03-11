@@ -40,6 +40,8 @@ interface RoomDao {
 
     @Query("SELECT * FROM advertisement")
     suspend fun getAdvertisements(): List<Advertisement>
+    @Query("SELECT * FROM Product WHERE barcode = :barcode LIMIT 1")
+    suspend fun getProductByBarcode(barcode: String): Product?
 
 
     /** All Cart operations */

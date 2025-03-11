@@ -58,6 +58,7 @@ abstract class RoomDb : RoomDatabase() {
                 description = description,
                 manufacturerId = 1,
                 basicColorName = "dark-green",
+                barcode = "9788492808274"
             ).also {
                 it.colors = mutableListOf(
                     ProductColor(productId = it.id,
@@ -76,6 +77,7 @@ abstract class RoomDb : RoomDatabase() {
                 description = description,
                 manufacturerId = 1,
                 basicColorName = "gold",
+                barcode = "12345"
             ).also {
                 it.colors = mutableListOf(
                     ProductColor(productId = it.id,
@@ -100,6 +102,7 @@ abstract class RoomDb : RoomDatabase() {
                 description = description,
                 manufacturerId = 1,
                 basicColorName = "black",
+                barcode = "12345"
             ).also {
                 it.colors = mutableListOf(
                     ProductColor(productId = it.id,
@@ -123,6 +126,7 @@ abstract class RoomDb : RoomDatabase() {
                 description = description,
                 manufacturerId = 2,
                 basicColorName = "green",
+                barcode = "12345"
             ).also {
                 it.colors = mutableListOf(
                     ProductColor(productId = it.id,
@@ -142,6 +146,7 @@ abstract class RoomDb : RoomDatabase() {
                 description = description,
                 manufacturerId = 2,
                 basicColorName = "gray",
+                barcode = "12345"
             ).also {
                 it.colors = mutableListOf(
                     ProductColor(productId = it.id,

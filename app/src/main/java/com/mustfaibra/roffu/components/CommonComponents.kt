@@ -255,13 +255,13 @@ fun AppBottomNav(
                     color = MaterialTheme.colors.primary,
                     shape = CircleShape,
                 ),
-            painter = painterResource(id = R.drawable.ic_shopping_bag),
-            backgroundColor = if (activeRoute == Screen.Cart.route) MaterialTheme.colors.primary
+            painter = painterResource(id = R.drawable.ic_barcode),
+            backgroundColor = if (activeRoute == Screen.BarcodeScanner.route) MaterialTheme.colors.primary
             else MaterialTheme.colors.background,
             iconSize = Dimension.mdIcon.times(0.8f),
-            iconTint = if (activeRoute == Screen.Cart.route) MaterialTheme.colors.onPrimary
+            iconTint = if (activeRoute == Screen.BarcodeScanner.route) MaterialTheme.colors.onPrimary
             else MaterialTheme.colors.onSurface.copy(alpha = 0.5f),
-            onButtonClicked = { onActiveRouteChange(Screen.Cart.route) },
+            onButtonClicked = { onActiveRouteChange(Screen.BarcodeScanner.route) },
             shape = CircleShape,
             paddingValue = PaddingValues(Dimension.md),
         )

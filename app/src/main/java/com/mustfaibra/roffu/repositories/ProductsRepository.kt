@@ -13,6 +13,8 @@ import com.mustfaibra.roffu.sealed.Error
 import com.mustfaibra.roffu.utils.UserPref
 import com.mustfaibra.roffu.utils.getFormattedDate
 import com.mustfaibra.roffu.utils.getStructuredProducts
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.*
 import javax.inject.Inject
 
@@ -40,6 +42,11 @@ class ProductsRepository @Inject constructor(
         }
     }
 
+    suspend fun getProductByBarcode(barcode: String): Product? {
+        return withContext(Dispatchers.IO) {
+            dao.getProductByBarcode(barcode)
+        }
+    }
     private suspend fun addToLocalCart(cartItem: CartItem) {
         /** Add it to cart items */
         dao.insertCartItem(cartItem = cartItem)
