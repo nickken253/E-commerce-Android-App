@@ -4,12 +4,8 @@ plugins {
     id 'kotlinx-serialization'
     id 'kotlin-parcelize'
     id 'com.google.devtools.ksp' version "$ksp_version"
-//    id 'com.google.gms.google-services'
-//    id 'com.google.firebase.appdistribution'
-
-    // <hilt>
-    id 'com.google.dagger.hilt.android'
     id 'kotlin-kapt'
+    id 'dagger.hilt.android.plugin'
 }
 
 android {
@@ -32,20 +28,16 @@ android {
     buildTypes {
         debug {
             debuggable true
-//            firebaseAppDistribution {
-//                artifactType = "APK"
-//                groups = "standard"
-//                serviceCredentialsFile = file("/firebase-app-distribution.json")
-//            }
-//            task publishDebug {
-//                dependsOn 'assembleDebug'
-//                dependsOn 'appDistributionUploadDebug'
-//            }
         }
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        benchmark {
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+            debuggable false
         }
     }
 
@@ -61,7 +53,9 @@ android {
         viewBinding true
         compose true
     }
-
+    composeOptions {
+        kotlinCompilerExtensionVersion "$kotlin_compose_compiler_version"
+    }
     packagingOptions {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
@@ -75,9 +69,6 @@ android {
 
     kapt {
         useBuildCache = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion "$kotlin_compose_compiler_version"
     }
 
     defaultConfig {
@@ -105,7 +96,6 @@ android {
 }
 
 dependencies {
-
     // <core - keep up to date as possible>
     implementation 'com.github.serpapi:google-search-results-java:2.0.2'
     implementation "androidx.core:core-ktx:1.12.0"
@@ -132,10 +122,6 @@ dependencies {
     implementation "androidx.navigation:navigation-fragment-ktx:2.7.5"
     implementation "androidx.navigation:navigation-ui-ktx:2.7.5"
 
-    // <firebase>
-    implementation platform("com.google.firebase:firebase-bom:32.7.0")
-//    implementation("com.google.firebase:firebase-analytics")
-
     // <room>
     implementation "androidx.room:room-runtime:$room_version"
     implementation "androidx.room:room-ktx:$room_version"
@@ -152,66 +138,22 @@ dependencies {
     ksp "com.google.dagger:hilt-compiler:$hilt_version"
 
     // <image>
-    implementation "io.coil-kt:coil-compose:2.5.0"
-    implementation "com.github.bumptech.glide:glide:4.16.0"
-    implementation "com.airbnb.android:lottie:6.1.0"
+    implementation "io.coil-kt:coil-compose:2.4.0"
+    implementation "io.coil-kt:coil:2.4.0"
+
+    // <accompanist>
+    implementation "com.google.accompanist:accompanist-pager:0.31.3-beta"
+    implementation "com.google.accompanist:accompanist-pager-indicators:0.31.3-beta"
+    implementation "com.google.accompanist:accompanist-placeholder:0.31.3-beta"
+
+    // <lottie>
     implementation "com.airbnb.android:lottie-compose:6.1.0"
-    implementation "com.facebook.shimmer:shimmer:0.5.0"
 
-    // <media3>
-    implementation "androidx.media3:media3-exoplayer:1.2.0"
-    implementation "androidx.media3:media3-ui:1.2.0"
-    implementation "androidx.media3:media3-session:1.2.0"
+    // <whatif>
+    implementation "com.github.skydoves:whatif:1.1.2"
 
-    // <retrofit>
-    implementation "com.squareup.retrofit2:retrofit:2.9.0"
-    implementation "com.squareup.retrofit2:converter-gson:2.9.0"
-    implementation 'com.squareup.retrofit2:converter-scalars:2.9.0'
-    implementation 'com.google.code.gson:gson:2.10.1'
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.11.0'
-
-    implementation("org.jsoup:jsoup:1.17.1")
-    implementation("com.google.guava:guava:33.0.0-android")
-    implementation 'com.github.acsbendi:Android-Request-Inspector-WebView:1.0.5'
-
-    // <Zxing>
-    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
-
-    // <gson>
-    implementation 'com.google.code.gson:gson:2.10.1'
-    implementation "androidx.hilt:hilt-navigation-compose:1.2.0"
-
-    implementation 'com.google.android.gms:play-services-code-scanner:16.1.0'
-    implementation 'androidx.webkit:webkit:1.10.0'
-    implementation "androidx.browser:browser:1.8.0"
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.0.1'
-    implementation 'com.google.android.material:material:1.0.0'
-    implementation "com.google.accompanist:accompanist-themeadapter-material3:0.35.0-alpha"
-    implementation "androidx.viewpager2:viewpager2:1.0.0"
-}
-
-/*
- * AGP tasks do not get properly wired to the KSP task at the moment.
- * As a result, KSP sees `error.NonExistentClass` instead of generated types.
- *
- * https://github.com/google/dagger/issues/4049
- * https://github.com/google/dagger/issues/4051
- * https://github.com/google/dagger/issues/4061
- * https://github.com/google/dagger/issues/4158
- */
-androidComponents {
-    onVariants(selector().all(), { variant ->
-        afterEvaluate {
-            // This is a workaround for https://issuetracker.google.com/301245705 which depends on internal
-            // implementations of the android gradle plugin and the ksp gradle plugin which might change in the future
-            // in an unpredictable way.
-            project.tasks.getByName("ksp" + variant.name.capitalize() + "Kotlin") {
-                def dataBindingTask = (com.android.build.gradle.internal.tasks.databinding.DataBindingGenBaseClassesTask) project.tasks.getByName("dataBindingGenBaseClasses" + variant.name.capitalize())
-
-                ((org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompileTool) it).setSource(
-                        dataBindingTask.sourceOutFolder
-                )
-            }
-        }
-    })
+    // <test>
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }

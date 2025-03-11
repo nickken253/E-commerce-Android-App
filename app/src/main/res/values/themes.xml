@@ -1,13 +1,17 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="roundCorner" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">10dp</item>
         <item name="color">@color/white</item>
     </style>
-    <style name="AppTheme" parent="Theme.Material3.Light.NoActionBar">
+
+    <style name="Theme.AppTemplate" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:windowDisablePreview">true</item>
+        
         <item name="checkedIcon">@drawable/checkbox</item>
-
-
         <item name="colorPrimary">@color/md_theme_primary</item>
         <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_primaryContainer</item>

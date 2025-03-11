@@ -19,3 +19,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "ShoppingCart"
 include ':app'
+include ':benchmark'
