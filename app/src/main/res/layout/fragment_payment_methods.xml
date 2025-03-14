@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:navigationIcon="@drawable/ic_back"
+            app:title="Manage Accounts/Cards"
+            app:titleCentered="true" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="12dp">
+
+            <TextView
+                android:id="@+id/tvAAC"
+                style="@style/TextAppearance.Material3.TitleMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Accounts/Cards" />
+
+            <TextView
+                android:id="@+id/tvAACDesc"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Thanh toán chuyển tiền theo thứ tự bên dưới (ngoại trừ các trường hợp đặc biệt)"
+                app:layout_constraintEnd_toStartOf="@id/btnSort"
+                app:layout_constraintStart_toStartOf="@id/tvAAC"
+                app:layout_constraintTop_toBottomOf="@id/tvAAC" />
+
+            <Button
+                android:id="@+id/btnSort"
+                style="@style/Widget.Material3.Button.TextButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableTop="@drawable/ic_menu"
+                android:drawableTint="@color/black"
+                android:text="Sort"
+                android:textColor="@color/black"
+                app:layout_constraintBottom_toBottomOf="@id/btnShowBalance"
+                app:layout_constraintEnd_toStartOf="@id/btnShowBalance"
+                app:layout_constraintTop_toTopOf="@id/btnShowBalance" />
+
+            <Button
+                android:id="@+id/btnShowBalance"
+                style="@style/Widget.Material3.Button.TextButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:drawableTop="@drawable/ic_show"
+                android:drawableTint="@color/black"
+                android:text="Show\nBalance"
+                android:textColor="@color/black"
+                app:layout_constraintEnd_toEndOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvAccountsAndCards"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:listitem="@layout/item_payment_method" />
+
+        <include
+            android:id="@+id/sectionAddNewCard"
+            layout="@layout/item_payment_method"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+
+</LinearLayout>

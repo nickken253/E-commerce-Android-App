@@ -1,0 +1,242 @@
+{
+  "001": {
+    "id": "001",
+    "name": "Ba Đình",
+    "slug": "ba-dinh",
+    "fullName": "Quận Ba Đình",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "002": {
+    "id": "002",
+    "name": "Hoàn Kiếm",
+    "slug": "hoan-kiem",
+    "fullName": "Quận Hoàn Kiếm",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "003": {
+    "id": "003",
+    "name": "Tây Hồ",
+    "slug": "tay-ho",
+    "fullName": "Quận Tây Hồ",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "004": {
+    "id": "004",
+    "name": "Long Biên",
+    "slug": "long-bien",
+    "fullName": "Quận Long Biên",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "005": {
+    "id": "005",
+    "name": "Cầu Giấy",
+    "slug": "cau-giay",
+    "fullName": "Quận Cầu Giấy",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "006": {
+    "id": "006",
+    "name": "Đống Đa",
+    "slug": "dong-da",
+    "fullName": "Quận Đống Đa",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "007": {
+    "id": "007",
+    "name": "Hai Bà Trưng",
+    "slug": "hai-ba-trung",
+    "fullName": "Quận Hai Bà Trưng",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "008": {
+    "id": "008",
+    "name": "Hoàng Mai",
+    "slug": "hoang-mai",
+    "fullName": "Quận Hoàng Mai",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "009": {
+    "id": "009",
+    "name": "Thanh Xuân",
+    "slug": "thanh-xuan",
+    "fullName": "Quận Thanh Xuân",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "016": {
+    "id": "016",
+    "name": "Sóc Sơn",
+    "slug": "soc-son",
+    "fullName": "Huyện Sóc Sơn",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "017": {
+    "id": "017",
+    "name": "Đông Anh",
+    "slug": "dong-anh",
+    "fullName": "Huyện Đông Anh",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "018": {
+    "id": "018",
+    "name": "Gia Lâm",
+    "slug": "gia-lam",
+    "fullName": "Huyện Gia Lâm",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "019": {
+    "id": "019",
+    "name": "Nam Từ Liêm",
+    "slug": "nam-tu-liem",
+    "fullName": "Quận Nam Từ Liêm",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "020": {
+    "id": "020",
+    "name": "Thanh Trì",
+    "slug": "thanh-tri",
+    "fullName": "Huyện Thanh Trì",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "021": {
+    "id": "021",
+    "name": "Bắc Từ Liêm",
+    "slug": "bac-tu-liem",
+    "fullName": "Quận Bắc Từ Liêm",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "250": {
+    "id": "250",
+    "name": "Mê Linh",
+    "slug": "me-linh",
+    "fullName": "Huyện Mê Linh",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "268": {
+    "id": "268",
+    "name": "Hà Đông",
+    "slug": "ha-dong",
+    "fullName": "Quận Hà Đông",
+    "level": "Quận",
+    "parentId": "01"
+  },
+  "269": {
+    "id": "269",
+    "name": "Sơn Tây",
+    "slug": "son-tay",
+    "fullName": "Thị xã Sơn Tây",
+    "level": "Thị xã",
+    "parentId": "01"
+  },
+  "271": {
+    "id": "271",
+    "name": "Ba Vì",
+    "slug": "ba-vi",
+    "fullName": "Huyện Ba Vì",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "272": {
+    "id": "272",
+    "name": "Phúc Thọ",
+    "slug": "phuc-tho",
+    "fullName": "Huyện Phúc Thọ",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "273": {
+    "id": "273",
+    "name": "Đan Phượng",
+    "slug": "dan-phuong",
+    "fullName": "Huyện Đan Phượng",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "274": {
+    "id": "274",
+    "name": "Hoài Đức",
+    "slug": "hoai-duc",
+    "fullName": "Huyện Hoài Đức",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "275": {
+    "id": "275",
+    "name": "Quốc Oai",
+    "slug": "quoc-oai",
+    "fullName": "Huyện Quốc Oai",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "276": {
+    "id": "276",
+    "name": "Thạch Thất",
+    "slug": "thach-that",
+    "fullName": "Huyện Thạch Thất",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "277": {
+    "id": "277",
+    "name": "Chương Mỹ",
+    "slug": "chuong-my",
+    "fullName": "Huyện Chương Mỹ",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "278": {
+    "id": "278",
+    "name": "Thanh Oai",
+    "slug": "thanh-oai",
+    "fullName": "Huyện Thanh Oai",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "279": {
+    "id": "279",
+    "name": "Thường Tín",
+    "slug": "thuong-tin",
+    "fullName": "Huyện Thường Tín",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "280": {
+    "id": "280",
+    "name": "Phú Xuyên",
+    "slug": "phu-xuyen",
+    "fullName": "Huyện Phú Xuyên",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "281": {
+    "id": "281",
+    "name": "Ứng Hòa",
+    "slug": "ung-hoa",
+    "fullName": "Huyện Ứng Hòa",
+    "level": "Huyện",
+    "parentId": "01"
+  },
+  "282": {
+    "id": "282",
+    "name": "Mỹ Đức",
+    "slug": "my-duc",
+    "fullName": "Huyện Mỹ Đức",
+    "level": "Huyện",
+    "parentId": "01"
+  }
+}

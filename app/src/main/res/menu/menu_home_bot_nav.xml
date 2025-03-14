@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/groupsFragment"
+        android:icon="@drawable/ic_checklist"
+        android:title="@string/checklist" />
+    <item
+        android:id="@+id/comparingFragment"
+        android:icon="@drawable/ic_price"
+        android:title="@string/price_check" />
+    <item
+        android:id="@+id/shoppingFragment"
+        android:icon="@drawable/ic_shipment"
+        android:title="@string/shopping" />
+    <item
+        android:id="@+id/settingFragment"
+        android:icon="@drawable/ic_setting"
+        android:title="@string/setting" />
+</menu>

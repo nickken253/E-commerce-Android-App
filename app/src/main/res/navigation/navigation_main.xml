@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/navigation_main"
+    app:startDestination="@id/groupsFragment">
+    <fragment
+        android:id="@+id/groupsFragment"
+        android:name="dev.vstd.shoppingcart.checklist.ui.groups.GroupsFragment"
+        android:label="GroupsFragment">
+        <action
+            android:id="@+id/action_groupsFragment_to_comparingFragment"
+            app:destination="@id/comparingFragment" />
+        <action
+            android:id="@+id/action_groupsFragment_to_settingFragment"
+            app:destination="@id/settingFragment" />
+        <action
+            android:id="@+id/action_groupsFragment_to_shoppingFragment"
+            app:destination="@id/shoppingFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/comparingFragment"
+        android:name="dev.vstd.shoppingcart.pricecompare.ui.ComparingFragment"
+        android:label="ComparingFragment" >
+        <action
+            android:id="@+id/action_comparingFragment_to_detailFragment"
+            app:destination="@id/detailFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/settingFragment"
+        android:name="dev.vstd.shoppingcart.setting.SettingFragment"
+        android:label="SettingFragment" >
+        <action
+            android:id="@+id/action_settingFragment_to_updateAddressFragment"
+            app:destination="@id/updateAddressFragment" />
+        <action
+            android:id="@+id/action_settingFragment_to_nav_payment_method"
+            app:destination="@id/nav_payment_method" />
+        <action
+            android:id="@+id/action_settingFragment_to_personalInfoFragment"
+            app:destination="@id/personalInfoFragment" />
+        <action
+            android:id="@+id/action_settingFragment_to_authActivity"
+            app:destination="@id/authActivity" />
+    </fragment>
+    <fragment
+        android:id="@+id/updateAddressFragment"
+        android:name="dev.vstd.shoppingcart.setting.UpdateAddressFragment"
+        android:label="UpdateAddressFragment" />
+    <fragment
+        android:id="@+id/detailFragment"
+        android:name="dev.vstd.shoppingcart.pricecompare.ui.DetailsFragment"
+        android:label="DetailFragment" />
+    <fragment
+        android:id="@+id/shoppingFragment"
+        android:name="dev.vstd.shoppingcart.shopping.ui.shopping.ShoppingFragment"
+        android:label="ShoppingFragment" >
+        <action
+            android:id="@+id/action_shoppingFragment_to_paymentActivity"
+            app:destination="@id/paymentActivity" />
+        <action
+            android:id="@+id/action_shoppingFragment_to_ordersFragment"
+            app:destination="@id/ordersFragment" />
+        <action
+            android:id="@+id/action_shoppingFragment_to_personalInfoFragment"
+            app:destination="@id/personalInfoFragment" />
+        <action
+            android:id="@+id/action_shoppingFragment_to_authActivity"
+            app:destination="@id/authActivity" />
+    </fragment>
+    <activity
+        android:id="@+id/paymentActivity"
+        android:name="dev.vstd.shoppingcart.shopping.ui.payment.PaymentActivity"
+        android:label="PaymentActivity" />
+    <fragment
+        android:id="@+id/ordersFragment"
+        android:name="dev.vstd.shoppingcart.shopping.ui.order.OrdersFragment"
+        android:label="OrdersFragment" />
+    <fragment
+        android:id="@+id/personalInfoFragment"
+        android:name="dev.vstd.shoppingcart.setting.PersonalInfoFragment"
+        android:label="PersonalInfoFragment" >
+        <action
+            android:id="@+id/action_personalInfoFragment_to_nav_payment_method"
+            app:destination="@id/nav_payment_method" />
+    </fragment>
+    <activity
+        android:id="@+id/authActivity"
+        android:name="dev.vstd.shoppingcart.auth.ui.AuthActivity"
+        android:label="AuthActivity" />
+    <include app:graph="@navigation/nav_payment_method" />
+</navigation>

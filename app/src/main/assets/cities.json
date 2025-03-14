@@ -1,0 +1,506 @@
+{
+  "01": {
+    "id": "01",
+    "name": "Hà Nội",
+    "slug": "ha-noi",
+    "fullName": "Thành phố Hà Nội",
+    "level": "Thành phố Trung ương",
+    "parentId": ""
+  },
+  "02": {
+    "id": "02",
+    "name": "Hà Giang",
+    "slug": "ha-giang",
+    "fullName": "Tỉnh Hà Giang",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "04": {
+    "id": "04",
+    "name": "Cao Bằng",
+    "slug": "cao-bang",
+    "fullName": "Tỉnh Cao Bằng",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "06": {
+    "id": "06",
+    "name": "Bắc Kạn",
+    "slug": "bac-kan",
+    "fullName": "Tỉnh Bắc Kạn",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "08": {
+    "id": "08",
+    "name": "Tuyên Quang",
+    "slug": "tuyen-quang",
+    "fullName": "Tỉnh Tuyên Quang",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "10": {
+    "id": "10",
+    "name": "Lào Cai",
+    "slug": "lao-cai",
+    "fullName": "Tỉnh Lào Cai",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "11": {
+    "id": "11",
+    "name": "Điện Biên",
+    "slug": "dien-bien",
+    "fullName": "Tỉnh Điện Biên",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "12": {
+    "id": "12",
+    "name": "Lai Châu",
+    "slug": "lai-chau",
+    "fullName": "Tỉnh Lai Châu",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "14": {
+    "id": "14",
+    "name": "Sơn La",
+    "slug": "son-la",
+    "fullName": "Tỉnh Sơn La",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "15": {
+    "id": "15",
+    "name": "Yên Bái",
+    "slug": "yen-bai",
+    "fullName": "Tỉnh Yên Bái",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "17": {
+    "id": "17",
+    "name": "Hoà Bình",
+    "slug": "hoa-binh",
+    "fullName": "Tỉnh Hoà Bình",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "19": {
+    "id": "19",
+    "name": "Thái Nguyên",
+    "slug": "thai-nguyen",
+    "fullName": "Tỉnh Thái Nguyên",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "20": {
+    "id": "20",
+    "name": "Lạng Sơn",
+    "slug": "lang-son",
+    "fullName": "Tỉnh Lạng Sơn",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "22": {
+    "id": "22",
+    "name": "Quảng Ninh",
+    "slug": "quang-ninh",
+    "fullName": "Tỉnh Quảng Ninh",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "24": {
+    "id": "24",
+    "name": "Bắc Giang",
+    "slug": "bac-giang",
+    "fullName": "Tỉnh Bắc Giang",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "25": {
+    "id": "25",
+    "name": "Phú Thọ",
+    "slug": "phu-tho",
+    "fullName": "Tỉnh Phú Thọ",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "26": {
+    "id": "26",
+    "name": "Vĩnh Phúc",
+    "slug": "vinh-phuc",
+    "fullName": "Tỉnh Vĩnh Phúc",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "27": {
+    "id": "27",
+    "name": "Bắc Ninh",
+    "slug": "bac-ninh",
+    "fullName": "Tỉnh Bắc Ninh",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "30": {
+    "id": "30",
+    "name": "Hải Dương",
+    "slug": "hai-duong",
+    "fullName": "Tỉnh Hải Dương",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "31": {
+    "id": "31",
+    "name": "Hải Phòng",
+    "slug": "hai-phong",
+    "fullName": "Thành phố Hải Phòng",
+    "level": "Thành phố Trung ương",
+    "parentId": ""
+  },
+  "33": {
+    "id": "33",
+    "name": "Hưng Yên",
+    "slug": "hung-yen",
+    "fullName": "Tỉnh Hưng Yên",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "34": {
+    "id": "34",
+    "name": "Thái Bình",
+    "slug": "thai-binh",
+    "fullName": "Tỉnh Thái Bình",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "35": {
+    "id": "35",
+    "name": "Hà Nam",
+    "slug": "ha-nam",
+    "fullName": "Tỉnh Hà Nam",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "36": {
+    "id": "36",
+    "name": "Nam Định",
+    "slug": "nam-dinh",
+    "fullName": "Tỉnh Nam Định",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "37": {
+    "id": "37",
+    "name": "Ninh Bình",
+    "slug": "ninh-binh",
+    "fullName": "Tỉnh Ninh Bình",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "38": {
+    "id": "38",
+    "name": "Thanh Hóa",
+    "slug": "thanh-hoa",
+    "fullName": "Tỉnh Thanh Hóa",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "40": {
+    "id": "40",
+    "name": "Nghệ An",
+    "slug": "nghe-an",
+    "fullName": "Tỉnh Nghệ An",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "42": {
+    "id": "42",
+    "name": "Hà Tĩnh",
+    "slug": "ha-tinh",
+    "fullName": "Tỉnh Hà Tĩnh",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "44": {
+    "id": "44",
+    "name": "Quảng Bình",
+    "slug": "quang-binh",
+    "fullName": "Tỉnh Quảng Bình",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "45": {
+    "id": "45",
+    "name": "Quảng Trị",
+    "slug": "quang-tri",
+    "fullName": "Tỉnh Quảng Trị",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "46": {
+    "id": "46",
+    "name": "Thừa Thiên Huế",
+    "slug": "thua-thien-hue",
+    "fullName": "Tỉnh Thừa Thiên Huế",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "48": {
+    "id": "48",
+    "name": "Đà Nẵng",
+    "slug": "da-nang",
+    "fullName": "Thành phố Đà Nẵng",
+    "level": "Thành phố Trung ương",
+    "parentId": ""
+  },
+  "49": {
+    "id": "49",
+    "name": "Quảng Nam",
+    "slug": "quang-nam",
+    "fullName": "Tỉnh Quảng Nam",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "51": {
+    "id": "51",
+    "name": "Quảng Ngãi",
+    "slug": "quang-ngai",
+    "fullName": "Tỉnh Quảng Ngãi",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "52": {
+    "id": "52",
+    "name": "Bình Định",
+    "slug": "binh-dinh",
+    "fullName": "Tỉnh Bình Định",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "54": {
+    "id": "54",
+    "name": "Phú Yên",
+    "slug": "phu-yen",
+    "fullName": "Tỉnh Phú Yên",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "56": {
+    "id": "56",
+    "name": "Khánh Hòa",
+    "slug": "khanh-hoa",
+    "fullName": "Tỉnh Khánh Hòa",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "58": {
+    "id": "58",
+    "name": "Ninh Thuận",
+    "slug": "ninh-thuan",
+    "fullName": "Tỉnh Ninh Thuận",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "60": {
+    "id": "60",
+    "name": "Bình Thuận",
+    "slug": "binh-thuan",
+    "fullName": "Tỉnh Bình Thuận",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "62": {
+    "id": "62",
+    "name": "Kon Tum",
+    "slug": "kon-tum",
+    "fullName": "Tỉnh Kon Tum",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "64": {
+    "id": "64",
+    "name": "Gia Lai",
+    "slug": "gia-lai",
+    "fullName": "Tỉnh Gia Lai",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "66": {
+    "id": "66",
+    "name": "Đắk Lắk",
+    "slug": "dak-lak",
+    "fullName": "Tỉnh Đắk Lắk",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "67": {
+    "id": "67",
+    "name": "Đắk Nông",
+    "slug": "dak-nong",
+    "fullName": "Tỉnh Đắk Nông",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "68": {
+    "id": "68",
+    "name": "Lâm Đồng",
+    "slug": "lam-dong",
+    "fullName": "Tỉnh Lâm Đồng",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "70": {
+    "id": "70",
+    "name": "Bình Phước",
+    "slug": "binh-phuoc",
+    "fullName": "Tỉnh Bình Phước",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "72": {
+    "id": "72",
+    "name": "Tây Ninh",
+    "slug": "tay-ninh",
+    "fullName": "Tỉnh Tây Ninh",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "74": {
+    "id": "74",
+    "name": "Bình Dương",
+    "slug": "binh-duong",
+    "fullName": "Tỉnh Bình Dương",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "75": {
+    "id": "75",
+    "name": "Đồng Nai",
+    "slug": "dong-nai",
+    "fullName": "Tỉnh Đồng Nai",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "77": {
+    "id": "77",
+    "name": "Bà Rịa - Vũng Tàu",
+    "slug": "ba-ria---vung-tau",
+    "fullName": "Tỉnh Bà Rịa - Vũng Tàu",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "79": {
+    "id": "79",
+    "name": "Hồ Chí Minh",
+    "slug": "ho-chi-minh",
+    "fullName": "Thành phố Hồ Chí Minh",
+    "level": "Thành phố Trung ương",
+    "parentId": ""
+  },
+  "80": {
+    "id": "80",
+    "name": "Long An",
+    "slug": "long-an",
+    "fullName": "Tỉnh Long An",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "82": {
+    "id": "82",
+    "name": "Tiền Giang",
+    "slug": "tien-giang",
+    "fullName": "Tỉnh Tiền Giang",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "83": {
+    "id": "83",
+    "name": "Bến Tre",
+    "slug": "ben-tre",
+    "fullName": "Tỉnh Bến Tre",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "84": {
+    "id": "84",
+    "name": "Trà Vinh",
+    "slug": "tra-vinh",
+    "fullName": "Tỉnh Trà Vinh",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "86": {
+    "id": "86",
+    "name": "Vĩnh Long",
+    "slug": "vinh-long",
+    "fullName": "Tỉnh Vĩnh Long",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "87": {
+    "id": "87",
+    "name": "Đồng Tháp",
+    "slug": "dong-thap",
+    "fullName": "Tỉnh Đồng Tháp",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "89": {
+    "id": "89",
+    "name": "An Giang",
+    "slug": "an-giang",
+    "fullName": "Tỉnh An Giang",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "91": {
+    "id": "91",
+    "name": "Kiên Giang",
+    "slug": "kien-giang",
+    "fullName": "Tỉnh Kiên Giang",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "92": {
+    "id": "92",
+    "name": "Cần Thơ",
+    "slug": "can-tho",
+    "fullName": "Thành phố Cần Thơ",
+    "level": "Thành phố Trung ương",
+    "parentId": ""
+  },
+  "93": {
+    "id": "93",
+    "name": "Hậu Giang",
+    "slug": "hau-giang",
+    "fullName": "Tỉnh Hậu Giang",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "94": {
+    "id": "94",
+    "name": "Sóc Trăng",
+    "slug": "soc-trang",
+    "fullName": "Tỉnh Sóc Trăng",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "95": {
+    "id": "95",
+    "name": "Bạc Liêu",
+    "slug": "bac-lieu",
+    "fullName": "Tỉnh Bạc Liêu",
+    "level": "Tỉnh",
+    "parentId": ""
+  },
+  "96": {
+    "id": "96",
+    "name": "Cà Mau",
+    "slug": "ca-mau",
+    "fullName": "Tỉnh Cà Mau",
+    "level": "Tỉnh",
+    "parentId": ""
+  }
+}

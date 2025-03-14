@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--card view with 4 corner have radius 10dp-->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/light_gray"/>
+            <corners android:radius="10dp"/>
+        </shape>
+    </item>
+</selector>

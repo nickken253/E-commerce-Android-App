@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/toolbarWrapper"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:title="Shopping Center" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <LinearLayout
+        android:id="@+id/greetingsWrapper"
+        android:layout_width="match_parent"
+        android:background="?attr/colorPrimaryVariant"
+        android:paddingVertical="8dp"
+        android:paddingHorizontal="12dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toBottomOf="@id/toolbarWrapper">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/avatar"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:src="@drawable/img_person"
+            android:scaleType="centerCrop"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+
+        <TextView
+            android:id="@+id/greetings"
+            android:textColor="@color/white"
+            app:fontFamily="@font/raleway_mediumitalic"
+            style="@style/TextAppearance.Material3.TitleLarge"
+            android:layout_width="0dp"
+            android:gravity="center"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            tools:text="Good morning, Quang" />
+
+    </LinearLayout>
+
+    <TextView
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="8dp"
+        android:id="@+id/tvHelper"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Shortcut >"
+        app:layout_constraintTop_toBottomOf="@id/greetingsWrapper"
+        app:layout_constraintStart_toStartOf="@id/greetingsWrapper"/>
+    <Button
+        android:layout_marginTop="8dp"
+        app:icon="@drawable/ic_cart"
+        android:id="@+id/btnCart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/cart"
+        android:text="@string/cart"
+        app:layout_constraintStart_toStartOf="@id/tvHelper"
+        app:layout_constraintTop_toBottomOf="@id/tvHelper" />
+
+    <Button
+        app:icon="@drawable/ic_shipment"
+        android:id="@+id/btnOrders"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/orders"
+        android:text="@string/orders"
+        app:layout_constraintStart_toStartOf="@id/btnCart"
+        app:layout_constraintTop_toBottomOf="@id/btnCart" />
+    <Button
+        app:icon="@drawable/ic_login"
+        android:id="@+id/btnLoginLogout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="Login"
+        app:layout_constraintStart_toStartOf="@id/btnCart"
+        app:layout_constraintTop_toBottomOf="@id/btnOrders" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

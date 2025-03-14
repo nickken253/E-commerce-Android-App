@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Shopping Assistant</string>
+    <string name="title_activity_payment">PaymentActivity</string>
+    <string name="search">Search</string>
+    <string name="submit">Submit</string>
+
+    <string name="item_image">item_image</string>
+    <string name="checklist">Checklist</string>
+    <string name="price_check">Price check</string>
+    <string name="orders">Orders</string>
+    <string name="setting">Setting</string>
+    <string name="checkout">Checkout</string>
+    <string name="create_new_group">Create New Group</string>
+    <string name="create_new_todo">Create New Todo</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="copy">Copy</string>
+    <string name="not_found_in_database">Not found in database!</string>
+    <string name="search_in_internet">Search in Internet</string>
+    <string name="scan_qr">Scan QR</string>
+    <string name="use_this_barcode">Use this barcode</string>
+    <string name="barcode">Barcode</string>
+    <string name="save">Save</string>
+    <string name="see_sellers">See sellers</string>
+    <string name="no_ship_address_available">Chưa thiết lập địa chỉ nhận hàng</string>
+    <string name="cart">Cart</string>
+    <string name="personal_info">Personal Info</string>
+    <string name="logout">Logout</string>
+    <string name="login">Login</string>
+    <string name="shopping">Shopping</string>
+    <string name="add">Add</string>
+</resources>

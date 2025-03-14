@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_payment_method"
+    app:startDestination="@id/paymentMethodsFragment">
+
+    <fragment
+        android:id="@+id/paymentMethodsFragment"
+        android:name="dev.vstd.shoppingcart.shopping.ui.shopping.PaymentMethodsFragment"
+        android:label="PaymentMethodsFragment" >
+        <action
+            android:id="@+id/action_paymentMethodsFragment_to_registerCardFragment"
+            app:destination="@id/registerCardFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/registerCardFragment"
+        android:name="dev.vstd.shoppingcart.shopping.ui.shopping.RegisterCardFragment"
+        android:label="RegisterCardFragment" />
+</navigation>
