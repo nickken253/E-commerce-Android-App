@@ -32,4 +32,10 @@ class BarcodeScannerViewModel @Inject constructor(
     fun isProductBookmarked(productId: Int): Boolean {
         return bookmarkedProductsIds.value.contains(productId)
     }
+    fun toggleBookmark(productId: Int) {
+        viewModelScope.launch {
+            productRepository.toggleBookmark(productId)
+        }
+    }
+
 }

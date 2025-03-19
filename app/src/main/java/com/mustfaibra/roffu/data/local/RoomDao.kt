@@ -32,6 +32,9 @@ interface RoomDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSize(productSize: ProductSize)
+    @Query("SELECT EXISTS(SELECT 1 FROM bookmarks WHERE productId = :productId)")
+    suspend fun isProductBookmarked(productId: Int): Boolean
+
 
 
     /** Advertisements operations */
