@@ -27,6 +27,11 @@ class ProductsRepository @Inject constructor(
         handleLocalCart(productId = productId, alreadyOnCart = alreadyOnCart)
         /** Handle the remote process */
     }
+    suspend fun toggleBookmark(productId: Int) {
+        val alreadyOnBookmark = dao.isProductBookmarked(productId)
+        updateBookmarkState(productId, alreadyOnBookmark)
+    }
+
 
     private suspend fun handleLocalCart(productId: Int, alreadyOnCart: Boolean) {
         if (alreadyOnCart) {

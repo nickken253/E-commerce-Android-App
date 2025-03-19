@@ -3,6 +3,7 @@ package com.mustfaibra.roffu.screens.barcode
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,8 +31,10 @@ import com.mustfaibra.roffu.models.Product
 @Composable
 fun BarcodeScannerScreen(
     navController: NavController,
-    onBookmarkStateChanged: (productId: Int) -> Unit,
-    viewModel: BarcodeScannerViewModel = hiltViewModel()
+    onBookmarkStateChanged: (productId: Int) -> Unit = { productId ->
+        Log.d("Bookmark", "Đã click vào bookmark của sản phẩm có ID: $productId")
+    },
+            viewModel: BarcodeScannerViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val hasCameraPermission = remember {
@@ -115,9 +118,10 @@ fun ProductDisplay(
                 modifier = Modifier.padding(end = 8.dp)
             )
         } else {
-            IconButton(onClick = { onBookmarkStateChanged(product.id) }) {
+            IconButton(onClick = { viewModel.toggleBookmark(product.id) }) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add to Bookmark", tint = Color.Blue)
             }
+
         }
     }
 }
