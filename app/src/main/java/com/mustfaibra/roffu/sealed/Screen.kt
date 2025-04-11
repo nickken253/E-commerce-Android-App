@@ -46,6 +46,7 @@ sealed class Screen(
         title = R.string.notifications,
         icon = R.drawable.ic_notifications,
     )
+    object Register : Screen("register")
 
     object Search : Screen(
         route = "search",

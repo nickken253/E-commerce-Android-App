@@ -81,7 +81,7 @@ fun CustomInputField(
     shape: Shape = MaterialTheme.shapes.small,
     padding: PaddingValues = PaddingValues(horizontal = Dimension.xs),
     leadingIcon: @Composable () -> Unit = {},
-    trailingIcon: @Composable () -> Unit = {},
+    trailingIcon: @Composable() (() -> Unit)? = {},
     onValueChange: (string: String) -> Unit,
     onFocusChange: (focused: Boolean) -> Unit,
     onKeyboardActionClicked: KeyboardActionScope.() -> Unit,
@@ -141,7 +141,9 @@ fun CustomInputField(
             ),
             cursorBrush = SolidColor(value = textColor),
         )
-        trailingIcon()
+        if (trailingIcon != null) {
+            trailingIcon()
+        }
     }
 }
 

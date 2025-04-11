@@ -11,4 +11,8 @@ object UserPref {
     fun updateUser(user: User){
         _user.value = user
     }
+    fun logout() {
+        _user.value = null
+        // Nếu bạn có lưu user vào DataStore/SharedPref thì cũng xóa ở đây luôn
+    }
 }
