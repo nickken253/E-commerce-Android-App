@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mustfaibra.roffu.models.User
 import com.mustfaibra.roffu.repositories.UserRepository
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
@@ -77,6 +78,70 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
+    fun registerUser(
+        email: String,
+        password: String,
+        confirmPassword: String,
+        businessName: String,
+        onRegistered: () -> Unit,
+        onRegistrationFailed: (String) -> Unit,
+    ) {
+        // Kiểm tra dữ liệu đầu vào
+        if (email.isBlank() || password.isBlank() || confirmPassword.isBlank() || businessName.isBlank()) {
+            onRegistrationFailed("Vui lòng điền đầy đủ thông tin!")
+            return
+        }
+
+        if (password != confirmPassword) {
+            onRegistrationFailed("Mật khẩu xác nhận không khớp!")
+            return
+        }
+
+        // Kiểm tra định dạng mật khẩu (8-20 ký tự, chứa chữ hoa, chữ thường, số, ký tự đặc biệt)
+        val passwordRegex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,20}$"
+        if (!password.matches(passwordRegex.toRegex())) {
+            onRegistrationFailed("Mật khẩu phải dài 8-20 ký tự, chứa chữ hoa, chữ thường, số và ký tự đặc biệt!")
+            return
+        }
+
+        // Kiểm tra định dạng email
+        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
+        if (!email.matches(emailRegex.toRegex())) {
+            onRegistrationFailed("Email không hợp lệ!")
+            return
+        }
+
+        // Gọi repository để đăng ký
+        uiState.value = UiState.Loading
+        viewModelScope.launch {
+            delay(2000) // Giả lập thời gian xử lý
+            val newUser = User(
+                userId = 0,
+                name = businessName,
+                email = email,
+                phone = "", // Nếu bạn muốn thêm số điện thoại, cần thêm vào giao diện
+                password = password,
+                gender = 1 // Giá trị mặc định, bạn có thể thay đổi
+            )
+            userRepository.registerUser(user = newUser).let { response ->
+                when (response) {
+                    is DataResponse.Success -> {
+                        response.data?.let { user ->
+                            uiState.value = UiState.Success
+                            UserPref.updateUser(user = user)
+                            //saveUserIdToPreferences(userId = user.userId)
+                            onRegistered()
+                        }
+                    }
+                    is DataResponse.Error -> {
+                        uiState.value = UiState.Error(error = response.error ?: Error.Network)
+                        onRegistrationFailed("Đăng ký thất bại: ${response.error?.message}")
+                    }
+                }
+            }
+        }
+    }
+
 
     private suspend fun saveUserIdToPreferences(userId: Int) {
         context.dataStore.edit {

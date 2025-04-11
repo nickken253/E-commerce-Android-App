@@ -44,6 +44,7 @@ import com.mustfaibra.roffu.screens.checkout.CheckoutScreen
 import com.mustfaibra.roffu.screens.home.HomeScreen
 import com.mustfaibra.roffu.screens.locationpicker.LocationPickerScreen
 import com.mustfaibra.roffu.screens.login.LoginScreen
+import com.mustfaibra.roffu.screens.login.ManHinhDangKy
 import com.mustfaibra.roffu.screens.notifications.NotificationScreen
 import com.mustfaibra.roffu.screens.onboard.OnboardScreen
 import com.mustfaibra.roffu.screens.orderhistory.OrdersHistoryScreen
@@ -292,6 +293,17 @@ fun ScaffoldSection(
                     LoginScreen(
                         onUserAuthenticated = onBackRequested,
                         onToastRequested = onToastRequested,
+                        onNavigateToRegister = { controller.navigate(Screen.Register.route) }
+
+
+                    )
+                }
+                composable(Screen.Register.route) {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    ManHinhDangKy(
+                        onQuayLaiDangNhap = { controller.popBackStack() },
+                        onDangKyThanhCong = { controller.navigate(Screen.Home.route) },
+                        onYeuCauToast = onToastRequested
                     )
                 }
                 composable(Screen.Home.route) {
@@ -389,6 +401,10 @@ fun ScaffoldSection(
                             ProfileScreen(
                                 user = it,
                                 onNavigationRequested = onNavigationRequested,
+                                onLogoutRequested = {
+                                    UserPref.logout()
+                                    onNavigationRequested(Screen.Login.route,  true)
+                                }
                             )
                         },
                         whatIfNot = {

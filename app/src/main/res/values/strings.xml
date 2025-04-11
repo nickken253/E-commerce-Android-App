@@ -10,6 +10,7 @@
     <string name="arabic">العربية</string>
     <string name="english">English</string>
     <string name="home">Home</string>
+    <string name="logout">Log Out</string>
     <string name="search">Search</string>
     <string name="notifications">Notifications</string>
     <string name="profile">Profile</string>

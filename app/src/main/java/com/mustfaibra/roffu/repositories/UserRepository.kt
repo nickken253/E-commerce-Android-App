@@ -28,6 +28,28 @@ class UserRepository @Inject constructor(
     suspend fun getUserPaymentProviders() =
         dao.getUserPaymentProviders()
 
+
+    suspend fun registerUser(user: User): DataResponse<User> {
+        return try {
+            // Check if user already exists (e.g., by email)
+            val existingUser = user.email?.let { dao.getUserByEmail(email = it) }
+            if (existingUser != null) {
+                DataResponse.Error(error = Error.Custom("User with this email already exists"))
+            } else {
+                // Simulate saving the user to local storage
+                dao.saveUser(user = user)
+                // Retrieve the saved user to confirm (assuming saveUser assigns an ID)
+                val savedUser = user.email?.let { dao.getUserByEmail(email = it) }
+                savedUser?.let {
+                    DataResponse.Success(data = it)
+                } ?: DataResponse.Error(error = Error.Custom("Failed to retrieve registered user"))
+            }
+        } catch (e: Exception) {
+            DataResponse.Error(error = Error.Network)
+        }
+    }
+
+
     /** Get the available locations for current user */
     suspend fun getUserLocations() = dao.getUserLocations()
 }

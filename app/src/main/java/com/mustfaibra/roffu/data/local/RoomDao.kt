@@ -9,8 +9,6 @@ import androidx.room.Update
 import com.mustfaibra.roffu.models.*
 import kotlinx.coroutines.flow.Flow
 
-// 3/20/2022
-
 @Dao
 interface RoomDao {
 
@@ -22,7 +20,6 @@ interface RoomDao {
     @Query("SELECT * FROM manufacturer")
     suspend fun getManufacturersWithProducts(): List<LocalManufacturer>
 
-
     /** Products operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProduct(product: Product)
@@ -32,10 +29,9 @@ interface RoomDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSize(productSize: ProductSize)
+
     @Query("SELECT EXISTS(SELECT 1 FROM bookmarks WHERE productId = :productId)")
     suspend fun isProductBookmarked(productId: Int): Boolean
-
-
 
     /** Advertisements operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -43,9 +39,9 @@ interface RoomDao {
 
     @Query("SELECT * FROM advertisement")
     suspend fun getAdvertisements(): List<Advertisement>
+
     @Query("SELECT * FROM Product WHERE barcode = :barcode LIMIT 1")
     suspend fun getProductByBarcode(barcode: String): Product?
-
 
     /** All Cart operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -116,7 +112,6 @@ interface RoomDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReviews(reviews: List<Review>)
 
-
     /** User operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveUser(user: User)
@@ -124,9 +119,11 @@ interface RoomDao {
     @Query("SELECT * FROM user WHERE userId = :userId LIMIT 1")
     suspend fun getLoggedUser(userId: Int): User?
 
-    @Transaction
-    @Query("SELECT * FROM product WHERE id = :productId")
-    suspend fun getProductDetails(productId: Int): ProductDetails?
+    @Query("SELECT * FROM user WHERE email = :email LIMIT 1")
+    suspend fun getUserByEmail(email: String): User?
+
+    @Query("SELECT * FROM user WHERE email = :email AND password = :password LIMIT 1")
+    suspend fun fakeSignIn(email: String, password: String): User?
 
     /** Locations operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -138,6 +135,7 @@ interface RoomDao {
     @Query("UPDATE orders SET isDelivered = :delivered")
     suspend fun updateOrdersAsDelivered(delivered: Boolean = true)
 
-    @Query("SELECT * FROM user WHERE email = :email AND password = :password LIMIT 1")
-    suspend fun fakeSignIn(email: String, password: String): User?
+    @Transaction
+    @Query("SELECT * FROM product WHERE id = :productId")
+    suspend fun getProductDetails(productId: Int): ProductDetails?
 }

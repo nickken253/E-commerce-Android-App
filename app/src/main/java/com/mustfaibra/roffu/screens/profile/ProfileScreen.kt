@@ -38,6 +38,7 @@ import com.mustfaibra.roffu.ui.theme.Dimension
 fun ProfileScreen(
     user: User,
     onNavigationRequested: (route: String, removePreviousRoute: Boolean) -> Unit,
+    onLogoutRequested: () -> Unit,
     profileViewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val generalOptions = remember {
@@ -136,6 +137,47 @@ fun ProfileScreen(
                 title = option.title,
                 onOptionClicked = {},
             )
+        }
+        /** Logout option */
+        item {
+            Row(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .fillMaxWidth()
+                    .clickable {
+                        profileViewModel.logout {
+                            onNavigationRequested(Screen.Login.route, true)
+                        }
+                        onNavigationRequested(Screen.Login.route, true)
+                    },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
+            ) {
+                DrawableButton(
+                    painter = rememberAsyncImagePainter(model = R.drawable.ic_logout),
+                    backgroundColor = MaterialTheme.colors.error.copy(alpha = 0.2f),
+                    iconTint = MaterialTheme.colors.error,
+                    onButtonClicked = {},
+                    iconSize = Dimension.smIcon,
+                    paddingValue = PaddingValues(Dimension.md),
+                    shape = CircleShape,
+                )
+                Text(
+                    text = stringResource(id = R.string.logout),
+                    style = MaterialTheme.typography.body1,
+                    color = MaterialTheme.colors.error,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    icon = Icons.Rounded.KeyboardArrowRight,
+                    backgroundColor = MaterialTheme.colors.background,
+                    iconTint = MaterialTheme.colors.onBackground,
+                    onButtonClicked = {},
+                    iconSize = Dimension.smIcon,
+                    paddingValue = PaddingValues(Dimension.md),
+                    shape = CircleShape,
+                )
+            }
         }
     }
 }
