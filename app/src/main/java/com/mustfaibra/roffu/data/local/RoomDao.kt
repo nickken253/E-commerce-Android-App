@@ -1,9 +1,12 @@
 package com.mustfaibra.roffu.data.local
 
 import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Relation
 import androidx.room.Transaction
 import androidx.room.Update
 import com.mustfaibra.roffu.models.*
@@ -19,6 +22,18 @@ interface RoomDao {
     @Transaction
     @Query("SELECT * FROM manufacturer")
     suspend fun getManufacturersWithProducts(): List<LocalManufacturer>
+    @Query("SELECT * FROM user WHERE role = 'user'")
+    fun getAllUsers(): Flow<List<User>>
+
+
+    @Insert
+    suspend fun insertUser(user: User)
+
+    @Update
+    suspend fun updateUser(user: User)
+
+    @Delete
+    suspend fun deleteUser(user: User)
 
     /** Products operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -136,6 +151,21 @@ interface RoomDao {
     suspend fun updateOrdersAsDelivered(delivered: Boolean = true)
 
     @Transaction
+
     @Query("SELECT * FROM product WHERE id = :productId")
     suspend fun getProductDetails(productId: Int): ProductDetails?
+
+    @Query("SELECT * FROM product")
+    fun getAllProducts(): Flow<List<Product>>
+    @Query("SELECT * FROM Product WHERE id = :productId LIMIT 1")
+    suspend fun getProductById(productId: Int): Product?
+
+    @Update
+    suspend fun updateProduct(product: Product)
+
+    @Delete
+    suspend fun deleteProduct(product: Product)
+    @Query("SELECT * FROM Manufacturer")
+    fun getAllManufacturers(): Flow<List<Manufacturer>>
+
 }

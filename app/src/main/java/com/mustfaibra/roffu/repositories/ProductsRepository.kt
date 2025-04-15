@@ -3,6 +3,7 @@ package com.mustfaibra.roffu.repositories
 import com.mustfaibra.roffu.data.local.RoomDao
 import com.mustfaibra.roffu.models.BookmarkItem
 import com.mustfaibra.roffu.models.CartItem
+import com.mustfaibra.roffu.models.Manufacturer
 import com.mustfaibra.roffu.models.Order
 import com.mustfaibra.roffu.models.OrderDetails
 import com.mustfaibra.roffu.models.OrderItem
@@ -14,6 +15,7 @@ import com.mustfaibra.roffu.utils.UserPref
 import com.mustfaibra.roffu.utils.getFormattedDate
 import com.mustfaibra.roffu.utils.getStructuredProducts
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.util.*
 import javax.inject.Inject
@@ -147,5 +149,11 @@ class ProductsRepository @Inject constructor(
         }
         /** Doesn't exist on the local, check remote */
         return DataResponse.Error(error = Error.Empty)
+    }
+    fun getManufacturers(): Flow<List<Manufacturer>> {
+        return dao.getAllManufacturers()
+    }
+    suspend fun addManufacturer(manufacturer: Manufacturer) {
+        dao.insertManufacturer(manufacturer)
     }
 }

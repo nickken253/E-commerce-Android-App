@@ -118,7 +118,7 @@ fun LoginScreen(
             padding = PaddingValues(Dimension.pagePadding.div(2)),
             buttonColor = Color(0xFF0050D8), // Màu xanh đậm hơn
             contentColor = Color.White,
-            text = "Đăng nhập",
+            text = "Login",
             enabled = uiState !is UiState.Loading,
             textStyle = MaterialTheme.typography.button,
             onButtonClicked = {
@@ -152,7 +152,7 @@ fun LoginScreen(
             padding = PaddingValues(Dimension.pagePadding.div(2)),
             buttonColor = Color.White,
             contentColor = MaterialTheme.colors.primary,
-            text = "Đăng ký",
+            text = "Register",
             enabled = uiState !is UiState.Loading,
             textStyle = MaterialTheme.typography.button,
             onButtonClicked = onNavigateToRegister

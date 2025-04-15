@@ -13,6 +13,7 @@ data class Product(
     val image: Int,
     val price: Double,
     val description: String,
+    val imagePath: String? = null,
     val discount: Int = 0,
     val manufacturerId: Int,
     val basicColorName: String,

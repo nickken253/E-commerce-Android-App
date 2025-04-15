@@ -3,9 +3,11 @@ package com.mustfaibra.roffu.repositories
 import com.mustfaibra.roffu.data.local.RoomDao
 import com.mustfaibra.roffu.models.Advertisement
 import com.mustfaibra.roffu.models.Manufacturer
+import com.mustfaibra.roffu.models.Product
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
 import com.mustfaibra.roffu.utils.getStructuredManufacturers
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class BrandsRepository @Inject constructor(
@@ -33,6 +35,9 @@ class BrandsRepository @Inject constructor(
                 DataResponse.Error(error = Error.Empty)
             }
         }
+    }
+    fun getAllProducts(): Flow<List<Product>> {
+        return dao.getAllProducts()
     }
 }
 

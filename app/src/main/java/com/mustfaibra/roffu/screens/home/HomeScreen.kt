@@ -61,6 +61,7 @@ fun HomeScreen(
     LaunchedEffect(key1 = Unit) {
         homeViewModel.getHomeAdvertisements()
         homeViewModel.getBrandsWithProducts()
+        homeViewModel.getAllProducts()
     }
 
     val pagerState = rememberPagerState()
@@ -190,44 +191,67 @@ fun HomeScreen(
         when (brandsUiState) {
             is UiState.Loading -> {
                 /** Still loading */
-
             }
             is UiState.Success -> {
                 /** Loading finished successfully, Shoes brands row first! */
                 item(
-                    span = {
-                        GridItemSpan(2)
-                    }
+                    span = { GridItemSpan(2) }
                 ) {
                     ManufacturersSection(
                         brands = brands.map { Triple(it.id, it.name, it.icon) },
                         activeBrandIndex = currentSelectedBrandIndex,
-                    ) {
-                        if (it != currentSelectedBrandIndex) {
+                        onBrandClicked = {
                             homeViewModel.updateCurrentSelectedBrandId(index = it)
                         }
-                    }
-                }
-                /** Show selected brand's data */
-                items(brands[currentSelectedBrandIndex].products) { product ->
-                    ProductItemLayout(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        cartOffset = cartOffset,
-                        image = product.image,
-                        price = product.price,
-                        title = product.name,
-                        discount = product.discount,
-                        onCart = product.id in cartProductsIds,
-                        onBookmark = product.id in bookmarkProductsIds,
-                        onProductClicked = {
-                            onProductClicked(product.id)
-                        },
-                        onChangeCartState = {
-                            onCartStateChanged(product.id)
-                        },
-                        onChangeBookmarkState = { onBookmarkStateChanged(product.id) },
                     )
+                }
+                /** Show products based on selected brand or all products */
+                when {
+                    currentSelectedBrandIndex == -1 -> {
+                        when (homeViewModel.allProductsUiState.value) {
+                            is UiState.Loading -> {
+                                // Hiển thị loading nếu cần
+                            }
+                            is UiState.Success -> {
+                                items(homeViewModel.allProducts) { product ->
+                                    ProductItemLayout(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        cartOffset = cartOffset,
+                                        image = product.image,
+                                        price = product.price,
+                                        title = product.name,
+                                        discount = product.discount,
+                                        onCart = product.id in cartProductsIds,
+                                        onBookmark = product.id in bookmarkProductsIds,
+                                        onProductClicked = { onProductClicked(product.id) },
+                                        onChangeCartState = { onCartStateChanged(product.id) },
+                                        onChangeBookmarkState = { onBookmarkStateChanged(product.id) },
+                                    )
+                                }
+                            }
+                            is UiState.Error -> {
+                                // Hiển thị lỗi nếu cần
+                            }
+                            else -> {}
+                        }
+                    }
+                    else -> {
+                        items(brands[currentSelectedBrandIndex].products) { product ->
+                            ProductItemLayout(
+                                modifier = Modifier.fillMaxWidth(),
+                                cartOffset = cartOffset,
+                                image = product.image,
+                                price = product.price,
+                                title = product.name,
+                                discount = product.discount,
+                                onCart = product.id in cartProductsIds,
+                                onBookmark = product.id in bookmarkProductsIds,
+                                onProductClicked = { onProductClicked(product.id) },
+                                onChangeCartState = { onCartStateChanged(product.id) },
+                                onChangeBookmarkState = { onBookmarkStateChanged(product.id) },
+                            )
+                        }
+                    }
                 }
             }
             else -> {
@@ -335,7 +359,6 @@ fun AdvertisementsPager(
     }
 }
 
-
 @Composable
 fun ManufacturersSection(
     brands: List<Triple<Int, String, Int>>,
@@ -347,6 +370,42 @@ fun ManufacturersSection(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding.div(2)),
     ) {
+        // Thêm mục "Tất cả"
+        item {
+            val backgroundColor = if (activeBrandIndex == -1) MaterialTheme.colors.primary
+            else MaterialTheme.colors.background
+
+            val contentColor = if (activeBrandIndex == -1) MaterialTheme.colors.onPrimary
+            else MaterialTheme.colors.onBackground
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimension.xs),
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(backgroundColor)
+                    .clickable { onBrandClicked(-1) }
+                    .padding(
+                        horizontal = Dimension.md,
+                        vertical = Dimension.sm,
+                    )
+            ) {
+                Icon(
+                    modifier = Modifier.size(Dimension.smIcon),
+                    painter = painterResource(id = R.drawable.ic_all), // Icon cho "Tất cả"
+                    contentDescription = null,
+                    tint = contentColor,
+                )
+                if (activeBrandIndex == -1) {
+                    Text(
+                        text = "Tất cả",
+                        style = MaterialTheme.typography.body1,
+                        color = contentColor,
+                    )
+                }
+            }
+        }
+        // Các thương hiệu khác
         itemsIndexed(brands) { index, (_, name, icon) ->
             val backgroundColor = if (activeBrandIndex == index) MaterialTheme.colors.primary
             else MaterialTheme.colors.background

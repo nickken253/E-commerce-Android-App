@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.models.User
 import com.mustfaibra.roffu.repositories.UserRepository
 import com.mustfaibra.roffu.sealed.DataResponse
@@ -82,12 +83,13 @@ class LoginViewModel @Inject constructor(
         email: String,
         password: String,
         confirmPassword: String,
-        businessName: String,
+        name: String,
+        address: String,
         onRegistered: () -> Unit,
         onRegistrationFailed: (String) -> Unit,
     ) {
         // Kiểm tra dữ liệu đầu vào
-        if (email.isBlank() || password.isBlank() || confirmPassword.isBlank() || businessName.isBlank()) {
+        if (email.isBlank() || password.isBlank() || confirmPassword.isBlank() || name.isBlank()) {
             onRegistrationFailed("Vui lòng điền đầy đủ thông tin!")
             return
         }
@@ -117,12 +119,16 @@ class LoginViewModel @Inject constructor(
             delay(2000) // Giả lập thời gian xử lý
             val newUser = User(
                 userId = 0,
-                name = businessName,
+                name = name,
                 email = email,
-                phone = "", // Nếu bạn muốn thêm số điện thoại, cần thêm vào giao diện
+                phone = "",
                 password = password,
-                gender = 1 // Giá trị mặc định, bạn có thể thay đổi
+                gender = 1,
+                role = "user",
+                profile = R.drawable.mustapha_profile,
+                address = address
             )
+
             userRepository.registerUser(user = newUser).let { response ->
                 when (response) {
                     is DataResponse.Success -> {

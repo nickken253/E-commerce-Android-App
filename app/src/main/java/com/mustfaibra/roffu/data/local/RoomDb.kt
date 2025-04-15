@@ -2,6 +2,8 @@ package com.mustfaibra.roffu.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.models.*
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +30,7 @@ import javax.inject.Provider
         ProductColor::class,
         ProductSize::class,
     ],
-    version = 1, exportSchema = false)
+    version = 3, exportSchema = false)
 abstract class RoomDb : RoomDatabase() {
 
     /** A function that used to retrieve Room's related dao instance */
@@ -49,6 +51,7 @@ abstract class RoomDb : RoomDatabase() {
             Advertisement(2, R.drawable.pegasus_trail_gortex_ads, 2, 0),
             Advertisement(3, R.drawable.blazer_low_black_ads, 3, 0),
         )
+
         private val nikeProducts = listOf(
             Product(
                 id = 1,
@@ -227,12 +230,13 @@ abstract class RoomDb : RoomDatabase() {
                 dao.saveUser(
                     User(
                         userId = 1,
-                        name = "Mustafa Ibrahim",
+                        name = "Phuc admin",
                         profile = R.drawable.mustapha_profile,
-                        phone = "+249922943879",
-                        email = "mustfaibra@gmail.com",
-                        password = "12344321",
-                        token = "ds2f434ls2ks2lsj2ls",
+                        phone = "0945396023",
+                        email = "phucadmin@gmail.com",
+                        password = "Anhnhoem456@",
+                        token = "1234567",
+                        role = "admin"
                     )
                 )
             }
@@ -282,4 +286,13 @@ abstract class RoomDb : RoomDatabase() {
         }
     }
 
+}
+val MIGRATION_1_2 = object : Migration(2, 3) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        //database.execSQL("ALTER TABLE User ADD COLUMN role TEXT NOT NULL DEFAULT 'user'")
+//        database.execSQL("ALTER TABLE User ADD COLUMN city TEXT")
+//        database.execSQL("ALTER TABLE User ADD COLUMN district TEXT")
+//        database.execSQL("ALTER TABLE User ADD COLUMN address TEXT")
+        database.execSQL("ALTER TABLE Product ADD COLUMN imagePath TEXT")
+    }
 }
