@@ -47,6 +47,11 @@ sealed class Screen(
         icon = R.drawable.ic_notifications,
     )
     object Register : Screen("register")
+    object Admin : Screen("admin")
+    object AddUser : Screen("add_user")
+    object EditUser : Screen("edit_user/{userId}")
+    object AddProduct : Screen("add_product")
+    object EditProduct : Screen("edit_product/{productId}")
 
     object Search : Screen(
         route = "search",

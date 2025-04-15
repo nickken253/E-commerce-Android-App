@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mustfaibra.roffu.models.Advertisement
 import com.mustfaibra.roffu.models.Manufacturer
+import com.mustfaibra.roffu.models.Product
 import com.mustfaibra.roffu.repositories.BrandsRepository
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
@@ -31,6 +32,8 @@ class HomeViewModel @Inject constructor(
     val brands: MutableList<Manufacturer> = mutableStateListOf()
 
     val currentSelectedBrandIndex = mutableStateOf(0)
+    val allProductsUiState = mutableStateOf<UiState>(UiState.Loading)
+    val allProducts: MutableList<Product> = mutableStateListOf()
 
     fun updateCurrentSelectedBrandId(index: Int) {
         currentSelectedBrandIndex.value = index
@@ -85,6 +88,18 @@ class HomeViewModel @Inject constructor(
                         brandsUiState.value = UiState.Error(error = it.error ?: Error.Network)
                     }
                 }
+            }
+        }
+    }
+    fun getAllProducts() {
+        if (allProducts.isNotEmpty()) return
+
+        allProductsUiState.value = UiState.Loading
+        viewModelScope.launch {
+            brandsRepository.getAllProducts().collect { products ->
+                allProducts.clear()
+                allProducts.addAll(products)
+                allProductsUiState.value = UiState.Success
             }
         }
     }

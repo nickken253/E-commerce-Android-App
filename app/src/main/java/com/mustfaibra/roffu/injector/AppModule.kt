@@ -11,6 +11,7 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
+import com.mustfaibra.roffu.data.local.MIGRATION_1_2
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -38,7 +39,8 @@ object AppModule {
             RoomDb::class.java,
             "RoFFuDatabase",
         )
-        .fallbackToDestructiveMigration()
+        .addMigrations(MIGRATION_1_2)
+        //.fallbackToDestructiveMigration()
         .addCallback(populateDataCallback)
         .build()
 

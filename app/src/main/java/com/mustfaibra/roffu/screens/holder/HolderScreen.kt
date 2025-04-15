@@ -15,6 +15,7 @@ import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +38,12 @@ import com.mustfaibra.roffu.models.CartItem
 import com.mustfaibra.roffu.models.User
 import com.mustfaibra.roffu.providers.LocalNavHost
 import com.mustfaibra.roffu.repositories.ProductsRepository
+import com.mustfaibra.roffu.screens.admin.AddProductScreen
+import com.mustfaibra.roffu.screens.admin.AddUserScreen
+import com.mustfaibra.roffu.screens.admin.AdminScreen
+import com.mustfaibra.roffu.screens.admin.AdminViewModel
+import com.mustfaibra.roffu.screens.admin.EditProductScreen
+import com.mustfaibra.roffu.screens.admin.EditUserScreen
 import com.mustfaibra.roffu.screens.barcode.BarcodeScannerScreen
 import com.mustfaibra.roffu.screens.bookmarks.BookmarksScreen
 import com.mustfaibra.roffu.screens.cart.CartScreen
@@ -240,7 +247,6 @@ fun HolderScreen(
         )
     }
 }
-
 @Composable
 fun ScaffoldSection(
     controller: NavHostController,
@@ -262,15 +268,57 @@ fun ScaffoldSection(
     onToastRequested: (message: String, color: Color) -> Unit,
     bottomNavigationContent: @Composable () -> Unit,
 ) {
+    // Kiểm tra vai trò người dùng và điều hướng
+    LaunchedEffect(user) {
+        user?.let {
+            if (it.isAdmin()) {
+                // Nếu là admin, điều hướng đến AdminScreen
+                controller.navigate(Screen.Admin.route) {
+                    popUpTo(0) { inclusive = true } // Xóa toàn bộ stack
+                    launchSingleTop = true
+                }
+            } else {
+                // Nếu là user bình thường, điều hướng đến HomeScreen (trừ khi đang ở các màn hình chính)
+                if (controller.currentDestination?.route !in listOf(
+                        Screen.Home.route,
+                        Screen.Bookmark.route,
+                        Screen.Cart.route,
+                        Screen.Profile.route,
+                        Screen.ProductDetails.route,
+                        Screen.Search.route,
+                        Screen.Notifications.route,
+                        Screen.BarcodeScanner.route,
+                        Screen.Checkout.route,
+                        Screen.OrderHistory.route,
+                        Screen.LocationPicker.route
+                    )
+                ) {
+                    controller.navigate(Screen.Home.route) {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }
+        } ?: run {
+            // Nếu chưa đăng nhập, điều hướng đến LoginScreen (trừ các màn hình khởi tạo)
+            if (controller.currentDestination?.route !in listOf(
+                    Screen.Splash.route,
+                    Screen.Onboard.route,
+                    Screen.Login.route,
+                    Screen.Signup.route,
+                    Screen.Register.route
+                )
+            ) {
+                onUserNotAuthorized(true)
+            }
+        }
+    }
+
     Scaffold(
         scaffoldState = scaffoldState,
-        snackbarHost = {
-            scaffoldState.snackbarHostState
-        },
+        snackbarHost = { scaffoldState.snackbarHostState },
     ) { paddingValues ->
-        Column(
-            Modifier.padding(paddingValues)
-        ) {
+        Column(Modifier.padding(paddingValues)) {
             NavHost(
                 modifier = Modifier.weight(1f),
                 navController = controller,
@@ -294,8 +342,6 @@ fun ScaffoldSection(
                         onUserAuthenticated = onBackRequested,
                         onToastRequested = onToastRequested,
                         onNavigateToRegister = { controller.navigate(Screen.Register.route) }
-
-
                     )
                 }
                 composable(Screen.Register.route) {
@@ -306,16 +352,122 @@ fun ScaffoldSection(
                         onYeuCauToast = onToastRequested
                     )
                 }
+                composable(Screen.Admin.route) {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    // Chỉ cho phép admin truy cập
+                    if (user?.isAdmin() == true) {
+                        AdminScreen(
+                            onBackRequested = onBackRequested,
+                            onNavigationRequested = onNavigationRequested,
+                            onToastRequested = onToastRequested
+                        )
+                    } else {
+                        LaunchedEffect(Unit) {
+                            //onToastRequested("Bạn không có quyền truy cập!", Color.Red)
+                            controller.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Admin.route) { inclusive = true }
+                            }
+                        }
+                    }
+                }
+                composable(Screen.AddUser.route) {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    // Chỉ cho phép admin truy cập
+                    if (user?.isAdmin() == true) {
+                        AddUserScreen(onBackRequested = onBackRequested,onToastRequested = onToastRequested)
+                    } else {
+                        LaunchedEffect(Unit) {
+                            //onToastRequested("Bạn không có quyền truy cập!", Color.Red)
+                            controller.navigate(Screen.Home.route) {
+                                popUpTo(Screen.AddUser.route) { inclusive = true }
+                            }
+                        }
+                    }
+                }
+                composable(
+                    route = Screen.EditUser.route,
+                    arguments = listOf(navArgument(name = "userId") { type = NavType.IntType })
+                ) {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    // Chỉ cho phép admin truy cập
+                    if (user?.isAdmin() == true) {
+                        val userId = it.arguments?.getInt("userId")
+                            ?: throw IllegalArgumentException("User ID is required")
+                        EditUserScreen(
+                            userId = userId,
+                            onBackRequested = onBackRequested,
+                            onToastRequested = onToastRequested
+                        )
+                    } else {
+                        LaunchedEffect(Unit) {
+                           // onToastRequested("Bạn không có quyền truy cập!", Color.Red)
+                            controller.navigate(Screen.Home.route) {
+                                popUpTo(Screen.EditUser.route) { inclusive = true }
+                            }
+                        }
+                    }
+                }
+                composable(Screen.AddProduct.route) {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    if (user?.isAdmin() == true) {
+                        AddProductScreen(
+                            onBack = onBackRequested,
+                            onDone = { onBackRequested() }, // hoặc một logic khác nếu cần
+                            onToastRequested = onToastRequested
+                        )
+                    } else {
+                        LaunchedEffect(Unit) {
+                            onToastRequested("Bạn không có quyền truy cập!", Color.Red)
+                            controller.navigate(Screen.Home.route) {
+                                popUpTo(Screen.AddProduct.route) { inclusive = true }
+                            }
+                        }
+                    }
+                }
+                composable(
+                    route = Screen.EditProduct.route,
+                    arguments = listOf(navArgument(name = "productId") { type = NavType.IntType })
+                ) {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    if (user?.isAdmin() == true) {
+                        val productId = it.arguments?.getInt("productId")
+                            ?: throw IllegalArgumentException("Product ID is required")
+
+                        EditProductScreen(
+                            productId = productId,
+                            onBack = onBackRequested,
+                            onDone = { onBackRequested() },
+                            onToastRequested = onToastRequested
+                        )
+                    } else {
+                        LaunchedEffect(Unit) {
+                            onToastRequested("Bạn không có quyền truy cập!", Color.Red)
+                            controller.navigate(Screen.Home.route) {
+                                popUpTo(Screen.EditProduct.route) { inclusive = true }
+                            }
+                        }
+                    }
+                }
+
                 composable(Screen.Home.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
-                    HomeScreen(
-                        cartOffset = cartOffset,
-                        cartProductsIds = productsOnCartIds,
-                        bookmarkProductsIds = productsOnBookmarksIds,
-                        onProductClicked = onShowProductRequest,
-                        onCartStateChanged = onUpdateCartRequest,
-                        onBookmarkStateChanged = onUpdateBookmarkRequest,
-                    )
+                    // Chỉ cho phép user bình thường hoặc khi chưa đăng nhập
+                    if (user?.isAdmin() != true) {
+                        HomeScreen(
+                            cartOffset = cartOffset,
+                            cartProductsIds = productsOnCartIds,
+                            bookmarkProductsIds = productsOnBookmarksIds,
+                            onProductClicked = onShowProductRequest,
+                            onCartStateChanged = onUpdateCartRequest,
+                            onBookmarkStateChanged = onUpdateBookmarkRequest,
+                        )
+                    } else {
+                        LaunchedEffect(Unit) {
+                            controller.navigate(Screen.Admin.route) {
+                                popUpTo(Screen.Home.route) { inclusive = true }
+                            }
+                        }
+                    }
                 }
                 composable(Screen.Notifications.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
@@ -327,107 +479,139 @@ fun ScaffoldSection(
                 }
                 composable(Screen.Bookmark.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
-                    BookmarksScreen(
-                        cartOffset = cartOffset,
-                        cartProductsIds = productsOnCartIds,
-                        onProductClicked = onShowProductRequest,
-                        onCartStateChanged = onUpdateCartRequest,
-                        onBookmarkStateChanged = onUpdateBookmarkRequest,
-                    )
+                    if (user?.isAdmin() != true) {
+                        BookmarksScreen(
+                            cartOffset = cartOffset,
+                            cartProductsIds = productsOnCartIds,
+                            onProductClicked = onShowProductRequest,
+                            onCartStateChanged = onUpdateCartRequest,
+                            onBookmarkStateChanged = onUpdateBookmarkRequest,
+                        )
+                    } else {
+                        LaunchedEffect(Unit) {
+                            controller.navigate(Screen.Admin.route) {
+                                popUpTo(Screen.Bookmark.route) { inclusive = true }
+                            }
+                        }
+                    }
                 }
-
                 composable(Screen.BarcodeScanner.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     BarcodeScannerScreen(
                         navController = controller,
                         onBookmarkStateChanged = { productId ->
-                            // Xử lý sự kiện thêm sản phẩm vào bookmark
+                            onUpdateBookmarkRequest(productId)
                         }
                     )
                 }
                 composable(Screen.Cart.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
-                    CartScreen(
-                        user = user,
-                        cartItems = cartItems,
-                        onProductClicked = onShowProductRequest,
-                        onUserNotAuthorized = { onUserNotAuthorized(false) },
-                        onCheckoutRequest = {
-                            onNavigationRequested(Screen.Checkout.route, false)
-                        },
-                    )
+                    if (user?.isAdmin() != true) {
+                        CartScreen(
+                            user = user,
+                            cartItems = cartItems,
+                            onProductClicked = onShowProductRequest,
+                            onUserNotAuthorized = { onUserNotAuthorized(false) },
+                            onCheckoutRequest = {
+                                onNavigationRequested(Screen.Checkout.route, false)
+                            },
+                        )
+                    } else {
+                        LaunchedEffect(Unit) {
+                            controller.navigate(Screen.Admin.route) {
+                                popUpTo(Screen.Cart.route) { inclusive = true }
+                            }
+                        }
+                    }
                 }
-
-
-
                 composable(Screen.Checkout.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
-                    user.whatIfNotNull(
-                        whatIf = {
-                            CheckoutScreen(
-                                cartItems = cartItems,
-                                onBackRequested = onBackRequested,
-                                onCheckoutSuccess = {
-                                    onNavigationRequested(Screen.OrderHistory.route, true)
-                                },
-                                onToastRequested = onToastRequested,
-                                onChangeLocationRequested = {
-                                    onNavigationRequested(Screen.LocationPicker.route, false)
+                    if (user?.isAdmin() != true) {
+                        user.whatIfNotNull(
+                            whatIf = {
+                                CheckoutScreen(
+                                    cartItems = cartItems,
+                                    onBackRequested = onBackRequested,
+                                    onCheckoutSuccess = {
+                                        onNavigationRequested(Screen.OrderHistory.route, true)
+                                    },
+                                    onToastRequested = onToastRequested,
+                                    onChangeLocationRequested = {
+                                        onNavigationRequested(Screen.LocationPicker.route, false)
+                                    }
+                                )
+                            },
+                            whatIfNot = {
+                                LaunchedEffect(Unit) {
+                                    onUserNotAuthorized(true)
                                 }
-                            )
-                        },
-                        whatIfNot = {
-                            LaunchedEffect(key1 = Unit) {
-                                onUserNotAuthorized(true)
+                            },
+                        )
+                    } else {
+                        LaunchedEffect(Unit) {
+                            controller.navigate(Screen.Admin.route) {
+                                popUpTo(Screen.Checkout.route) { inclusive = true }
                             }
-                        },
-                    )
+                        }
+                    }
                 }
                 composable(Screen.LocationPicker.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     LocationPickerScreen(
-                        onLocationRequested = {
-
-                        },
-                        onLocationPicked = {
-
-                        }
+                        onLocationRequested = {},
+                        onLocationPicked = {}
                     )
                 }
                 composable(Screen.Profile.route) {
-                    user.whatIfNotNull(
-                        whatIf = {
-                            onStatusBarColorChange(MaterialTheme.colors.background)
-                            ProfileScreen(
-                                user = it,
-                                onNavigationRequested = onNavigationRequested,
-                                onLogoutRequested = {
-                                    UserPref.logout()
-                                    onNavigationRequested(Screen.Login.route,  true)
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    if (user?.isAdmin() != true) {
+                        user.whatIfNotNull(
+                            whatIf = {
+                                ProfileScreen(
+                                    user = it,
+                                    onNavigationRequested = onNavigationRequested,
+                                    onLogoutRequested = {
+                                        UserPref.logout()
+                                        onNavigationRequested(Screen.Login.route, true)
+                                    }
+                                )
+                            },
+                            whatIfNot = {
+                                LaunchedEffect(Unit) {
+                                    onUserNotAuthorized(false)
                                 }
-                            )
-                        },
-                        whatIfNot = {
-                            LaunchedEffect(key1 = Unit) {
-                                onUserNotAuthorized(false)
+                            },
+                        )
+                    } else {
+                        LaunchedEffect(Unit) {
+                            controller.navigate(Screen.Admin.route) {
+                                popUpTo(Screen.Profile.route) { inclusive = true }
                             }
-                        },
-                    )
+                        }
+                    }
                 }
                 composable(Screen.OrderHistory.route) {
-                    user.whatIfNotNull(
-                        whatIf = {
-                            onStatusBarColorChange(MaterialTheme.colors.background)
-                            OrdersHistoryScreen(
-                                onBackRequested = onBackRequested,
-                            )
-                        },
-                        whatIfNot = {
-                            LaunchedEffect(key1 = Unit) {
-                                onUserNotAuthorized(true)
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    if (user?.isAdmin() != true) {
+                        user.whatIfNotNull(
+                            whatIf = {
+                                OrdersHistoryScreen(
+                                    onBackRequested = onBackRequested,
+                                )
+                            },
+                            whatIfNot = {
+                                LaunchedEffect(Unit) {
+                                    onUserNotAuthorized(true)
+                                }
+                            },
+                        )
+                    } else {
+                        LaunchedEffect(Unit) {
+                            controller.navigate(Screen.Admin.route) {
+                                popUpTo(Screen.OrderHistory.route) { inclusive = true }
                             }
-                        },
-                    )
+                        }
+                    }
                 }
                 composable(
                     route = Screen.ProductDetails.route,
@@ -438,7 +622,6 @@ fun ScaffoldSection(
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     val productId = it.arguments?.getInt("productId")
                         ?: throw IllegalArgumentException("Product id is required")
-
                     ProductDetailsScreen(
                         productId = productId,
                         cartItemsCount = cartItems.size,
@@ -450,15 +633,13 @@ fun ScaffoldSection(
                     )
                 }
             }
-            /** Now we lay down our bottom navigation component */
-            bottomNavigationContent()
+            // Chỉ hiển thị bottom navigation cho user bình thường
+            if (user?.isAdmin() != true) {
+                bottomNavigationContent()
+            }
         }
     }
 }
-
-/**
- * A function that is used to get the active route in our Navigation Graph , should return the splash route if it's null
- */
 @Composable
 fun getActiveRoute(navController: NavHostController): String {
     val navBackStackEntry by navController.currentBackStackEntryAsState()

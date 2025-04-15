@@ -41,6 +41,8 @@ fun ManHinhDangKy(
     val selectedProvince = remember { mutableStateOf("Thành phố") }
     val selectedDistrict = remember { mutableStateOf("") }
     val soNha = remember { mutableStateOf("") }
+    val tenNguoiDung = remember { mutableStateOf("") }
+
 
     val categories = listOf(
         "Máy tính & laptop", "Đồ gia dụng", "Quần áo",
@@ -63,13 +65,29 @@ fun ManHinhDangKy(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Đăng ký",
+            text = "Register",
             style = MaterialTheme.typography.h5.copy(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colors.onBackground
             ),
             modifier = Modifier.align(Alignment.Start)
         )
+        // Tên người dùng
+        CustomInputField(
+            modifier = Modifier.fillMaxWidth(),
+            value = tenNguoiDung.value,
+            onValueChange = { tenNguoiDung.value = it },
+            placeholder = "Tên của bạn",
+            textStyle = MaterialTheme.typography.body1,
+            padding = PaddingValues(Dimension.pagePadding),
+            backgroundColor = MaterialTheme.colors.surface,
+            textColor = MaterialTheme.colors.onBackground,
+            imeAction = ImeAction.Next,
+            shape = RoundedCornerShape(8.dp),
+            onFocusChange = {},
+            onKeyboardActionClicked = {},
+        )
+
 
         // Email có @gmail.com
         Row(
@@ -131,7 +149,7 @@ fun ManHinhDangKy(
             onKeyboardActionClicked = {},
         )
 
-        // Thành phố + Thay đổi
+        // Thành phố + Change
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding)
@@ -153,7 +171,7 @@ fun ManHinhDangKy(
                 padding = PaddingValues(Dimension.pagePadding.div(2)),
                 buttonColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
                 contentColor = MaterialTheme.colors.primary,
-                text = "Thay đổi",
+                text = "Change",
                 enabled = true,
                 textStyle = MaterialTheme.typography.body1,
                 onButtonClicked = {
@@ -184,7 +202,7 @@ fun ManHinhDangKy(
                 padding = PaddingValues(Dimension.pagePadding.div(2)),
                 buttonColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
                 contentColor = MaterialTheme.colors.primary,
-                text = "Thay đổi",
+                text = "Change",
                 enabled = true,
                 textStyle = MaterialTheme.typography.body1,
                 onButtonClicked = {
@@ -235,19 +253,20 @@ fun ManHinhDangKy(
             padding = PaddingValues(Dimension.pagePadding.div(2)),
             buttonColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
-            text = "Tiếp tục",
+            text = "Next",
             enabled = trangThaiUi !is UiState.Loading,
             textStyle = MaterialTheme.typography.button,
             onButtonClicked = {
                 val rawEmail = emailOrPhone ?: ""
                 val fullEmail = "$rawEmail@gmail.com"
 
-                if (rawEmail.isBlank() || (matKhau ?: "").isBlank() || matKhauXacNhan.value.isBlank()
+                if (tenNguoiDung.value.isBlank() || rawEmail.isBlank() || (matKhau ?: "").isBlank() || matKhauXacNhan.value.isBlank()
                     || selectedProvince.value == "Thành phố" || selectedDistrict.value.isBlank() || soNha.value.isBlank()
                 ) {
                     onYeuCauToast("Vui lòng điền đầy đủ thông tin!", Color.Red)
                     return@CustomButton
                 }
+
 
                 if (matKhau != matKhauXacNhan.value) {
                     onYeuCauToast("Mật khẩu xác nhận không khớp!", Color.Red)
@@ -258,15 +277,17 @@ fun ManHinhDangKy(
                     email = fullEmail,
                     password = matKhau ?: "",
                     confirmPassword = matKhauXacNhan.value,
-                    businessName = "${soNha.value}, ${selectedDistrict.value}, ${selectedProvince.value}",
+                    name = tenNguoiDung.value,
+                    address = "${soNha.value}, ${selectedDistrict.value}, ${selectedProvince.value}",
                     onRegistered = {
-                        onYeuCauToast("Đăng ký thành công!", Color.Green)
+                        onYeuCauToast("Register successful!", Color.Green)
                         onDangKyThanhCong()
                     },
                     onRegistrationFailed = { loi ->
                         onYeuCauToast(loi, Color.Red)
                     }
                 )
+
             },
             leadingIcon = {
                 if (trangThaiUi is UiState.Loading) {
