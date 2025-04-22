@@ -150,11 +150,11 @@ class UpdateAddressFragment : BaseFragment<FragmentUpdateAddressBinding>() {
             super.onViewCreated(view, savedInstanceState)
             binding?.apply {
                 title.text = this@RVBotSheet.title
-                wheelPicker.data = items
-                btnSubmit.setOnClickListener {
-                    onSubmit(items[wheelPicker.currentItemPosition])
-                    dismiss()
-                }
+                // wheelPicker.data = items // Đã comment vì không còn WheelPicker
+                // btnSubmit.setOnClickListener {
+                //     onSubmit(items[wheelPicker.currentItemPosition])
+                //     dismiss()
+                // }
             }
         }
     }
