@@ -164,4 +164,13 @@ dependencies {
 
     // WhatIf
     implementation "com.github.skydoves:whatif:1.1.1"
+
+    // RecyclerView
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+
+    // AppCompat
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+
+    // Material Components for TabLayout
+    implementation 'com.google.android.material:material:1.11.0'
 }
