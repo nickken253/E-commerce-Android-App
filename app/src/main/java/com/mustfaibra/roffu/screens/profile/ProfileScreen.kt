@@ -119,7 +119,8 @@ fun ProfileScreen(
                 title = option.title,
                 onOptionClicked = {
                     if (option is Screen.OrderHistory) {
-                        onNavigationRequested(option.route, false)
+                        // Chuyển sang màn hình OrderManager (OrderScreen mới)
+                        onNavigationRequested(Screen.OrderManager.route, false)
                     }
                 },
             )

@@ -71,7 +71,7 @@ fun HolderScreen(
     holderViewModel: HolderViewModel = hiltViewModel(),
 ) {
     val destinations = remember {
-        listOf(Screen.Home,  Screen.Bookmark, Screen.Cart, Screen.Profile, Screen.OrderManager)
+        listOf(Screen.Home, Screen.Bookmark, Screen.Cart, Screen.Profile)
     }
 
 
