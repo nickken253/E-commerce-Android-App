@@ -3,7 +3,6 @@ package com.mustfaibra.roffu.screens.barcode
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,8 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,33 +22,50 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.mustfaibra.roffu.components.CameraPreview
+import com.mustfaibra.roffu.sealed.Screen
 import com.mustfaibra.roffu.utils.BarcodeAnalyzer
 import com.mustfaibra.roffu.models.Product
 
 @Composable
 fun BarcodeScannerScreen(
     navController: NavController,
-    onBookmarkStateChanged: (productId: Int) -> Unit = { productId ->
-        Log.d("Bookmark", "Đã click vào bookmark của sản phẩm có ID: $productId")
-    },
-            viewModel: BarcodeScannerViewModel = hiltViewModel()
+    viewModel: BarcodeScannerViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val hasCameraPermission = remember {
+    var hasCameraPermission by remember { mutableStateOf(
         ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-    }
+    ) }
 
-    if (!hasCameraPermission) {
-        Text("Ứng dụng cần quyền truy cập camera!")
-        return
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasCameraPermission = isGranted
+        if (!isGranted) {
+            Toast.makeText(context, "Cần quyền camera để quét mã vạch", Toast.LENGTH_SHORT).show()
+        }
     }
-
-    val scannedProduct by viewModel.scannedProduct.collectAsState()
 
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { processBarcodeFromImage(context, it, viewModel) }
+    }
+
+    if (!hasCameraPermission) {
+        LaunchedEffect(Unit) {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Ứng dụng cần quyền truy cập camera!")
+            Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
+                Text("Cấp quyền camera")
+            }
+        }
+        return
     }
 
     Column(
@@ -66,8 +80,16 @@ fun BarcodeScannerScreen(
             }
         )
 
+        val scannedProduct by viewModel.scannedProduct.collectAsState()
         scannedProduct?.let { product ->
-            ProductDisplay(product, onBookmarkStateChanged,viewModel)
+            ProductDisplay(
+                product = product,
+                onProductClicked = {
+                    navController.navigate(
+                        Screen.ProductDetails.route.replace("{productId}", "${product.id}")
+                    )
+                }
+            )
         } ?: Text(text = "Đang quét...", modifier = Modifier.padding(16.dp))
 
         Row(
@@ -85,19 +107,18 @@ fun BarcodeScannerScreen(
         }
     }
 }
+
 @Composable
 fun ProductDisplay(
     product: Product,
-    onBookmarkStateChanged: (productId: Int) -> Unit,
-    viewModel: BarcodeScannerViewModel
+    onProductClicked: () -> Unit
 ) {
-    val isBookmarked by viewModel.bookmarkedProductsIds.collectAsState()
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
             .background(Color.White, shape = RoundedCornerShape(16.dp))
+            .clickable { onProductClicked() }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -110,22 +131,8 @@ fun ProductDisplay(
         Column(modifier = Modifier.weight(1f)) {
             Text(text = product.name, style = MaterialTheme.typography.body1)
         }
-
-        if (isBookmarked.contains(product.id)) {
-            Text(
-                text = "In Bookmark",
-                color = Color.Blue,
-                modifier = Modifier.padding(end = 8.dp)
-            )
-        } else {
-            IconButton(onClick = { viewModel.toggleBookmark(product.id) }) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Add to Bookmark", tint = Color.Blue)
-            }
-
-        }
     }
 }
-
 
 fun processBarcodeFromImage(
     context: android.content.Context,

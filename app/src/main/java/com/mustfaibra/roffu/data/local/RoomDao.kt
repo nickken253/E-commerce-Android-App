@@ -22,9 +22,13 @@ interface RoomDao {
     @Transaction
     @Query("SELECT * FROM manufacturer")
     suspend fun getManufacturersWithProducts(): List<LocalManufacturer>
+
     @Query("SELECT * FROM user WHERE role = 'user'")
     fun getAllUsers(): Flow<List<User>>
 
+    /** User operations */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveUser(user: User)
 
     @Insert
     suspend fun insertUser(user: User)
@@ -34,6 +38,18 @@ interface RoomDao {
 
     @Delete
     suspend fun deleteUser(user: User)
+
+    @Query("SELECT * FROM user WHERE userId = :userId LIMIT 1")
+    suspend fun getLoggedUser(userId: Int): User?
+
+    @Query("SELECT * FROM user WHERE email = :email LIMIT 1")
+    suspend fun getUserByEmail(email: String): User?
+
+    @Query("SELECT * FROM user WHERE email = :email AND password = :password LIMIT 1")
+    suspend fun fakeSignIn(email: String, password: String): User?
+
+    @Query("UPDATE user SET password = :newPassword WHERE email = :email")
+    suspend fun updateUserPassword(email: String, newPassword: String)
 
     /** Products operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -48,15 +64,31 @@ interface RoomDao {
     @Query("SELECT EXISTS(SELECT 1 FROM bookmarks WHERE productId = :productId)")
     suspend fun isProductBookmarked(productId: Int): Boolean
 
+    @Query("SELECT * FROM Product WHERE barcode = :barcode LIMIT 1")
+    suspend fun getProductByBarcode(barcode: String): Product?
+
+    @Query("SELECT * FROM Product WHERE id = :productId LIMIT 1")
+    suspend fun getProductById(productId: Int): Product?
+
+    @Update
+    suspend fun updateProduct(product: Product)
+
+    @Delete
+    suspend fun deleteProduct(product: Product)
+
+    @Query("SELECT * FROM Product")
+    fun getAllProducts(): Flow<List<Product>>
+
+    @Transaction
+    @Query("SELECT * FROM product WHERE id = :productId")
+    suspend fun getProductDetails(productId: Int): ProductDetails?
+
     /** Advertisements operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAdvertisement(advertisement: Advertisement)
 
     @Query("SELECT * FROM advertisement")
     suspend fun getAdvertisements(): List<Advertisement>
-
-    @Query("SELECT * FROM Product WHERE barcode = :barcode LIMIT 1")
-    suspend fun getProductByBarcode(barcode: String): Product?
 
     /** All Cart operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -78,7 +110,7 @@ interface RoomDao {
     @Query("DELETE FROM cart WHERE productId = :productId ")
     suspend fun deleteCartItem(productId: Int)
 
-    @Query("Delete FROM cart")
+    @Query("DELETE FROM cart")
     suspend fun clearCart()
 
     /** Payment providers operations */
@@ -120,25 +152,12 @@ interface RoomDao {
     @Query("DELETE FROM bookmarks WHERE productId = :productId ")
     suspend fun deleteBookmarkItem(productId: Int)
 
-    @Query("Delete FROM bookmarks")
+    @Query("DELETE FROM bookmarks")
     suspend fun clearBookmark()
 
     /** Product reviews */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReviews(reviews: List<Review>)
-
-    /** User operations */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun saveUser(user: User)
-
-    @Query("SELECT * FROM user WHERE userId = :userId LIMIT 1")
-    suspend fun getLoggedUser(userId: Int): User?
-
-    @Query("SELECT * FROM user WHERE email = :email LIMIT 1")
-    suspend fun getUserByEmail(email: String): User?
-
-    @Query("SELECT * FROM user WHERE email = :email AND password = :password LIMIT 1")
-    suspend fun fakeSignIn(email: String, password: String): User?
 
     /** Locations operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -150,22 +169,7 @@ interface RoomDao {
     @Query("UPDATE orders SET isDelivered = :delivered")
     suspend fun updateOrdersAsDelivered(delivered: Boolean = true)
 
-    @Transaction
-
-    @Query("SELECT * FROM product WHERE id = :productId")
-    suspend fun getProductDetails(productId: Int): ProductDetails?
-
-    @Query("SELECT * FROM product")
-    fun getAllProducts(): Flow<List<Product>>
-    @Query("SELECT * FROM Product WHERE id = :productId LIMIT 1")
-    suspend fun getProductById(productId: Int): Product?
-
-    @Update
-    suspend fun updateProduct(product: Product)
-
-    @Delete
-    suspend fun deleteProduct(product: Product)
+    /** Manufacturer operations */
     @Query("SELECT * FROM Manufacturer")
     fun getAllManufacturers(): Flow<List<Manufacturer>>
-
 }

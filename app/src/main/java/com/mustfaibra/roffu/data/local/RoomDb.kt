@@ -231,7 +231,7 @@ abstract class RoomDb : RoomDatabase() {
                     User(
                         userId = 1,
                         name = "Phuc admin",
-                        profile = R.drawable.mustapha_profile,
+                        profile = R.drawable.default_avatar,
                         phone = "0945396023",
                         email = "phucadmin@gmail.com",
                         password = "Anhnhoem456@",
