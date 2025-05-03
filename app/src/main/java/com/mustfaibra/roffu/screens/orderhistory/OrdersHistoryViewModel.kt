@@ -1,3 +1,5 @@
+// Đã migrate chức năng sang OrderViewModel. File này không còn sử dụng.
+
 package com.mustfaibra.roffu.screens.orderhistory
 
 
@@ -19,6 +21,7 @@ import javax.inject.Inject
  * A View model with hiltViewModel annotation that is used to access this view model everywhere needed
  */
 @HiltViewModel
+@Deprecated("This file is no longer used. Functionality has been migrated to OrderViewModel.")
 class OrdersHistoryViewModel @Inject constructor(
     private val productsRepository: ProductsRepository,
 ) : ViewModel() {

@@ -55,7 +55,6 @@ import com.mustfaibra.roffu.screens.login.ManHinhDangKy
 import com.mustfaibra.roffu.screens.notifications.NotificationScreen
 import com.mustfaibra.roffu.screens.onboard.OnboardScreen
 import com.mustfaibra.roffu.screens.order.OrderScreen
-import com.mustfaibra.roffu.screens.orderhistory.OrdersHistoryScreen
 import com.mustfaibra.roffu.screens.productdetails.ProductDetailsScreen
 import com.mustfaibra.roffu.screens.profile.ProfileScreen
 import com.mustfaibra.roffu.screens.search.SearchScreen
@@ -585,29 +584,6 @@ fun ScaffoldSection(
                         }
                     }
                 }
-                composable(Screen.OrderHistory.route) {
-                    onStatusBarColorChange(MaterialTheme.colors.background)
-                    if (user?.isAdmin() != true) {
-                        user.whatIfNotNull(
-                            whatIf = {
-                                OrdersHistoryScreen(
-                                    onBackRequested = onBackRequested,
-                                )
-                            },
-                            whatIfNot = {
-                                LaunchedEffect(Unit) {
-                                    onUserNotAuthorized(true)
-                                }
-                            },
-                        )
-                    } else {
-                        LaunchedEffect(Unit) {
-                            controller.navigate(Screen.Admin.route) {
-                                popUpTo(Screen.OrderHistory.route) { inclusive = true }
-                            }
-                        }
-                    }
-                }
                 composable(Screen.OrderManager.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     OrderScreen(
@@ -636,6 +612,10 @@ fun ScaffoldSection(
                         onBackRequested = onBackRequested,
                         navController = controller
                     )
+                }
+                composable(Screen.OrderHistory.route) {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    OrderScreen()
                 }
             }
             // Chỉ hiển thị bottom navigation cho user bình thường

@@ -8,6 +8,7 @@ import com.mustfaibra.roffu.models.Order
 import com.mustfaibra.roffu.models.OrderDetails
 import com.mustfaibra.roffu.models.OrderItem
 import com.mustfaibra.roffu.models.OrderPayment
+import com.mustfaibra.roffu.models.OrderWithItemsAndProducts
 import com.mustfaibra.roffu.models.Product
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
@@ -151,9 +152,19 @@ class ProductsRepository @Inject constructor(
         /** Doesn't exist on the local, check remote */
         return DataResponse.Error(error = Error.Empty)
     }
+
+    suspend fun getOrdersWithProducts(): DataResponse<List<OrderWithItemsAndProducts>> {
+        dao.getOrdersWithItemsAndProducts().let {
+            if (it.isNotEmpty())
+                return DataResponse.Success(data = it)
+        }
+        return DataResponse.Error(error = Error.Empty)
+    }
+
     fun getManufacturers(): Flow<List<Manufacturer>> {
         return dao.getAllManufacturers()
     }
+
     suspend fun addManufacturer(manufacturer: Manufacturer) {
         dao.insertManufacturer(manufacturer)
     }

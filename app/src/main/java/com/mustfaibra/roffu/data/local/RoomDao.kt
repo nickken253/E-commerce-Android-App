@@ -112,6 +112,10 @@ interface RoomDao {
     @Query("SELECT * FROM orders")
     suspend fun getLocalOrders(): List<OrderDetails>
 
+    @Transaction
+    @Query("SELECT * FROM orders")
+    suspend fun getOrdersWithItemsAndProducts(): List<OrderWithItemsAndProducts>
+
     /** Bookmarks operations */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBookmarkItem(bookmarkItem: BookmarkItem)

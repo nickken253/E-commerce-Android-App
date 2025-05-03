@@ -1,30 +1,34 @@
 package com.mustfaibra.roffu.screens.order
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -33,38 +37,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mustfaibra.roffu.R
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import com.mustfaibra.roffu.models.OrderDetails
+import com.mustfaibra.roffu.models.Location
+import com.mustfaibra.roffu.models.PaymentProvider
+import com.mustfaibra.roffu.sealed.UiState
+import com.mustfaibra.roffu.ui.theme.Dimension
 
-
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OrderScreen(
     orderViewModel: OrderViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
 ) {
+    LaunchedEffect(Unit) { orderViewModel.getOrdersWithProducts() }
+    val orders = orderViewModel.ordersWithProducts
+
     val tabTitles = listOf("Chờ xác nhận", "Chờ lấy hàng", "Đang giao", "Đã giao", "Đã hủy")
     var selectedTab by remember { mutableStateOf(0) }
-    val orderUiState by orderViewModel.orderUiState.collectAsState()
+    val filteredOrders = orders.filter { it.order.status == tabTitles[selectedTab] }
 
-    // Lọc danh sách đơn hàng theo trạng thái tab đang chọn
-    val filteredOrders = orderUiState.orders.filter { it.status == tabTitles[selectedTab] }
-
-    val expandedStates = remember { mutableStateMapOf<String, Boolean>() }
-
-    // Thêm biến trạng thái mở màn shipping detail
     var showShippingDetail by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
         if (showShippingDetail) {
-            // Chỉ hiển thị ShippingDetailScreen, che toàn bộ UI khác
             ShippingDetailScreen(
                 onBack = { showShippingDetail = false }
             )
         } else {
-            // Toàn bộ UI còn lại (header, tab, danh sách đơn hàng...)
             TopAppBar(
                 title = { Text("Đơn hàng", style = MaterialTheme.typography.h6) },
                 navigationIcon = {
@@ -87,8 +86,6 @@ fun OrderScreen(
                 backgroundColor = Color.White,
                 elevation = 4.dp
             )
-
-            // Tabs
             ScrollableTabRow(
                 selectedTabIndex = selectedTab,
                 backgroundColor = Color.White,
@@ -114,17 +111,15 @@ fun OrderScreen(
                     )
                 }
             }
-
-            // Danh sách đơn hàng
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
                     .background(Color(0xFFF8F8F8)),
                 contentPadding = PaddingValues(8.dp)
             ) {
-                items(filteredOrders) { order ->
-                    val isExpanded = expandedStates[order.id] == true
-                    val productsToShow = if (isExpanded) order.products else order.products.take(2)
+                items(filteredOrders) { orderWithProducts ->
+                    val order = orderWithProducts.order
+                    val orderItems = orderWithProducts.orderItems
                     Card(
                         shape = RoundedCornerShape(14.dp),
                         elevation = 3.dp,
@@ -133,32 +128,13 @@ fun OrderScreen(
                             .padding(vertical = 8.dp, horizontal = 6.dp)
                     ) {
                         Column(Modifier.background(Color.White)) {
-                            // Header: Shop name + trạng thái
                             Row(
                                 Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if (order.shopLabel != null) {
-                                    Box(
-                                        Modifier
-                                            .background(
-                                                MaterialTheme.colors.primary,
-                                                RoundedCornerShape(4.dp)
-                                            )
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    ) {
-                                        Text(
-                                            order.shopLabel,
-                                            color = Color.White,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                    Spacer(Modifier.width(6.dp))
-                                }
-                                Text(order.shopName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Text(order.createdAt, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 Spacer(Modifier.weight(1f))
                                 Text(
                                     order.status,
@@ -168,154 +144,78 @@ fun OrderScreen(
                                 )
                             }
                             Divider(color = Color(0xFFF2F2F2), thickness = 1.dp)
-                            // Danh sách sản phẩm
-                            productsToShow.forEach { product ->
-                                Row(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Image(
-                                        painter = painterResource(product.image),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(68.dp).clip(RoundedCornerShape(8.dp))
-                                    )
-                                    Spacer(Modifier.width(12.dp))
-                                    Column(Modifier.weight(1f)) {
-                                        Text(
-                                            product.name,
-                                            fontWeight = FontWeight.Medium,
-                                            fontSize = 15.sp,
-                                            maxLines = 1
-                                        )
-                                        Text(product.variant, color = Color.Gray, fontSize = 12.sp)
-                                        Spacer(Modifier.height(2.dp))
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            if (product.priceOrigin != null) {
+                            val expandedOrders = remember { mutableStateMapOf<String, Boolean>() }
+                            orderItems.let { items ->
+                                val orderId = order.orderId
+                                val expanded = expandedOrders[orderId] == true
+                                val showItems = if (expanded || items.size <= 2) items else items.take(2)
+                                showItems.forEach { orderItemWithProduct ->
+                                    val product = orderItemWithProduct.product
+                                    if (product != null) {
+                                        Row(
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Image(
+                                                painter = painterResource(product.image),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(68.dp).clip(RoundedCornerShape(8.dp))
+                                            )
+                                            Spacer(Modifier.width(12.dp))
+                                            Column(Modifier.weight(1f)) {
                                                 Text(
-                                                    text = "₫${"%,d".format(product.priceOrigin)}",
-                                                    style = TextStyle(textDecoration = TextDecoration.LineThrough),
-                                                    color = Color.Gray,
-                                                    fontSize = 13.sp
+                                                    product.name,
+                                                    fontWeight = FontWeight.Medium,
+                                                    fontSize = 15.sp,
+                                                    maxLines = 1
                                                 )
-                                                Spacer(Modifier.width(4.dp))
-                                            }
-                                            Text(
-                                                text = "₫${"%,d".format(product.price)}",
-                                                color = MaterialTheme.colors.primary,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 15.sp
-                                            )
-                                            Spacer(Modifier.width(8.dp))
-                                            Text(
-                                                "x${product.quantity}",
-                                                color = Color.Gray,
-                                                fontSize = 13.sp
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            // Nếu có nhiều hơn 2 sản phẩm thì dùng AnimatedVisibility cho phần còn lại
-                            if (order.products.size > 2) {
-                                AnimatedVisibility(
-                                    visible = isExpanded,
-                                    enter = expandVertically() + fadeIn(),
-                                    exit = shrinkVertically() + fadeOut()
-                                ) {
-                                    Column {
-                                        order.products.drop(2).forEach { product ->
-                                            Row(
-                                                Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Image(
-                                                    painter = painterResource(product.image),
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(68.dp).clip(RoundedCornerShape(8.dp))
-                                                )
-                                                Spacer(Modifier.width(12.dp))
-                                                Column(Modifier.weight(1f)) {
+                                                Text(listOfNotNull(product.type.takeIf { it.isNotBlank() }, product.basicColorName.takeIf { it.isNotBlank() }, product.size.takeIf { it.isNotBlank() }).joinToString(", "), color = Color.Gray, fontSize = 12.sp)
+                                                Spacer(Modifier.height(2.dp))
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
                                                     Text(
-                                                        product.name,
-                                                        fontWeight = FontWeight.Medium,
-                                                        fontSize = 15.sp,
-                                                        maxLines = 1
+                                                        text = "₫" + String.format("%,.0f", product.price * 25000),
+                                                        color = MaterialTheme.colors.primary,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 15.sp
                                                     )
-                                                    Text(product.variant, color = Color.Gray, fontSize = 12.sp)
-                                                    Spacer(Modifier.height(2.dp))
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        if (product.priceOrigin != null) {
-                                                            Text(
-                                                                text = "₫${"%,d".format(product.priceOrigin)}",
-                                                                style = TextStyle(textDecoration = TextDecoration.LineThrough),
-                                                                color = Color.Gray,
-                                                                fontSize = 13.sp
-                                                            )
-                                                            Spacer(Modifier.width(4.dp))
-                                                        }
-                                                        Text(
-                                                            text = "₫${"%,d".format(product.price)}",
-                                                            color = MaterialTheme.colors.primary,
-                                                            fontWeight = FontWeight.Bold,
-                                                            fontSize = 15.sp
-                                                        )
-                                                        Spacer(Modifier.width(8.dp))
-                                                        Text(
-                                                            "x${product.quantity}",
-                                                            color = Color.Gray,
-                                                            fontSize = 13.sp
-                                                        )
-                                                    }
+                                                    Spacer(Modifier.width(8.dp))
+                                                    Text(
+                                                        "x${orderItemWithProduct.orderItem.quantity}",
+                                                        color = Color.Gray,
+                                                        fontSize = 13.sp
+                                                    )
                                                 }
                                             }
                                         }
                                     }
                                 }
-                                // Nút Xem thêm/Thu gọn như hiện tại
-                                Row(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .clickable { expandedStates[order.id] = !isExpanded }
-                                        .padding(vertical = 2.dp),
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Text(
-                                        text = if (isExpanded) "Thu gọn" else "Xem thêm",
-                                        fontStyle = FontStyle.Italic,
-                                        color = MaterialTheme.colors.primary,
-                                        fontSize = 14.sp
-                                    )
-                                    Icon(
-                                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colors.primary
-                                    )
+                                if (items.size > 2) {
+                                    TextButton(
+                                        onClick = { expandedOrders[orderId] = !expanded },
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    ) {
+                                        Text(if (expanded) "Thu gọn" else "Xem thêm (${items.size - 2}) sản phẩm", color = MaterialTheme.colors.primary, fontSize = 13.sp)
+                                    }
                                 }
                             }
-                            Divider(color = Color(0xFFF2F2F2), thickness = 1.dp)
-                            // Tổng số tiền
+                            Divider(color = Color(0xFFF2F2F2), thickness = 1.dp, modifier = Modifier.padding(vertical = 4.dp))
                             Row(
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.End
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
+                                Spacer(Modifier.weight(1f))
+                                Text("Tổng cộng: ", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 Text(
-                                    "Tổng số tiền (${order.products.sumOf { it.quantity }} sản phẩm): ",
-                                    fontSize = 14.sp
-                                )
-                                Text(
-                                    order.total,
+                                    "₫" + String.format("%,.0f", order.total * 25000),
                                     color = MaterialTheme.colors.primary,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
+                                    fontSize = 17.sp
                                 )
                             }
-                            // Nút chức năng (theo trạng thái)
                             Row(
                                 Modifier
                                     .fillMaxWidth()
@@ -324,36 +224,41 @@ fun OrderScreen(
                             ) {
                                 when (order.status) {
                                     "Chờ xác nhận", "Chờ lấy hàng" -> {
-                                        OutlinedButton(
-                                            onClick = { /* TODO: Xử lý hủy đơn */ },
-                                            shape = RoundedCornerShape(8.dp),
+                                        TextButton(
+                                            onClick = { /* TODO: Hủy đơn */ },
                                             border = BorderStroke(1.dp, MaterialTheme.colors.primary),
-                                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 4.dp)
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = ButtonDefaults.textButtonColors(backgroundColor = Color.White),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                                         ) {
                                             Text("Hủy đơn", color = MaterialTheme.colors.primary, fontSize = 14.sp)
                                         }
                                     }
                                     "Đang giao" -> {
-                                        OutlinedButton(
+                                        Button(
                                             onClick = { showShippingDetail = true },
                                             shape = RoundedCornerShape(8.dp),
-                                            border = BorderStroke(1.dp, MaterialTheme.colors.primary),
-                                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 4.dp)
+                                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
                                         ) {
-                                            Text("Chi tiết vận chuyển", color = MaterialTheme.colors.primary, fontSize = 14.sp)
+                                            Text("Chi tiết vận chuyển", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                         }
                                     }
                                     "Đã giao" -> {
-                                        OutlinedButton(
-                                            onClick = { /* TODO: Đánh giá */ },
-                                            shape = RoundedCornerShape(8.dp),
-                                            border = BorderStroke(1.dp, MaterialTheme.colors.primary),
-                                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 4.dp)
-                                        ) {
-                                            Text("Đánh giá", color = MaterialTheme.colors.primary, fontSize = 14.sp)
-                                        }
+                                        Text(
+                                            "Đã giao hàng",
+                                            color = Color.Gray,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
                                     }
-                                    // "Đã hủy" hoặc trạng thái khác: Không hiện nút
+                                    "Đã hủy" -> {
+                                        Text(
+                                            "Đơn đã hủy",
+                                            color = Color.Red,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -364,20 +269,19 @@ fun OrderScreen(
     }
 }
 
-@Composable
-fun NotificationDialog(notifications: List<Notification>, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Thông báo") },
-        text = {
-            Column {
-                notifications.forEach {
-                    Text("- ${it.content}", style = MaterialTheme.typography.body2)
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Đóng") }
-        }
-    )
-}
+// UI Model cho đơn hàng và sản phẩm
+private data class OrderUiModel(
+    val id: String,
+    val createdAt: String,
+    val status: String,
+    val products: List<ProductUiModel>,
+    val total: String,
+)
+private data class ProductUiModel(
+    val image: Int,
+    val name: String,
+    val variant: String,
+    val priceOrigin: Double?,
+    val price: Double,
+    val quantity: Int,
+)

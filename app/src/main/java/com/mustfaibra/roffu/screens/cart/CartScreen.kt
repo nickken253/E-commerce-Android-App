@@ -61,8 +61,8 @@ fun CartScreen(
         derivedStateOf { cartItems.filter { it.cartId?.let { id -> checkedStates[id] } == true } }
     }
 
-    val totalVnd by remember(selectedItems) {
-        derivedStateOf { selectedItems.sumOf { it.quantity * (it.product?.price ?: 0.0) * USD_TO_VND } }
+    val totalPrice by remember(selectedItems) {
+        derivedStateOf { selectedItems.sumOf { it.quantity * (it.product?.price ?: 0.0) } }
     }
 
     LaunchedEffect(selectedItems) {
@@ -149,7 +149,7 @@ fun CartScreen(
                             style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
                         )
                         Text(
-                            text = String.format("%,.0fđ", totalVnd),
+                            text = String.format("%,.0fđ", totalPrice * 25000),
                             style = MaterialTheme.typography.h5.copy(
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.ExtraBold

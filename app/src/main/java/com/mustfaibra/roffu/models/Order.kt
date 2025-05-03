@@ -19,6 +19,7 @@ data class Order(
     @SerialName("delivery") val needDelivery: Boolean = true,
     val isDelivered: Boolean = false,
     val locationId: Int?,
+    val status: String = "Chờ xác nhận",
 ){
     @Ignore var orderItems: List<OrderItem>? = null
     @Ignore var orderPayment: OrderPayment? = null
