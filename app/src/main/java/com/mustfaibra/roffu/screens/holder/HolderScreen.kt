@@ -630,12 +630,10 @@ fun ScaffoldSection(
                         navController = controller
                     )
                 }
-<<<<<<< Updated upstream
                 composable(Screen.OrderHistory.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     OrderScreen()
-=======
-
+                }
                 composable(
                     route = Screen.ProductComparison.route,
                     arguments = listOf(
@@ -652,7 +650,6 @@ fun ScaffoldSection(
                         onNavigateBack = onBackRequested
                     )
                 }
-
                 composable(
                     route = Screen.ProductSelection.route,
                     arguments = listOf(
@@ -666,7 +663,6 @@ fun ScaffoldSection(
                         onNavigateBack = onBackRequested,
                         navController = controller
                     )
->>>>>>> Stashed changes
                 }
             }
             // Chỉ hiển thị bottom navigation cho user bình thường
