@@ -28,7 +28,7 @@ class UserRepository @Inject constructor(
     suspend fun getUserPaymentProviders() =
         dao.getUserPaymentProviders()
 
-
+    /** Register a new user */
     suspend fun registerUser(user: User): DataResponse<User> {
         return try {
             // Check if user already exists (e.g., by email)
@@ -49,6 +49,36 @@ class UserRepository @Inject constructor(
         }
     }
 
+    /** Check if an email exists in the database */
+    suspend fun checkEmailExists(email: String): DataResponse<Boolean> {
+        return try {
+            val user = dao.getUserByEmail(email = email)
+            DataResponse.Success(data = user != null)
+        } catch (e: Exception) {
+            DataResponse.Error(error = Error.Network)
+        }
+    }
+
+    /** Reset password for a user */
+    suspend fun resetPassword(email: String, newPassword: String): DataResponse<User?> {
+        return try {
+            // Check if user exists by email
+            val existingUser = dao.getUserByEmail(email = email)
+            if (existingUser == null) {
+                DataResponse.Error(error = Error.Custom("Email không tồn tại"))
+            } else {
+                // Update the user's password
+                dao.updateUserPassword(email = email, newPassword = newPassword)
+                // Retrieve the updated user to confirm
+                val updatedUser = dao.getUserByEmail(email = email)
+                updatedUser?.let {
+                    DataResponse.Success(data = it)
+                } ?: DataResponse.Error(error = Error.Custom("Failed to retrieve updated user"))
+            }
+        } catch (e: Exception) {
+            DataResponse.Error(error = Error.Network)
+        }
+    }
 
     /** Get the available locations for current user */
     suspend fun getUserLocations() = dao.getUserLocations()

@@ -1,6 +1,7 @@
 package com.mustfaibra.roffu.screens.login
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +25,9 @@ import com.mustfaibra.roffu.ui.theme.Dimension
 import com.mustfaibra.roffu.utils.LocationData
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -38,11 +42,19 @@ fun ManHinhDangKy(
     val trangThaiUi by remember { loginViewModel.uiState }
 
     val matKhauXacNhan = remember { mutableStateOf("") }
-    val selectedProvince = remember { mutableStateOf("Thành phố") }
+    val selectedProvince = remember { mutableStateOf("Chọn tỉnh/thành phố") }
     val selectedDistrict = remember { mutableStateOf("") }
     val soNha = remember { mutableStateOf("") }
     val tenNguoiDung = remember { mutableStateOf("") }
 
+    // Trạng thái lỗi cho từng trường
+    val errorTenNguoiDung = remember { mutableStateOf<String?>(null) }
+    val errorEmail = remember { mutableStateOf<String?>(null) }
+    val errorMatKhau = remember { mutableStateOf<String?>(null) }
+    val errorMatKhauXacNhan = remember { mutableStateOf<String?>(null) }
+    val errorProvince = remember { mutableStateOf<String?>(null) }
+    val errorDistrict = remember { mutableStateOf<String?>(null) }
+    val errorSoNha = remember { mutableStateOf<String?>(null) }
 
     val categories = listOf(
         "Máy tính & laptop", "Đồ gia dụng", "Quần áo",
@@ -56,6 +68,12 @@ fun ManHinhDangKy(
     val provinceList = LocationData.provinces.keys.toList()
     val districtList = LocationData.provinces[selectedProvince.value] ?: emptyList()
 
+    // Hàm kiểm tra mật khẩu hợp lệ
+    fun isValidPassword(password: String): Boolean {
+        val passwordRegex = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,20}$"
+        return password.matches(passwordRegex.toRegex())
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,184 +83,432 @@ fun ManHinhDangKy(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Register",
+            text = "Đăng ký",
             style = MaterialTheme.typography.h5.copy(
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colors.onBackground
+                color = MaterialTheme.colors.onBackground,
+                fontFamily = FontFamily.SansSerif
             ),
             modifier = Modifier.align(Alignment.Start)
         )
+
         // Tên người dùng
-        CustomInputField(
-            modifier = Modifier.fillMaxWidth(),
-            value = tenNguoiDung.value,
-            onValueChange = { tenNguoiDung.value = it },
-            placeholder = "Tên của bạn",
-            textStyle = MaterialTheme.typography.body1,
-            padding = PaddingValues(Dimension.pagePadding),
-            backgroundColor = MaterialTheme.colors.surface,
-            textColor = MaterialTheme.colors.onBackground,
-            imeAction = ImeAction.Next,
-            shape = RoundedCornerShape(8.dp),
-            onFocusChange = {},
-            onKeyboardActionClicked = {},
-        )
-
-
-        // Email có @gmail.com
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colors.surface, RoundedCornerShape(8.dp))
-                .padding(horizontal = Dimension.pagePadding, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Họ và tên",
+                    style = MaterialTheme.typography.body2.copy(
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colors.onBackground
+                    )
+                )
+                Text(
+                    text = "*",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.body2
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
             CustomInputField(
-                modifier = Modifier.weight(1f),
-                value = emailOrPhone ?: "",
-                onValueChange = { loginViewModel.updateEmailOrPhone(it.ifBlank { null }) },
-                placeholder = "Nhập email",
-                textStyle = MaterialTheme.typography.body1,
-                imeAction = ImeAction.Next,
-                backgroundColor = Color.Transparent,
-                padding = PaddingValues(0.dp),
-                shape = RoundedCornerShape(0.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = if (errorTenNguoiDung.value != null) 1.dp else 0.dp,
+                        color = if (errorTenNguoiDung.value != null) Color.Red else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
+                value = tenNguoiDung.value,
+                onValueChange = {
+                    tenNguoiDung.value = it
+                    errorTenNguoiDung.value = null
+                },
+                placeholder = "Nhập họ và tên",
+                textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
+                padding = PaddingValues(Dimension.pagePadding),
+                backgroundColor = MaterialTheme.colors.surface,
                 textColor = MaterialTheme.colors.onBackground,
+                imeAction = ImeAction.Next,
+                shape = RoundedCornerShape(8.dp),
                 onFocusChange = {},
                 onKeyboardActionClicked = {},
-                trailingIcon = null,
             )
-            Text(text = "@gmail.com", style = MaterialTheme.typography.body1, color = MaterialTheme.colors.onBackground)
+            errorTenNguoiDung.value?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+
+        // Email
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Email",
+                    style = MaterialTheme.typography.body2.copy(
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colors.onBackground
+                    )
+                )
+                Text(
+                    text = "*",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.body2
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colors.surface, RoundedCornerShape(8.dp))
+                    .border(
+                        width = if (errorEmail.value != null) 1.dp else 0.dp,
+                        color = if (errorEmail.value != null) Color.Red else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .padding(horizontal = Dimension.pagePadding, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CustomInputField(
+                    modifier = Modifier.weight(1f),
+                    value = emailOrPhone ?: "",
+                    onValueChange = {
+                        loginViewModel.updateEmailOrPhone(it.ifBlank { null })
+                        errorEmail.value = null
+                    },
+                    placeholder = "Nhập email của bạn",
+                    textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
+                    imeAction = ImeAction.Next,
+                    backgroundColor = Color.Transparent,
+                    padding = PaddingValues(0.dp),
+                    shape = RoundedCornerShape(0.dp),
+                    textColor = MaterialTheme.colors.onBackground,
+                    onFocusChange = {},
+                    onKeyboardActionClicked = {},
+                    trailingIcon = null,
+                )
+                Text(
+                    text = "@gmail.com",
+                    style = TextStyle(
+                        fontFamily = FontFamily.SansSerif,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colors.onBackground
+                    )
+                )
+            }
+            errorEmail.value?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
 
         // Mật khẩu
-        CustomInputField(
-            modifier = Modifier.fillMaxWidth(),
-            value = matKhau ?: "",
-            onValueChange = { loginViewModel.updatePassword(it.ifBlank { null }) },
-            placeholder = "Nhập mật khẩu của bạn",
-            visualTransformation = PasswordVisualTransformation(),
-            textStyle = MaterialTheme.typography.body1,
-            padding = PaddingValues(Dimension.pagePadding),
-            backgroundColor = MaterialTheme.colors.surface,
-            textColor = MaterialTheme.colors.onBackground,
-            imeAction = ImeAction.Next,
-            shape = RoundedCornerShape(8.dp),
-            onFocusChange = {},
-            onKeyboardActionClicked = {},
-        )
-
-        // Xác nhận mật khẩu
-        CustomInputField(
-            modifier = Modifier.fillMaxWidth(),
-            value = matKhauXacNhan.value,
-            onValueChange = { matKhauXacNhan.value = it },
-            placeholder = "Nhập lại mật khẩu của bạn",
-            visualTransformation = PasswordVisualTransformation(),
-            textStyle = MaterialTheme.typography.body1,
-            padding = PaddingValues(Dimension.pagePadding),
-            backgroundColor = MaterialTheme.colors.surface,
-            textColor = MaterialTheme.colors.onBackground,
-            imeAction = ImeAction.Next,
-            shape = RoundedCornerShape(8.dp),
-            onFocusChange = {},
-            onKeyboardActionClicked = {},
-        )
-
-        // Thành phố + Change
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding)
-        ) {
-            CustomButton(
-                modifier = Modifier.weight(2f),
-                shape = RoundedCornerShape(8.dp),
-                padding = PaddingValues(Dimension.pagePadding.div(2)),
-                buttonColor = MaterialTheme.colors.surface,
-                contentColor = MaterialTheme.colors.onBackground,
-                text = selectedProvince.value,
-                enabled = false,
-                textStyle = MaterialTheme.typography.body1,
-                onButtonClicked = {},
-            )
-            CustomButton(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(8.dp),
-                padding = PaddingValues(Dimension.pagePadding.div(2)),
-                buttonColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
-                contentColor = MaterialTheme.colors.primary,
-                text = "Change",
-                enabled = true,
-                textStyle = MaterialTheme.typography.body1,
-                onButtonClicked = {
-                    isProvinceDialogOpen = true
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Mật khẩu",
+                    style = MaterialTheme.typography.body2.copy(
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colors.onBackground
+                    )
+                )
+                Text(
+                    text = "*",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.body2
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            CustomInputField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = if (errorMatKhau.value != null) 1.dp else 0.dp,
+                        color = if (errorMatKhau.value != null) Color.Red else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
+                value = matKhau ?: "",
+                onValueChange = {
+                    loginViewModel.updatePassword(it.ifBlank { null })
+                    errorMatKhau.value = null
                 },
+                placeholder = "Nhập mật khẩu",
+                visualTransformation = PasswordVisualTransformation(),
+                textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
+                padding = PaddingValues(Dimension.pagePadding),
+                backgroundColor = MaterialTheme.colors.surface,
+                textColor = MaterialTheme.colors.onBackground,
+                imeAction = ImeAction.Next,
+                shape = RoundedCornerShape(8.dp),
+                onFocusChange = {},
+                onKeyboardActionClicked = {},
             )
+            errorMatKhau.value?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
 
-        // Quận huyện + chọn
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding)
-        ) {
-            CustomButton(
-                modifier = Modifier.weight(2f),
-                shape = RoundedCornerShape(8.dp),
-                padding = PaddingValues(Dimension.pagePadding.div(2)),
-                buttonColor = MaterialTheme.colors.surface,
-                contentColor = MaterialTheme.colors.onBackground,
-                text = selectedDistrict.value.ifBlank { "Quận/Huyện" },
-                enabled = false,
-                textStyle = MaterialTheme.typography.body1,
-                onButtonClicked = {},
-            )
-            CustomButton(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(8.dp),
-                padding = PaddingValues(Dimension.pagePadding.div(2)),
-                buttonColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
-                contentColor = MaterialTheme.colors.primary,
-                text = "Change",
-                enabled = true,
-                textStyle = MaterialTheme.typography.body1,
-                onButtonClicked = {
-                    isDistrictDialogOpen = true
+        // Xác nhận mật khẩu
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Xác nhận mật khẩu",
+                    style = MaterialTheme.typography.body2.copy(
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colors.onBackground
+                    )
+                )
+                Text(
+                    text = "*",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.body2
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            CustomInputField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = if (errorMatKhauXacNhan.value != null) 1.dp else 0.dp,
+                        color = if (errorMatKhauXacNhan.value != null) Color.Red else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
+                value = matKhauXacNhan.value,
+                onValueChange = {
+                    matKhauXacNhan.value = it
+                    errorMatKhauXacNhan.value = null
                 },
+                placeholder = "Nhập lại mật khẩu",
+                visualTransformation = PasswordVisualTransformation(),
+                textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
+                padding = PaddingValues(Dimension.pagePadding),
+                backgroundColor = MaterialTheme.colors.surface,
+                textColor = MaterialTheme.colors.onBackground,
+                imeAction = ImeAction.Next,
+                shape = RoundedCornerShape(8.dp),
+                onFocusChange = {},
+                onKeyboardActionClicked = {},
             )
+            errorMatKhauXacNhan.value?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+
+        // Thành phố
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Tỉnh/Thành phố",
+                    style = MaterialTheme.typography.body2.copy(
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colors.onBackground
+                    )
+                )
+                Text(
+                    text = "*",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.body2
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = if (errorProvince.value != null) 1.dp else 0.dp,
+                        color = if (errorProvince.value != null) Color.Red else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding)
+            ) {
+                CustomButton(
+                    modifier = Modifier.weight(2f),
+                    shape = RoundedCornerShape(8.dp),
+                    padding = PaddingValues(Dimension.pagePadding.div(2)),
+                    buttonColor = MaterialTheme.colors.surface,
+                    contentColor = MaterialTheme.colors.onBackground,
+                    text = selectedProvince.value,
+                    enabled = false,
+                    textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
+                    onButtonClicked = {},
+                )
+                CustomButton(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    padding = PaddingValues(Dimension.pagePadding.div(2)),
+                    buttonColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
+                    contentColor = MaterialTheme.colors.primary,
+                    text = "Chọn",
+                    enabled = true,
+                    textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
+                    onButtonClicked = {
+                        isProvinceDialogOpen = true
+                    },
+                )
+            }
+            errorProvince.value?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+
+        // Quận huyện
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Quận/Huyện",
+                    style = MaterialTheme.typography.body2.copy(
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colors.onBackground
+                    )
+                )
+                Text(
+                    text = "*",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.body2
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = if (errorDistrict.value != null) 1.dp else 0.dp,
+                        color = if (errorDistrict.value != null) Color.Red else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding)
+            ) {
+                CustomButton(
+                    modifier = Modifier.weight(2f),
+                    shape = RoundedCornerShape(8.dp),
+                    padding = PaddingValues(Dimension.pagePadding.div(2)),
+                    buttonColor = MaterialTheme.colors.surface,
+                    contentColor = MaterialTheme.colors.onBackground,
+                    text = selectedDistrict.value.ifBlank { "Chọn quận/huyện" },
+                    enabled = false,
+                    textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
+                    onButtonClicked = {},
+                )
+                CustomButton(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    padding = PaddingValues(Dimension.pagePadding.div(2)),
+                    buttonColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
+                    contentColor = MaterialTheme.colors.primary,
+                    text = "Chọn",
+                    enabled = true,
+                    textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
+                    onButtonClicked = {
+                        isDistrictDialogOpen = true
+                    },
+                )
+            }
+            errorDistrict.value?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
 
         // Số nhà
-        CustomInputField(
-            modifier = Modifier.fillMaxWidth(),
-            value = soNha.value,
-            onValueChange = { soNha.value = it },
-            placeholder = "Tên đường/Số nhà",
-            textStyle = MaterialTheme.typography.body1,
-            padding = PaddingValues(Dimension.pagePadding),
-            backgroundColor = MaterialTheme.colors.surface,
-            textColor = MaterialTheme.colors.onBackground,
-            imeAction = ImeAction.Next,
-            shape = RoundedCornerShape(8.dp),
-            onFocusChange = {},
-            onKeyboardActionClicked = {},
-        )
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Địa chỉ cụ thể",
+                    style = MaterialTheme.typography.body2.copy(
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colors.onBackground
+                    )
+                )
+                Text(
+                    text = "*",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.body2
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            CustomInputField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = if (errorSoNha.value != null) 1.dp else 0.dp,
+                        color = if (errorSoNha.value != null) Color.Red else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
+                value = soNha.value,
+                onValueChange = {
+                    soNha.value = it
+                    errorSoNha.value = null
+                },
+                placeholder = "Nhập tên đường, số nhà",
+                textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
+                padding = PaddingValues(Dimension.pagePadding),
+                backgroundColor = MaterialTheme.colors.surface,
+                textColor = MaterialTheme.colors.onBackground,
+                imeAction = ImeAction.Next,
+                shape = RoundedCornerShape(8.dp),
+                onFocusChange = {},
+                onKeyboardActionClicked = {},
+            )
+            errorSoNha.value?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
 
         // Danh mục
-        Text("Bạn muốn tìm kiếm cái gì?", style = MaterialTheme.typography.subtitle1.copy(fontWeight = FontWeight.Medium))
-        FlowRow(modifier = Modifier.fillMaxWidth()) {
-            categories.forEach { category ->
-                val selected = selectedCategory.value == category
-                CustomButton(
-                    shape = RoundedCornerShape(50),
-                    padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    buttonColor = if (selected) MaterialTheme.colors.primary.copy(alpha = 0.1f) else MaterialTheme.colors.surface,
-                    contentColor = if (selected) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground,
-                    text = category,
-                    textStyle = MaterialTheme.typography.caption,
-                    onButtonClicked = {
-                        selectedCategory.value = if (selected) null else category
-                    },
+        Column {
+            Text(
+                text = "Danh mục quan tâm",
+                style = MaterialTheme.typography.subtitle1.copy(
+                    fontWeight = FontWeight.Medium,
+                    fontFamily = FontFamily.SansSerif
                 )
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            FlowRow(modifier = Modifier.fillMaxWidth()) {
+                categories.forEach { category ->
+                    val selected = selectedCategory.value == category
+                    CustomButton(
+                        shape = RoundedCornerShape(50),
+                        padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        buttonColor = if (selected) MaterialTheme.colors.primary.copy(alpha = 0.1f) else MaterialTheme.colors.surface,
+                        contentColor = if (selected) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground,
+                        text = category,
+                        textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 14.sp),
+                        onButtonClicked = {
+                            selectedCategory.value = if (selected) null else category
+                        },
+                    )
+                }
             }
         }
 
@@ -253,41 +519,93 @@ fun ManHinhDangKy(
             padding = PaddingValues(Dimension.pagePadding.div(2)),
             buttonColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
-            text = "Next",
+            text = "Đăng ký",
             enabled = trangThaiUi !is UiState.Loading,
-            textStyle = MaterialTheme.typography.button,
+            textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
             onButtonClicked = {
+                var hasError = false
+
+                // Kiểm tra tên người dùng
+                if (tenNguoiDung.value.isBlank()) {
+                    errorTenNguoiDung.value = "Trường này là bắt buộc"
+                    hasError = true
+                } else {
+                    errorTenNguoiDung.value = null
+                }
+
+                // Kiểm tra email
                 val rawEmail = emailOrPhone ?: ""
-                val fullEmail = "$rawEmail@gmail.com"
-
-                if (tenNguoiDung.value.isBlank() || rawEmail.isBlank() || (matKhau ?: "").isBlank() || matKhauXacNhan.value.isBlank()
-                    || selectedProvince.value == "Thành phố" || selectedDistrict.value.isBlank() || soNha.value.isBlank()
-                ) {
-                    onYeuCauToast("Vui lòng điền đầy đủ thông tin!", Color.Red)
-                    return@CustomButton
+                if (rawEmail.isBlank()) {
+                    errorEmail.value = "Trường này là bắt buộc"
+                    hasError = true
+                } else {
+                    errorEmail.value = null
                 }
 
-
-                if (matKhau != matKhauXacNhan.value) {
-                    onYeuCauToast("Mật khẩu xác nhận không khớp!", Color.Red)
-                    return@CustomButton
+                // Kiểm tra mật khẩu
+                val password = matKhau ?: ""
+                if (password.isBlank()) {
+                    errorMatKhau.value = "Trường này là bắt buộc"
+                    hasError = true
+                } else if (!isValidPassword(password)) {
+                    errorMatKhau.value = "Mật khẩu dài từ 8-20 ký tự và chứa kết hợp các chữ cái tiếng Anh, số và ký hiệu đặc biệt"
+                    hasError = true
+                } else {
+                    errorMatKhau.value = null
                 }
 
-                loginViewModel.registerUser(
-                    email = fullEmail,
-                    password = matKhau ?: "",
-                    confirmPassword = matKhauXacNhan.value,
-                    name = tenNguoiDung.value,
-                    address = "${soNha.value}, ${selectedDistrict.value}, ${selectedProvince.value}",
-                    onRegistered = {
-                        onYeuCauToast("Register successful!", Color.Green)
-                        onDangKyThanhCong()
-                    },
-                    onRegistrationFailed = { loi ->
-                        onYeuCauToast(loi, Color.Red)
-                    }
-                )
+                // Kiểm tra xác nhận mật khẩu
+                if (matKhauXacNhan.value.isBlank()) {
+                    errorMatKhauXacNhan.value = "Trường này là bắt buộc"
+                    hasError = true
+                } else if (matKhauXacNhan.value != password) {
+                    errorMatKhauXacNhan.value = "Mật khẩu không trùng khớp"
+                    hasError = true
+                } else {
+                    errorMatKhauXacNhan.value = null
+                }
 
+                // Kiểm tra tỉnh/thành phố
+                if (selectedProvince.value == "Chọn tỉnh/thành phố") {
+                    errorProvince.value = "Trường này là bắt buộc"
+                    hasError = true
+                } else {
+                    errorProvince.value = null
+                }
+
+                // Kiểm tra quận/huyện
+                if (selectedDistrict.value.isBlank()) {
+                    errorDistrict.value = "Trường này là bắt buộc"
+                    hasError = true
+                } else {
+                    errorDistrict.value = null
+                }
+
+                // Kiểm tra số nhà
+                if (soNha.value.isBlank()) {
+                    errorSoNha.value = "Trường này là bắt buộc"
+                    hasError = true
+                } else {
+                    errorSoNha.value = null
+                }
+
+                if (!hasError) {
+                    val fullEmail = "$rawEmail@gmail.com"
+                    loginViewModel.registerUser(
+                        email = fullEmail,
+                        password = password,
+                        confirmPassword = matKhauXacNhan.value,
+                        name = tenNguoiDung.value,
+                        address = "${soNha.value}, ${selectedDistrict.value}, ${selectedProvince.value}",
+                        onRegistered = {
+                            onYeuCauToast("Đăng ký thành công!", Color.Green)
+                            onDangKyThanhCong()
+                        },
+                        onRegistrationFailed = { loi ->
+                            onYeuCauToast(loi, Color.Red)
+                        }
+                    )
+                }
             },
             leadingIcon = {
                 if (trangThaiUi is UiState.Loading) {
@@ -303,7 +621,7 @@ fun ManHinhDangKy(
             trailingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_arrow_forward),
-                    contentDescription = "Next",
+                    contentDescription = "Đăng ký",
                     tint = MaterialTheme.colors.onPrimary,
                     modifier = Modifier.size(Dimension.smIcon)
                 )
@@ -316,15 +634,24 @@ fun ManHinhDangKy(
         Dialog(onDismissRequest = { isProvinceDialogOpen = false }) {
             Surface(shape = RoundedCornerShape(8.dp)) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Chọn Tỉnh / Thành phố", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Chọn Tỉnh/Thành phố",
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.SansSerif
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     provinceList.forEach {
                         TextButton(onClick = {
                             selectedProvince.value = it
                             selectedDistrict.value = ""
+                            errorProvince.value = null
                             isProvinceDialogOpen = false
                         }) {
-                            Text(it)
+                            Text(
+                                text = it,
+                                fontFamily = FontFamily.SansSerif,
+                                fontSize = 16.sp
+                            )
                         }
                     }
                 }
@@ -337,14 +664,23 @@ fun ManHinhDangKy(
         Dialog(onDismissRequest = { isDistrictDialogOpen = false }) {
             Surface(shape = RoundedCornerShape(8.dp)) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Chọn Quận / Huyện", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Chọn Quận/Huyện",
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.SansSerif
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     districtList.forEach {
                         TextButton(onClick = {
                             selectedDistrict.value = it
+                            errorDistrict.value = null
                             isDistrictDialogOpen = false
                         }) {
-                            Text(it)
+                            Text(
+                                text = it,
+                                fontFamily = FontFamily.SansSerif,
+                                fontSize = 16.sp
+                            )
                         }
                     }
                 }

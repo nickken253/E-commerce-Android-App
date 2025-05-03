@@ -498,10 +498,7 @@ fun ScaffoldSection(
                 composable(Screen.BarcodeScanner.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     BarcodeScannerScreen(
-                        navController = controller,
-                        onBookmarkStateChanged = { productId ->
-                            onUpdateBookmarkRequest(productId)
-                        }
+                        navController = controller
                     )
                 }
                 composable(Screen.Cart.route) {

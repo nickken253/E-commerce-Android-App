@@ -5,30 +5,35 @@ import androidx.annotation.StringRes
 import com.mustfaibra.roffu.R
 
 sealed class Screen(
-    val                              route: String,
+    val route: String,
     @StringRes val title: Int? = null,
     @DrawableRes val icon: Int? = null,
 ) {
     object Splash : Screen(
         route = "splash",
     )
+
     object Onboard : Screen(
         route = "onboard",
         title = R.string.onboard,
     )
+
     object Signup : Screen(
         route = "signup",
         title = R.string.signup,
     )
+
     object Login : Screen(
         route = "login",
         title = R.string.login,
     )
+
     object Home : Screen(
         route = "home",
         title = R.string.home,
         icon = R.drawable.ic_home_empty,
     )
+
     object Bookmark : Screen(
         route = "bookmark",
         title = R.string.bookmarks,
@@ -46,6 +51,7 @@ sealed class Screen(
         title = R.string.notifications,
         icon = R.drawable.ic_notifications,
     )
+
     object Register : Screen("register")
     object Admin : Screen("admin")
     object AddUser : Screen("add_user")
@@ -58,11 +64,13 @@ sealed class Screen(
         title = R.string.search,
         icon = R.drawable.ic_search,
     )
+
     object Cart : Screen(
         route = "cart",
         title = R.string.cart,
         icon = R.drawable.ic_shopping_bag,
     )
+
     object BarcodeScanner : Screen(
         route = "barcode-scanner",
         title = R.string.barcode_scanner,
@@ -74,6 +82,7 @@ sealed class Screen(
         route = "checkout",
         title = R.string.checkout,
     )
+
     object ProductDetails : Screen(
         route = "product-details/{productId}",
         title = R.string.product_details,

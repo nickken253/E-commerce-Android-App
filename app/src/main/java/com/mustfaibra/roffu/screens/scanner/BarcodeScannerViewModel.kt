@@ -8,8 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
@@ -19,23 +17,10 @@ class BarcodeScannerViewModel @Inject constructor(
 
     val scannedProduct = MutableStateFlow<Product?>(null)
 
-    val bookmarkedProductsIds = productRepository.getBookmarksProductsIdsFlow()
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-
     fun getProductByBarcode(barcode: String) {
         viewModelScope.launch {
             val product = productRepository.getProductByBarcode(barcode)
             scannedProduct.value = product
         }
     }
-
-    fun isProductBookmarked(productId: Int): Boolean {
-        return bookmarkedProductsIds.value.contains(productId)
-    }
-    fun toggleBookmark(productId: Int) {
-        viewModelScope.launch {
-            productRepository.toggleBookmark(productId)
-        }
-    }
-
 }
