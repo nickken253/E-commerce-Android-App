@@ -46,6 +46,7 @@ import com.mustfaibra.roffu.components.CustomButton
 import com.mustfaibra.roffu.components.DrawableButton
 import com.mustfaibra.roffu.components.ReactiveBookmarkIcon
 import com.mustfaibra.roffu.sealed.Orientation
+import com.mustfaibra.roffu.sealed.Screen
 import com.mustfaibra.roffu.ui.theme.Dimension
 import com.mustfaibra.roffu.utils.addMoveAnimation
 import com.mustfaibra.roffu.utils.getValidColor
@@ -220,26 +221,43 @@ fun ProductDetailsScreen(
                     }
                 }
                 /** Add / Remove from cart button */
-                CustomButton(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 24.dp),
-                    text = "Add to cart",
-                    buttonColor = MaterialTheme.colors.primary,
-                    contentColor = MaterialTheme.colors.onPrimary,
-                    onButtonClicked = {
-                        // Lấy thông tin biến thể đang chọn
-                        val selectedSize = productDetailsViewModel.selectedSize.value.toString()
-                        val selectedColor = productDetailsViewModel.selectedColor.value
-                        // Gọi logic mới, truyền đủ productId, size, color
-                        productDetailsViewModel.addToCart(
-                            productId = productId,
-                            size = selectedSize,
-                            color = selectedColor
-                        )
-                        showAddedDialog = true
-                    },
-                )
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CustomButton(
+                        modifier = Modifier.weight(1f),
+                        text = "Add to cart",
+                        buttonColor = MaterialTheme.colors.primary,
+                        contentColor = MaterialTheme.colors.onPrimary,
+                        onButtonClicked = {
+                            // Lấy thông tin biến thể đang chọn
+                            val selectedSize = productDetailsViewModel.selectedSize.value.toString()
+                            val selectedColor = productDetailsViewModel.selectedColor.value
+                            // Gọi logic mới, truyền đủ productId, size, color
+                            productDetailsViewModel.addToCart(
+                                productId = productId,
+                                size = selectedSize,
+                                color = selectedColor
+                            )
+                            showAddedDialog = true
+                        },
+                    )
+                    
+                    CustomButton(
+                        modifier = Modifier.weight(1f),
+                        text = "So sánh",
+                        buttonColor = MaterialTheme.colors.secondary,
+                        contentColor = MaterialTheme.colors.onSecondary,
+                        onButtonClicked = {
+                            navController.navigate(
+                                Screen.ProductSelection.route.replace("{productId}", productId.toString())
+                            )
+                        },
+                    )
+                }
 
                 // Popup xác nhận đã thêm vào giỏ hàng
                 if (showAddedDialog) {

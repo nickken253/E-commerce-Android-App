@@ -65,6 +65,8 @@ import com.mustfaibra.roffu.utils.UserPref
 import com.mustfaibra.roffu.utils.getDp
 import com.skydoves.whatif.whatIfNotNull
 import kotlinx.coroutines.launch
+import com.mustfaibra.roffu.screens.productdetails.ProductComparisonScreen
+import com.mustfaibra.roffu.screens.productdetails.ProductSelectionScreen
 
 @Composable
 fun HolderScreen(
@@ -74,10 +76,6 @@ fun HolderScreen(
     val destinations = remember {
         listOf(Screen.Home, Screen.Bookmark, Screen.Cart, Screen.Profile)
     }
-
-
-
-
 
     /** Our navigation controller that the MainActivity provides */
     val controller = LocalNavHost.current
@@ -148,6 +146,7 @@ fun HolderScreen(
             productsOnCartIds = productsOnCartIds,
             productsOnBookmarksIds = productsOnBookmarksIds,
             onStatusBarColorChange = onStatusBarColorChange,
+            holderViewModel = holderViewModel,
             bottomNavigationContent = {
                 if (
                     currentRouteAsState in destinations.map { it.route }
@@ -200,8 +199,7 @@ fun HolderScreen(
             },
             onShowProductRequest = { productId ->
                 controller.navigate(
-                    Screen.ProductDetails.route
-                        .replace("{productId}", "$productId")
+                    Screen.ProductDetails.route.replace("{productId}", productId.toString())
                 )
             },
             onUpdateCartRequest = { productId ->
@@ -256,6 +254,7 @@ fun ScaffoldSection(
     productsOnCartIds: List<Int>,
     productsOnBookmarksIds: List<Int>,
     onStatusBarColorChange: (color: Color) -> Unit,
+    holderViewModel: HolderViewModel,
     onSplashFinished: (nextDestination: Screen) -> Unit,
     onBoardFinished: () -> Unit,
     onNavigationRequested: (route: String, removePreviousRoute: Boolean) -> Unit,
@@ -451,9 +450,23 @@ fun ScaffoldSection(
                             cartOffset = cartOffset,
                             cartProductsIds = productsOnCartIds,
                             bookmarkProductsIds = productsOnBookmarksIds,
-                            onProductClicked = onShowProductRequest,
-                            onCartStateChanged = onUpdateCartRequest,
-                            onBookmarkStateChanged = onUpdateBookmarkRequest,
+                            onProductClicked = { productId ->
+                                controller.navigate(
+                                    Screen.ProductDetails.route.replace("{productId}", productId.toString())
+                                )
+                            },
+                            onCartStateChanged = { productId ->
+                                holderViewModel.updateCart(productId)
+                            },
+                            onBookmarkStateChanged = { productId ->
+                                holderViewModel.updateBookmarks(
+                                    productId = productId,
+                                    currentlyOnBookmarks = productId in productsOnBookmarksIds
+                                )
+                            },
+                            onNavigateToSearch = {
+                                controller.navigate(Screen.Search.route)
+                            }
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -469,7 +482,11 @@ fun ScaffoldSection(
                 }
                 composable(Screen.Search.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
-                    SearchScreen()
+                    SearchScreen(
+                        onNavigateBack = {
+                            controller.popBackStack()
+                        }
+                    )
                 }
                 composable(Screen.Bookmark.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
@@ -613,9 +630,43 @@ fun ScaffoldSection(
                         navController = controller
                     )
                 }
+<<<<<<< Updated upstream
                 composable(Screen.OrderHistory.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     OrderScreen()
+=======
+
+                composable(
+                    route = Screen.ProductComparison.route,
+                    arguments = listOf(
+                        navArgument("productId1") { type = NavType.IntType },
+                        navArgument("productId2") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val productId1 = backStackEntry.arguments?.getInt("productId1") ?: 0
+                    val productId2 = backStackEntry.arguments?.getInt("productId2") ?: 0
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    ProductComparisonScreen(
+                        productId1 = productId1,
+                        productId2 = productId2,
+                        onNavigateBack = onBackRequested
+                    )
+                }
+
+                composable(
+                    route = Screen.ProductSelection.route,
+                    arguments = listOf(
+                        navArgument("productId") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val productId = backStackEntry.arguments?.getInt("productId") ?: 0
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    ProductSelectionScreen(
+                        currentProductId = productId,
+                        onNavigateBack = onBackRequested,
+                        navController = controller
+                    )
+>>>>>>> Stashed changes
                 }
             }
             // Chỉ hiển thị bottom navigation cho user bình thường
