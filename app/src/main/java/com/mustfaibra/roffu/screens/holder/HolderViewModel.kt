@@ -69,11 +69,13 @@ class HolderViewModel @Inject constructor(
     }
 
 
-    fun updateCart(productId: Int, currentlyOnCart: Boolean) {
+    // Sửa hàm updateCart: bỏ tham số alreadyOnCart/currentlyOnCart, chỉ giữ productId hoặc truyền thêm size, color nếu muốn cập nhật biến thể
+    fun updateCart(productId: Int, currentlyOnCart: Boolean = false) {
         viewModelScope.launch {
             productsRepository.updateCartState(
                 productId = productId,
-                alreadyOnCart = currentlyOnCart,
+                size = "Default",
+                color = "Default"
             )
         }
     }

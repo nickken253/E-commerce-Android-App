@@ -49,90 +49,100 @@ fun ShippingDetailScreen(
     steps: List<ShippingStep> = sampleTrackingSteps,
     onBack: () -> Unit = {}
 ) {
-    Column(Modifier.fillMaxSize().background(Color.White)) {
-        TopAppBar(
-            title = { Text("Thông tin vận chuyển") },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, null)
-                }
-            },
-            backgroundColor = Color.White,
-            elevation = 4.dp
+    Box(Modifier.fillMaxSize().background(Color.White)) {
+        // Text test để debug hiển thị
+        Text(
+            text = "Shipping Detail Test",
+            color = Color.Red,
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 24.dp),
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold
         )
-
-        // Đầu tracking
-        Row(
-            Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Thay icon này bằng icon vận chuyển của bạn nếu có
-            Icon(
-                imageVector = Icons.Default.LocalShipping,
-                contentDescription = null,
-                modifier = Modifier.size(54.dp),
-                tint = MaterialTheme.colors.primary
+        Column(Modifier.fillMaxSize()) {
+            TopAppBar(
+                title = { Text("Thông tin vận chuyển") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                },
+                backgroundColor = Color.White,
+                elevation = 4.dp
             )
-            Spacer(Modifier.width(12.dp))
-            Column {
-                Text(expressName, fontWeight = FontWeight.Bold)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Mã vận đơn: $trackingNumber", color = Color.Gray, fontSize = 14.sp)
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "SAO CHÉP",
-                        color = MaterialTheme.colors.primary,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { /* TODO: copy to clipboard */ }
-                    )
-                }
-            }
-        }
 
-        Divider()
-
-        // Timeline
-        LazyColumn(
-            Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
-        ) {
-            itemsIndexed(steps) { idx, step ->
-                Row(verticalAlignment = Alignment.Top) {
-                    // Dot
-                    Box(
-                        Modifier
-                            .padding(top = 4.dp)
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (step.isActive) MaterialTheme.colors.primary else Color.LightGray
-                            )
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Column {
+            // Đầu tracking
+            Row(
+                Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Thay icon này bằng icon vận chuyển của bạn nếu có
+                Icon(
+                    imageVector = Icons.Default.LocalShipping,
+                    contentDescription = null,
+                    modifier = Modifier.size(54.dp),
+                    tint = MaterialTheme.colors.primary
+                )
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(expressName, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Mã vận đơn: $trackingNumber", color = Color.Gray, fontSize = 14.sp)
+                        Spacer(Modifier.width(8.dp))
                         Text(
-                            step.content,
-                            color = if (step.isActive) MaterialTheme.colors.primary else Color.Gray,
-                            fontWeight = if (step.isActive) FontWeight.Bold else FontWeight.Normal
-                        )
-                        Text(
-                            step.time,
-                            color = Color.Gray,
-                            fontSize = 13.sp
+                            "SAO CHÉP",
+                            color = MaterialTheme.colors.primary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { /* TODO: copy to clipboard */ }
                         )
                     }
                 }
-                if (idx != steps.lastIndex) {
-                    // Timeline line
-                    Spacer(
-                        Modifier
-                            .padding(start = 5.dp)
-                            .width(2.dp)
-                            .height(22.dp)
-                            .background(Color(0xFFE0E0E0))
-                    )
+            }
+
+            Divider()
+
+            // Timeline
+            LazyColumn(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            ) {
+                itemsIndexed(steps) { idx, step ->
+                    Row(verticalAlignment = Alignment.Top) {
+                        // Dot
+                        Box(
+                            Modifier
+                                .padding(top = 4.dp)
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (step.isActive) MaterialTheme.colors.primary else Color.LightGray
+                                )
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                step.content,
+                                color = if (step.isActive) MaterialTheme.colors.primary else Color.Gray,
+                                fontWeight = if (step.isActive) FontWeight.Bold else FontWeight.Normal
+                            )
+                            Text(
+                                step.time,
+                                color = Color.Gray,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                    if (idx != steps.lastIndex) {
+                        // Timeline line
+                        Spacer(
+                            Modifier
+                                .padding(start = 5.dp)
+                                .width(2.dp)
+                                .height(22.dp)
+                                .background(Color(0xFFE0E0E0))
+                        )
+                    }
                 }
             }
         }

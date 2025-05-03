@@ -40,7 +40,7 @@ object AppModule {
             "RoFFuDatabase",
         )
         .addMigrations(MIGRATION_1_2)
-        //.fallbackToDestructiveMigration()
+        .fallbackToDestructiveMigration()
         .addCallback(populateDataCallback)
         .build()
 

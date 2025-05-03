@@ -54,335 +54,330 @@ fun OrderScreen(
 
     val expandedStates = remember { mutableStateMapOf<String, Boolean>() }
 
+    // Thêm biến trạng thái mở màn shipping detail
     var showShippingDetail by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        // Header
-        TopAppBar(
-            title = { Text("Đơn hàng", style = MaterialTheme.typography.h6) },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        null
-                    )
-                }
-            },
-            actions = {
-                IconButton(onClick = { /*TODO: Search*/ }) { Icon(Icons.Default.Search, null) }
-                IconButton(onClick = { orderViewModel.showNotifications() }) {
-                    Icon(
-                        Icons.Default.Notifications,
-                        null
-                    )
-                }
-            },
-            backgroundColor = Color.White,
-            elevation = 4.dp
-        )
-
-        // Tabs
-        ScrollableTabRow(
-            selectedTabIndex = selectedTab,
-            backgroundColor = Color.White,
-            edgePadding = 0.dp,
-            indicator = { tabPositions ->
-                TabRowDefaults.Indicator(
-                    Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                    color = MaterialTheme.colors.primary
-                )
-            }
-        ) {
-            tabTitles.forEachIndexed { idx, title ->
-                Tab(
-                    selected = selectedTab == idx,
-                    onClick = { selectedTab = idx },
-                    text = {
-                        Text(
-                            title,
-                            fontWeight = if (selectedTab == idx) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedTab == idx) MaterialTheme.colors.primary else Color.Gray
+        if (showShippingDetail) {
+            // Chỉ hiển thị ShippingDetailScreen, che toàn bộ UI khác
+            ShippingDetailScreen(
+                onBack = { showShippingDetail = false }
+            )
+        } else {
+            // Toàn bộ UI còn lại (header, tab, danh sách đơn hàng...)
+            TopAppBar(
+                title = { Text("Đơn hàng", style = MaterialTheme.typography.h6) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            null
                         )
                     }
-                )
-            }
-        }
+                },
+                actions = {
+                    IconButton(onClick = { /*TODO: Search*/ }) { Icon(Icons.Default.Search, null) }
+                    IconButton(onClick = { orderViewModel.showNotifications() }) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            null
+                        )
+                    }
+                },
+                backgroundColor = Color.White,
+                elevation = 4.dp
+            )
 
-        // Danh sách đơn hàng
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().background(Color(0xFFF8F8F8)),
-            contentPadding = PaddingValues(8.dp)
-        ) {
-            items(filteredOrders) { order ->
-                val isExpanded = expandedStates[order.id] == true
-                Card(
-                    shape = RoundedCornerShape(14.dp),
-                    elevation = 3.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp, horizontal = 6.dp)
-                ) {
-                    Column(Modifier.background(Color.White)) {
-                        // Header: Shop name + trạng thái
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (order.shopLabel != null) {
-                                Box(
-                                    Modifier
-                                        .background(
-                                            MaterialTheme.colors.primary,
-                                            RoundedCornerShape(4.dp)
-                                        )
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        order.shopLabel,
-                                        color = Color.White,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                                Spacer(Modifier.width(6.dp))
-                            }
-                            Text(order.shopName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            Spacer(Modifier.weight(1f))
+            // Tabs
+            ScrollableTabRow(
+                selectedTabIndex = selectedTab,
+                backgroundColor = Color.White,
+                edgePadding = 0.dp,
+                indicator = { tabPositions ->
+                    TabRowDefaults.Indicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        color = MaterialTheme.colors.primary
+                    )
+                }
+            ) {
+                tabTitles.forEachIndexed { idx, title ->
+                    Tab(
+                        selected = selectedTab == idx,
+                        onClick = { selectedTab = idx },
+                        text = {
                             Text(
-                                order.status,
-                                color = MaterialTheme.colors.primary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
+                                title,
+                                fontWeight = if (selectedTab == idx) FontWeight.Bold else FontWeight.Normal,
+                                color = if (selectedTab == idx) MaterialTheme.colors.primary else Color.Gray
                             )
                         }
-                        Divider(color = Color(0xFFF2F2F2), thickness = 1.dp)
-                        // Danh sách sản phẩm
-                        order.products.take(2).forEach { product ->
+                    )
+                }
+            }
+
+            // Danh sách đơn hàng
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Color(0xFFF8F8F8)),
+                contentPadding = PaddingValues(8.dp)
+            ) {
+                items(filteredOrders) { order ->
+                    val isExpanded = expandedStates[order.id] == true
+                    val productsToShow = if (isExpanded) order.products else order.products.take(2)
+                    Card(
+                        shape = RoundedCornerShape(14.dp),
+                        elevation = 3.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp, horizontal = 6.dp)
+                    ) {
+                        Column(Modifier.background(Color.White)) {
+                            // Header: Shop name + trạng thái
                             Row(
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Image(
-                                    painter = painterResource(product.image),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(68.dp).clip(RoundedCornerShape(8.dp))
+                                if (order.shopLabel != null) {
+                                    Box(
+                                        Modifier
+                                            .background(
+                                                MaterialTheme.colors.primary,
+                                                RoundedCornerShape(4.dp)
+                                            )
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            order.shopLabel,
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Spacer(Modifier.width(6.dp))
+                                }
+                                Text(order.shopName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Spacer(Modifier.weight(1f))
+                                Text(
+                                    order.status,
+                                    color = MaterialTheme.colors.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
                                 )
-                                Spacer(Modifier.width(12.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text(
-                                        product.name,
-                                        fontWeight = FontWeight.Medium,
-                                        fontSize = 15.sp,
-                                        maxLines = 1
+                            }
+                            Divider(color = Color(0xFFF2F2F2), thickness = 1.dp)
+                            // Danh sách sản phẩm
+                            productsToShow.forEach { product ->
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Image(
+                                        painter = painterResource(product.image),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(68.dp).clip(RoundedCornerShape(8.dp))
                                     )
-                                    Text(product.variant, color = Color.Gray, fontSize = 12.sp)
-                                    Spacer(Modifier.height(2.dp))
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        if (product.priceOrigin != null) {
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            product.name,
+                                            fontWeight = FontWeight.Medium,
+                                            fontSize = 15.sp,
+                                            maxLines = 1
+                                        )
+                                        Text(product.variant, color = Color.Gray, fontSize = 12.sp)
+                                        Spacer(Modifier.height(2.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            if (product.priceOrigin != null) {
+                                                Text(
+                                                    text = "₫${"%,d".format(product.priceOrigin)}",
+                                                    style = TextStyle(textDecoration = TextDecoration.LineThrough),
+                                                    color = Color.Gray,
+                                                    fontSize = 13.sp
+                                                )
+                                                Spacer(Modifier.width(4.dp))
+                                            }
                                             Text(
-                                                text = "₫${"%,d".format(product.priceOrigin)}",
-                                                style = TextStyle(textDecoration = TextDecoration.LineThrough),
+                                                text = "₫${"%,d".format(product.price)}",
+                                                color = MaterialTheme.colors.primary,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 15.sp
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                "x${product.quantity}",
                                                 color = Color.Gray,
                                                 fontSize = 13.sp
                                             )
-                                            Spacer(Modifier.width(4.dp))
                                         }
-                                        Text(
-                                            text = "₫${"%,d".format(product.price)}",
-                                            color = MaterialTheme.colors.primary,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 15.sp
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            "x${product.quantity}",
-                                            color = Color.Gray,
-                                            fontSize = 13.sp
-                                        )
                                     }
                                 }
                             }
-                        }
-                        // Nếu có nhiều hơn 2 sản phẩm thì dùng AnimatedVisibility cho phần còn lại
-                        if (order.products.size > 2) {
-                            AnimatedVisibility(
-                                visible = isExpanded,
-                                enter = expandVertically() + fadeIn(),
-                                exit = shrinkVertically() + fadeOut()
-                            ) {
-                                Column {
-                                    order.products.drop(2).forEach { product ->
-                                        Row(
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Image(
-                                                painter = painterResource(product.image),
-                                                contentDescription = null,
-                                                modifier = Modifier.size(68.dp).clip(RoundedCornerShape(8.dp))
-                                            )
-                                            Spacer(Modifier.width(12.dp))
-                                            Column(Modifier.weight(1f)) {
-                                                Text(
-                                                    product.name,
-                                                    fontWeight = FontWeight.Medium,
-                                                    fontSize = 15.sp,
-                                                    maxLines = 1
+                            // Nếu có nhiều hơn 2 sản phẩm thì dùng AnimatedVisibility cho phần còn lại
+                            if (order.products.size > 2) {
+                                AnimatedVisibility(
+                                    visible = isExpanded,
+                                    enter = expandVertically() + fadeIn(),
+                                    exit = shrinkVertically() + fadeOut()
+                                ) {
+                                    Column {
+                                        order.products.drop(2).forEach { product ->
+                                            Row(
+                                                Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Image(
+                                                    painter = painterResource(product.image),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(68.dp).clip(RoundedCornerShape(8.dp))
                                                 )
-                                                Text(product.variant, color = Color.Gray, fontSize = 12.sp)
-                                                Spacer(Modifier.height(2.dp))
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    if (product.priceOrigin != null) {
+                                                Spacer(Modifier.width(12.dp))
+                                                Column(Modifier.weight(1f)) {
+                                                    Text(
+                                                        product.name,
+                                                        fontWeight = FontWeight.Medium,
+                                                        fontSize = 15.sp,
+                                                        maxLines = 1
+                                                    )
+                                                    Text(product.variant, color = Color.Gray, fontSize = 12.sp)
+                                                    Spacer(Modifier.height(2.dp))
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        if (product.priceOrigin != null) {
+                                                            Text(
+                                                                text = "₫${"%,d".format(product.priceOrigin)}",
+                                                                style = TextStyle(textDecoration = TextDecoration.LineThrough),
+                                                                color = Color.Gray,
+                                                                fontSize = 13.sp
+                                                            )
+                                                            Spacer(Modifier.width(4.dp))
+                                                        }
                                                         Text(
-                                                            text = "₫${"%,d".format(product.priceOrigin)}",
-                                                            style = TextStyle(textDecoration = TextDecoration.LineThrough),
+                                                            text = "₫${"%,d".format(product.price)}",
+                                                            color = MaterialTheme.colors.primary,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 15.sp
+                                                        )
+                                                        Spacer(Modifier.width(8.dp))
+                                                        Text(
+                                                            "x${product.quantity}",
                                                             color = Color.Gray,
                                                             fontSize = 13.sp
                                                         )
-                                                        Spacer(Modifier.width(4.dp))
                                                     }
-                                                    Text(
-                                                        text = "₫${"%,d".format(product.price)}",
-                                                        color = MaterialTheme.colors.primary,
-                                                        fontWeight = FontWeight.Bold,
-                                                        fontSize = 15.sp
-                                                    )
-                                                    Spacer(Modifier.width(8.dp))
-                                                    Text(
-                                                        "x${product.quantity}",
-                                                        color = Color.Gray,
-                                                        fontSize = 13.sp
-                                                    )
                                                 }
                                             }
                                         }
                                     }
                                 }
+                                // Nút Xem thêm/Thu gọn như hiện tại
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable { expandedStates[order.id] = !isExpanded }
+                                        .padding(vertical = 2.dp),
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = if (isExpanded) "Thu gọn" else "Xem thêm",
+                                        fontStyle = FontStyle.Italic,
+                                        color = MaterialTheme.colors.primary,
+                                        fontSize = 14.sp
+                                    )
+                                    Icon(
+                                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colors.primary
+                                    )
+                                }
                             }
-                            // Nút Xem thêm/Thu gọn như hiện tại
+                            Divider(color = Color(0xFFF2F2F2), thickness = 1.dp)
+                            // Tổng số tiền
                             Row(
                                 Modifier
                                     .fillMaxWidth()
-                                    .clickable { expandedStates[order.id] = !isExpanded }
-                                    .padding(vertical = 2.dp),
-                                horizontalArrangement = Arrangement.Center
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.End
                             ) {
                                 Text(
-                                    text = if (isExpanded) "Thu gọn" else "Xem thêm",
-                                    fontStyle = FontStyle.Italic,
-                                    color = MaterialTheme.colors.primary,
+                                    "Tổng số tiền (${order.products.sumOf { it.quantity }} sản phẩm): ",
                                     fontSize = 14.sp
                                 )
-                                Icon(
-                                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colors.primary
+                                Text(
+                                    order.total,
+                                    color = MaterialTheme.colors.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
                                 )
                             }
-                        }
-                        Divider(color = Color(0xFFF2F2F2), thickness = 1.dp)
-                        // Tổng số tiền
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            Text(
-                                "Tổng số tiền (${order.products.sumOf { it.quantity }} sản phẩm): ",
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                order.total,
-                                color = MaterialTheme.colors.primary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            )
-                        }
-                        // Nút chức năng (theo trạng thái)
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            when (order.status) {
-                                "Chờ xác nhận", "Chờ lấy hàng" -> {
-                                    OutlinedButton(
-                                        onClick = { /* TODO: Xử lý hủy đơn */ },
-                                        shape = RoundedCornerShape(8.dp),
-                                        border = BorderStroke(1.dp, MaterialTheme.colors.primary),
-                                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 4.dp)
-                                    ) {
-                                        Text("Hủy đơn", color = MaterialTheme.colors.primary, fontSize = 14.sp)
+                            // Nút chức năng (theo trạng thái)
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                when (order.status) {
+                                    "Chờ xác nhận", "Chờ lấy hàng" -> {
+                                        OutlinedButton(
+                                            onClick = { /* TODO: Xử lý hủy đơn */ },
+                                            shape = RoundedCornerShape(8.dp),
+                                            border = BorderStroke(1.dp, MaterialTheme.colors.primary),
+                                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 4.dp)
+                                        ) {
+                                            Text("Hủy đơn", color = MaterialTheme.colors.primary, fontSize = 14.sp)
+                                        }
                                     }
-                                }
-                                "Đang giao" -> {
-                                    OutlinedButton(
-                                        onClick = { showShippingDetail = true },
-                                        shape = RoundedCornerShape(8.dp),
-                                        border = BorderStroke(1.dp, MaterialTheme.colors.primary),
-                                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 4.dp)
-                                    ) {
-                                        Text("Chi tiết vận chuyển", color = MaterialTheme.colors.primary, fontSize = 14.sp)
+                                    "Đang giao" -> {
+                                        OutlinedButton(
+                                            onClick = { showShippingDetail = true },
+                                            shape = RoundedCornerShape(8.dp),
+                                            border = BorderStroke(1.dp, MaterialTheme.colors.primary),
+                                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 4.dp)
+                                        ) {
+                                            Text("Chi tiết vận chuyển", color = MaterialTheme.colors.primary, fontSize = 14.sp)
+                                        }
                                     }
-                                }
-                                "Đã giao" -> {
-                                    OutlinedButton(
-                                        onClick = { /* TODO: Đánh giá */ },
-                                        shape = RoundedCornerShape(8.dp),
-                                        border = BorderStroke(1.dp, MaterialTheme.colors.primary),
-                                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 4.dp)
-                                    ) {
-                                        Text("Đánh giá", color = MaterialTheme.colors.primary, fontSize = 14.sp)
+                                    "Đã giao" -> {
+                                        OutlinedButton(
+                                            onClick = { /* TODO: Đánh giá */ },
+                                            shape = RoundedCornerShape(8.dp),
+                                            border = BorderStroke(1.dp, MaterialTheme.colors.primary),
+                                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 4.dp)
+                                        ) {
+                                            Text("Đánh giá", color = MaterialTheme.colors.primary, fontSize = 14.sp)
+                                        }
                                     }
+                                    // "Đã hủy" hoặc trạng thái khác: Không hiện nút
                                 }
-                                // "Đã hủy" hoặc trạng thái khác: Không hiện nút
                             }
                         }
                     }
                 }
-                if (orderUiState.showNotificationDialog) {
-                    NotificationDialog(
-                        notifications = orderUiState.notifications,
-                        onDismiss = { orderViewModel.hideNotifications() }
-                    )
-                }
-                if (showShippingDetail) {
-                    ShippingDetailScreen(
-                        onBack = { showShippingDetail = false }
-                    )
-                }
             }
-        }
-
-        @Composable
-        fun NotificationDialog(notifications: List<Notification>, onDismiss: () -> Unit) {
-            AlertDialog(
-                onDismissRequest = onDismiss,
-                title = { Text("Thông báo") },
-                text = {
-                    Column {
-                        notifications.forEach {
-                            Text("- ${it.content}", style = MaterialTheme.typography.body2)
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = onDismiss) { Text("Đóng") }
-                }
-            )
         }
     }
 }
 
 @Composable
 fun NotificationDialog(notifications: List<Notification>, onDismiss: () -> Unit) {
-
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Thông báo") },
+        text = {
+            Column {
+                notifications.forEach {
+                    Text("- ${it.content}", style = MaterialTheme.typography.body2)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Đóng") }
+        }
+    )
 }

@@ -17,10 +17,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,8 +38,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.mustfaibra.roffu.R
+import com.mustfaibra.roffu.components.AddedToCartDialog
 import com.mustfaibra.roffu.components.CustomButton
 import com.mustfaibra.roffu.components.DrawableButton
 import com.mustfaibra.roffu.components.ReactiveBookmarkIcon
@@ -53,11 +59,14 @@ fun ProductDetailsScreen(
     onUpdateCartState: (productId: Int) -> Unit,
     onUpdateBookmarksState: (productId: Int) -> Unit,
     onBackRequested: () -> Unit,
+    navController: NavHostController,
     productDetailsViewModel: ProductDetailsViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(key1 = Unit) {
         productDetailsViewModel.getProductDetails(productId = productId)
     }
+
+    var showAddedDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -151,7 +160,7 @@ fun ProductDetailsScreen(
                         }
                     }
                     /** Sizes section */
-                    it.sizes?.let { sizes ->
+                    if (it.sizes != null && it.sizes!!.isNotEmpty()) {
                         SizesSection(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
@@ -161,7 +170,7 @@ fun ProductDetailsScreen(
                                     to = 0.dp,
                                     duration = 700,
                                 ),
-                            sizes = sizes.map { size -> size.size },
+                            sizes = it.sizes!!.map { size -> size.size },
                             pickedSizeProvider = { size },
                             onSizePicked = productDetailsViewModel::updateSelectedSize,
                         )
@@ -194,7 +203,7 @@ fun ProductDetailsScreen(
                         onBookmarkChange = { onUpdateBookmarksState(productId) }
                     )
                     /** colors section */
-                    it.colors?.let { colors ->
+                    if (it.colors != null && it.colors!!.size > 1) {
                         ColorsSection(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
@@ -204,7 +213,7 @@ fun ProductDetailsScreen(
                                     to = 0.dp,
                                     duration = 700,
                                 ),
-                            colors = colors.map { color -> color.colorName },
+                            colors = it.colors!!.map { color -> color.colorName },
                             pickedColorProvider = { color },
                             onColorPicked = productDetailsViewModel::updateSelectedColor,
                         )
@@ -214,19 +223,44 @@ fun ProductDetailsScreen(
                 CustomButton(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .addMoveAnimation(
-                            orientation = Orientation.Vertical,
-                            from = -(40.dp),
-                            to = 0.dp,
-                            duration = 700,
-                        ),
-                    text = if (isOnCartStateProvider()) "Remove from cart" else "Add to cart",
-                    onButtonClicked = { onUpdateCartState(productId) },
+                        .padding(top = 24.dp),
+                    text = "Add to cart",
                     buttonColor = MaterialTheme.colors.primary,
                     contentColor = MaterialTheme.colors.onPrimary,
-                    shape = RoundedCornerShape(percent = 50),
-                    textStyle = MaterialTheme.typography.button,
+                    onButtonClicked = {
+                        // Lấy thông tin biến thể đang chọn
+                        val selectedSize = productDetailsViewModel.selectedSize.value.toString()
+                        val selectedColor = productDetailsViewModel.selectedColor.value
+                        // Gọi logic mới, truyền đủ productId, size, color
+                        productDetailsViewModel.addToCart(
+                            productId = productId,
+                            size = selectedSize,
+                            color = selectedColor
+                        )
+                        showAddedDialog = true
+                    },
                 )
+
+                // Popup xác nhận đã thêm vào giỏ hàng
+                if (showAddedDialog) {
+                    val product = productDetailsViewModel.product.value
+                    AddedToCartDialog(
+                        productName = product?.name ?: "",
+                        productImage = product?.image ?: 0,
+                        productPrice = product?.price ?: 0.0,
+                        onContinue = {
+                            showAddedDialog = false
+                            navController.popBackStack()
+                        },
+                        onViewCart = {
+                            showAddedDialog = false
+                            navController.navigate("cart") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onDismiss = { showAddedDialog = false }
+                    )
+                }
             }
         }
     }

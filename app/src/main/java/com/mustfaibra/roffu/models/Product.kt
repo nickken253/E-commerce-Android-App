@@ -17,7 +17,10 @@ data class Product(
     val discount: Int = 0,
     val manufacturerId: Int,
     val basicColorName: String,
-    val barcode: String
+    val barcode: String,
+    // --- Bổ sung thuộc tính phân loại và size ---
+    val type: String = "", // Loại (color, design, ...)
+    val size: String = ""  // Size (41, 42, L, XL, ...)
 ) {
     @Ignore
     var manufacturer: Manufacturer? = null

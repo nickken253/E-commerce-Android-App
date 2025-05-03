@@ -27,9 +27,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.mustfaibra.roffu.components.AppBottomNav
 import com.mustfaibra.roffu.components.CustomSnackBar
 import com.mustfaibra.roffu.models.CartItem
@@ -155,20 +157,19 @@ fun HolderScreen(
                 ) {
                     AppBottomNav(
                         activeRoute = currentRouteAsState,
-                        backgroundColor = MaterialTheme.colors.surface,
                         bottomNavDestinations = destinations,
+                        backgroundColor = MaterialTheme.colors.background,
                         onCartOffsetMeasured = { offset ->
                             setCartOffset(offset)
                         },
-                        onActiveRouteChange = {
-                            if (it != currentRouteAsState) {
-                                /** We should navigate to that new route */
-                                controller.navigate(it) {
-                                    popUpTo(Screen.Home.route) {
-                                        saveState = true
-                                    }
+                        onActiveRouteChange = { route ->
+                            if (route != currentRouteAsState) {
+                                controller.navigate(route) {
                                     launchSingleTop = true
                                     restoreState = true
+                                    popUpTo(controller.graph.startDestinationId) {
+                                        saveState = true
+                                    }
                                 }
                             }
                         }
@@ -206,8 +207,7 @@ fun HolderScreen(
             },
             onUpdateCartRequest = { productId ->
                 holderViewModel.updateCart(
-                    productId = productId,
-                    currentlyOnCart = productId in productsOnCartIds,
+                    productId = productId
                 )
             },
             onUpdateBookmarkRequest = { productId ->
@@ -398,7 +398,7 @@ fun ScaffoldSection(
                         )
                     } else {
                         LaunchedEffect(Unit) {
-                           // onToastRequested("Bạn không có quyền truy cập!", Color.Red)
+                            // onToastRequested("Bạn không có quyền truy cập!", Color.Red)
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.EditUser.route) { inclusive = true }
                             }
@@ -504,7 +504,7 @@ fun ScaffoldSection(
                     if (user?.isAdmin() != true) {
                         CartScreen(
                             user = user,
-                            cartItems = cartItems,
+                            // XÓA cartItems, CartScreen tự lấy từ HolderViewModel
                             onProductClicked = onShowProductRequest,
                             onUserNotAuthorized = { onUserNotAuthorized(false) },
                             onCheckoutRequest = {
@@ -616,17 +616,25 @@ fun ScaffoldSection(
                 }
                 composable(
                     route = Screen.ProductDetails.route,
-                    arguments = listOf()
-                ) {
+                    arguments = listOf(
+                        navArgument("productId") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val productId = backStackEntry.arguments?.getInt("productId") ?: 0
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     ProductDetailsScreen(
-                        productId = 1, // TODO: Truyền productId động qua route/navArgument, hiện tại tạm truyền cứng để tránh lỗi build
+                        productId = productId,
                         cartItemsCount = cartItems.size,
-                        isOnCartStateProvider = { false },
-                        isOnBookmarksStateProvider = { false },
-                        onUpdateCartState = {},
-                        onUpdateBookmarksState = {},
-                        onBackRequested = onBackRequested
+                        isOnCartStateProvider = { productsOnCartIds.contains(productId) },
+                        isOnBookmarksStateProvider = { productsOnBookmarksIds.contains(productId) },
+                        onUpdateCartState = { productId ->
+                            onUpdateCartRequest(productId)
+                        },
+                        onUpdateBookmarksState = { productId ->
+                            onUpdateBookmarkRequest(productId)
+                        },
+                        onBackRequested = onBackRequested,
+                        navController = controller
                     )
                 }
             }

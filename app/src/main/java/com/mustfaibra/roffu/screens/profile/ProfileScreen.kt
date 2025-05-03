@@ -18,7 +18,11 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowRight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +44,7 @@ fun ProfileScreen(
     onNavigationRequested: (route: String, removePreviousRoute: Boolean) -> Unit,
     onLogoutRequested: () -> Unit,
     profileViewModel: ProfileViewModel = hiltViewModel(),
+    selectedTab: String? = null,
 ) {
     val generalOptions = remember {
         listOf(Screen.Settings, Screen.OrderHistory)
@@ -47,6 +52,19 @@ fun ProfileScreen(
     val personalOptions = remember {
         listOf(Screen.PrivacyPolicies, Screen.TermsConditions)
     }
+    var showOrderHistory by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == Screen.Profile.route) {
+            showOrderHistory = false
+        }
+    }
+
+    if (showOrderHistory) {
+        onNavigationRequested(Screen.OrderManager.route, false)
+        showOrderHistory = false
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -119,8 +137,7 @@ fun ProfileScreen(
                 title = option.title,
                 onOptionClicked = {
                     if (option is Screen.OrderHistory) {
-                        // Chuyển sang màn hình OrderManager (OrderScreen mới)
-                        onNavigationRequested(Screen.OrderManager.route, false)
+                        showOrderHistory = true
                     }
                 },
             )

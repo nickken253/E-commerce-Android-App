@@ -72,14 +72,20 @@ interface RoomDao {
     @Update
     suspend fun updateCartItem(cartItem: CartItem)
 
-    @Query("UPDATE cart SET quantity = :quantity WHERE productId = :productId ")
-    suspend fun updateCartItemQuantity(productId: Int, quantity: Int)
+    @Query("UPDATE cart SET quantity = :quantity WHERE cartId = :cartId")
+    suspend fun updateCartItemQuantity(cartId: Int, quantity: Int)
 
     @Query("DELETE FROM cart WHERE productId = :productId ")
     suspend fun deleteCartItem(productId: Int)
 
+    @Query("DELETE FROM cart WHERE cartId = :cartId")
+    suspend fun deleteCartItemById(cartId: Int)
+
     @Query("Delete FROM cart")
     suspend fun clearCart()
+
+    @Query("SELECT * FROM cart")
+    suspend fun getCartItemsNow(): List<CartItem>
 
     /** Payment providers operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)

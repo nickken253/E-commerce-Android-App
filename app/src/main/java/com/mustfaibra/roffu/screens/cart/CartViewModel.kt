@@ -35,16 +35,18 @@ class CartViewModel @Inject constructor(
         }
     }
 
-    fun removeCartItem(productId: Int) {
-        /** remove item from cart , we sent it the current state to invert it */
+    // XÓA hoặc SỬA HÀM removeCartItem để không dùng alreadyOnCart nữa
+    fun removeCartItem(cartId: Int) {
         viewModelScope.launch {
-            productRepository.updateCartState(productId = productId, alreadyOnCart = true)
+            // Viết hàm xóa cart item theo cartId hoặc productId tuỳ logic bạn muốn
+            // productRepository.deleteCartItem(cartId)
+            productRepository.deleteCartItemById(cartId)
         }
     }
 
-    fun updateQuantity(productId: Int, quantity: Int) {
+    fun updateQuantity(cartId: Int, quantity: Int) {
         viewModelScope.launch {
-            productRepository.updateCartItemQuantity(id = productId, quantity = quantity)
+            productRepository.updateCartItemQuantity(cartId = cartId, quantity = quantity)
         }
     }
 

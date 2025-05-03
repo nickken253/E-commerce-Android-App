@@ -9,6 +9,8 @@ data class CartItem(
     @PrimaryKey(autoGenerate = true) val cartId: Int? = null,
     val productId: Int? = null,
     val quantity: Int,
+    val size: String = "",
+    val color: String = ""
 ) {
     /** This will deals with the data from server and local */
     @Ignore var product: Product? = null

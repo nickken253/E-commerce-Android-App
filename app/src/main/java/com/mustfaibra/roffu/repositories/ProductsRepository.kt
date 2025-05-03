@@ -24,29 +24,30 @@ class ProductsRepository @Inject constructor(
     private val dao: RoomDao,
 ) {
 
-    suspend fun updateCartState(productId: Int, alreadyOnCart: Boolean) {
-        /** Handle the local storing process */
-        handleLocalCart(productId = productId, alreadyOnCart = alreadyOnCart)
-        /** Handle the remote process */
-    }
-    suspend fun toggleBookmark(productId: Int) {
-        val alreadyOnBookmark = dao.isProductBookmarked(productId)
-        updateBookmarkState(productId, alreadyOnBookmark)
-    }
-
-
-    private suspend fun handleLocalCart(productId: Int, alreadyOnCart: Boolean) {
-        if (alreadyOnCart) {
-            /** Already on local , delete it */
-            dao.deleteCartItem(productId = productId)
+    suspend fun updateCartState(productId: Int, size: String, color: String) {
+        // Lấy tất cả item trong cart hiện tại
+        val cartItems = dao.getCartItemsNow()
+        val existing = cartItems.find {
+            it.productId == productId && it.size == size && it.color == color
+        }
+        if (existing != null) {
+            // Nếu đã có biến thể này, tăng số lượng
+            dao.updateCartItemQuantity(existing.cartId!!, existing.quantity + 1)
         } else {
-            /** not on local , add it */
+            // Nếu chưa có, thêm mới
             val cartItem = CartItem(
                 productId = productId,
                 quantity = 1,
+                size = size,
+                color = color
             )
-            addToLocalCart(cartItem = cartItem)
+            dao.insertCartItem(cartItem)
         }
+    }
+
+    suspend fun toggleBookmark(productId: Int) {
+        val alreadyOnBookmark = dao.isProductBookmarked(productId)
+        updateBookmarkState(productId, alreadyOnBookmark)
     }
 
     suspend fun getProductByBarcode(barcode: String): Product? {
@@ -54,14 +55,14 @@ class ProductsRepository @Inject constructor(
             dao.getProductByBarcode(barcode)
         }
     }
-    private suspend fun addToLocalCart(cartItem: CartItem) {
-        /** Add it to cart items */
-        dao.insertCartItem(cartItem = cartItem)
+
+    suspend fun updateCartItemQuantity(cartId: Int, quantity: Int) {
+        /** Update local cart item quantity */
+        dao.updateCartItemQuantity(cartId = cartId, quantity = quantity)
     }
 
-    suspend fun updateCartItemQuantity(id: Int, quantity: Int) {
-        /** Update local cart item quantity */
-        dao.updateCartItemQuantity(productId = id, quantity = quantity)
+    suspend fun deleteCartItemById(cartId: Int) {
+        dao.deleteCartItemById(cartId)
     }
 
     suspend fun saveOrders(

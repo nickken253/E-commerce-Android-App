@@ -82,4 +82,10 @@ class ProductDetailsViewModel @Inject constructor(
         }
         _selectedSize.value = size
     }
+
+    fun addToCart(productId: Int, size: String, color: String) {
+        viewModelScope.launch {
+            productsRepository.updateCartState(productId, size, color)
+        }
+    }
 }
