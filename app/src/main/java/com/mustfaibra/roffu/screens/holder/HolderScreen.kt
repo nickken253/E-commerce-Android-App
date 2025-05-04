@@ -37,11 +37,9 @@ import com.mustfaibra.roffu.components.CustomSnackBar
 import com.mustfaibra.roffu.models.CartItem
 import com.mustfaibra.roffu.models.User
 import com.mustfaibra.roffu.providers.LocalNavHost
-import com.mustfaibra.roffu.repositories.ProductsRepository
 import com.mustfaibra.roffu.screens.admin.AddProductScreen
 import com.mustfaibra.roffu.screens.admin.AddUserScreen
 import com.mustfaibra.roffu.screens.admin.AdminScreen
-import com.mustfaibra.roffu.screens.admin.AdminViewModel
 import com.mustfaibra.roffu.screens.admin.EditProductScreen
 import com.mustfaibra.roffu.screens.admin.EditUserScreen
 import com.mustfaibra.roffu.screens.barcode.BarcodeScannerScreen
@@ -50,8 +48,11 @@ import com.mustfaibra.roffu.screens.cart.CartScreen
 import com.mustfaibra.roffu.screens.checkout.CheckoutScreen
 import com.mustfaibra.roffu.screens.home.HomeScreen
 import com.mustfaibra.roffu.screens.locationpicker.LocationPickerScreen
+import com.mustfaibra.roffu.screens.login.ForgotPasswordScreen
 import com.mustfaibra.roffu.screens.login.LoginScreen
 import com.mustfaibra.roffu.screens.login.ManHinhDangKy
+import com.mustfaibra.roffu.screens.login.OtpVerificationScreen
+import com.mustfaibra.roffu.screens.login.ResetPasswordScreen
 import com.mustfaibra.roffu.screens.notifications.NotificationScreen
 import com.mustfaibra.roffu.screens.onboard.OnboardScreen
 import com.mustfaibra.roffu.screens.orderhistory.OrdersHistoryScreen
@@ -72,12 +73,8 @@ fun HolderScreen(
     holderViewModel: HolderViewModel = hiltViewModel(),
 ) {
     val destinations = remember {
-        listOf(Screen.Home,  Screen.Bookmark, Screen.Cart, Screen.Profile)
+        listOf(Screen.Home, Screen.Bookmark, Screen.Cart, Screen.Profile)
     }
-
-
-
-
 
     /** Our navigation controller that the MainActivity provides */
     val controller = LocalNavHost.current
@@ -247,6 +244,7 @@ fun HolderScreen(
         )
     }
 }
+
 @Composable
 fun ScaffoldSection(
     controller: NavHostController,
@@ -306,7 +304,10 @@ fun ScaffoldSection(
                     Screen.Onboard.route,
                     Screen.Login.route,
                     Screen.Signup.route,
-                    Screen.Register.route
+                    Screen.Register.route,
+                    Screen.ResetPassword.route,
+                    "forgot-password",
+                    "otp-verification/{email}" // Thêm route mới
                 )
             ) {
                 onUserNotAuthorized(true)
@@ -339,6 +340,7 @@ fun ScaffoldSection(
                 composable(Screen.Login.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     LoginScreen(
+                        navController = controller,
                         onUserAuthenticated = onBackRequested,
                         onToastRequested = onToastRequested,
                         onNavigateToRegister = { controller.navigate(Screen.Register.route) }
@@ -352,6 +354,37 @@ fun ScaffoldSection(
                         onYeuCauToast = onToastRequested
                     )
                 }
+                composable("forgot-password") {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    ForgotPasswordScreen(
+                        navController = controller,
+                        onToastRequested = onToastRequested
+                    )
+                }
+                composable(
+                    route = "otp-verification/{email}",
+                    arguments = listOf(navArgument("email") { type = NavType.StringType })
+                ) {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    val email = it.arguments?.getString("email") ?: ""
+                    OtpVerificationScreen(
+                        navController = controller,
+                        email = email,
+                        onToastRequested = onToastRequested
+                    )
+                }
+                composable(
+                    route = Screen.ResetPassword.route,
+                    arguments = listOf(navArgument("email") { type = NavType.StringType })
+                ) {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    val email = it.arguments?.getString("email") ?: ""
+                    ResetPasswordScreen(
+                        navController = controller,
+                        email = email,
+                        onToastRequested = onToastRequested
+                    )
+                }
                 composable(Screen.Admin.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     // Chỉ cho phép admin truy cập
@@ -363,7 +396,6 @@ fun ScaffoldSection(
                         )
                     } else {
                         LaunchedEffect(Unit) {
-                            //onToastRequested("Bạn không có quyền truy cập!", Color.Red)
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.Admin.route) { inclusive = true }
                             }
@@ -374,10 +406,12 @@ fun ScaffoldSection(
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     // Chỉ cho phép admin truy cập
                     if (user?.isAdmin() == true) {
-                        AddUserScreen(onBackRequested = onBackRequested,onToastRequested = onToastRequested)
+                        AddUserScreen(
+                            onBackRequested = onBackRequested,
+                            onToastRequested = onToastRequested
+                        )
                     } else {
                         LaunchedEffect(Unit) {
-                            //onToastRequested("Bạn không có quyền truy cập!", Color.Red)
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.AddUser.route) { inclusive = true }
                             }
@@ -400,7 +434,6 @@ fun ScaffoldSection(
                         )
                     } else {
                         LaunchedEffect(Unit) {
-                           // onToastRequested("Bạn không có quyền truy cập!", Color.Red)
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.EditUser.route) { inclusive = true }
                             }
@@ -412,12 +445,11 @@ fun ScaffoldSection(
                     if (user?.isAdmin() == true) {
                         AddProductScreen(
                             onBack = onBackRequested,
-                            onDone = { onBackRequested() }, // hoặc một logic khác nếu cần
+                            onDone = { onBackRequested() },
                             onToastRequested = onToastRequested
                         )
                     } else {
                         LaunchedEffect(Unit) {
-                            onToastRequested("Bạn không có quyền truy cập!", Color.Red)
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.AddProduct.route) { inclusive = true }
                             }
@@ -432,7 +464,6 @@ fun ScaffoldSection(
                     if (user?.isAdmin() == true) {
                         val productId = it.arguments?.getInt("productId")
                             ?: throw IllegalArgumentException("Product ID is required")
-
                         EditProductScreen(
                             productId = productId,
                             onBack = onBackRequested,
@@ -441,14 +472,12 @@ fun ScaffoldSection(
                         )
                     } else {
                         LaunchedEffect(Unit) {
-                            onToastRequested("Bạn không có quyền truy cập!", Color.Red)
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.EditProduct.route) { inclusive = true }
                             }
                         }
                     }
                 }
-
                 composable(Screen.Home.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     // Chỉ cho phép user bình thường hoặc khi chưa đăng nhập
@@ -459,7 +488,7 @@ fun ScaffoldSection(
                             bookmarkProductsIds = productsOnBookmarksIds,
                             onProductClicked = onShowProductRequest,
                             onCartStateChanged = onUpdateCartRequest,
-                            onBookmarkStateChanged = onUpdateBookmarkRequest,
+                            onBookmarkStateChanged = onUpdateBookmarkRequest
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -485,7 +514,7 @@ fun ScaffoldSection(
                             cartProductsIds = productsOnCartIds,
                             onProductClicked = onShowProductRequest,
                             onCartStateChanged = onUpdateCartRequest,
-                            onBookmarkStateChanged = onUpdateBookmarkRequest,
+                            onBookmarkStateChanged = onUpdateBookmarkRequest
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -511,7 +540,7 @@ fun ScaffoldSection(
                             onUserNotAuthorized = { onUserNotAuthorized(false) },
                             onCheckoutRequest = {
                                 onNavigationRequested(Screen.Checkout.route, false)
-                            },
+                            }
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -542,7 +571,7 @@ fun ScaffoldSection(
                                 LaunchedEffect(Unit) {
                                     onUserNotAuthorized(true)
                                 }
-                            },
+                            }
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -577,7 +606,7 @@ fun ScaffoldSection(
                                 LaunchedEffect(Unit) {
                                     onUserNotAuthorized(false)
                                 }
-                            },
+                            }
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -593,14 +622,14 @@ fun ScaffoldSection(
                         user.whatIfNotNull(
                             whatIf = {
                                 OrdersHistoryScreen(
-                                    onBackRequested = onBackRequested,
+                                    onBackRequested = onBackRequested
                                 )
                             },
                             whatIfNot = {
                                 LaunchedEffect(Unit) {
                                     onUserNotAuthorized(true)
                                 }
-                            },
+                            }
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -614,7 +643,7 @@ fun ScaffoldSection(
                     route = Screen.ProductDetails.route,
                     arguments = listOf(
                         navArgument(name = "productId") { type = NavType.IntType }
-                    ),
+                    )
                 ) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     val productId = it.arguments?.getInt("productId")
@@ -626,7 +655,7 @@ fun ScaffoldSection(
                         isOnBookmarksStateProvider = { productId in productsOnBookmarksIds },
                         onUpdateCartState = onUpdateCartRequest,
                         onUpdateBookmarksState = onUpdateBookmarkRequest,
-                        onBackRequested = onBackRequested,
+                        onBackRequested = onBackRequested
                     )
                 }
             }
@@ -637,6 +666,7 @@ fun ScaffoldSection(
         }
     }
 }
+
 @Composable
 fun getActiveRoute(navController: NavHostController): String {
     val navBackStackEntry by navController.currentBackStackEntryAsState()

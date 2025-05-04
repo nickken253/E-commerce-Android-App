@@ -46,6 +46,8 @@ import com.mustfaibra.roffu.sealed.UiState
 import com.mustfaibra.roffu.ui.theme.Dimension
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import coil.compose.AsyncImage
+import androidx.compose.ui.graphics.ColorFilter
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
@@ -358,7 +360,6 @@ fun AdvertisementsPager(
         }
     }
 }
-
 @Composable
 fun ManufacturersSection(
     brands: List<Triple<Int, String, Int>>,
@@ -390,11 +391,11 @@ fun ManufacturersSection(
                         vertical = Dimension.sm,
                     )
             ) {
-                Icon(
-                    modifier = Modifier.size(Dimension.smIcon),
-                    painter = painterResource(id = R.drawable.ic_all), // Icon cho "Tất cả"
+                AsyncImage(
+                    model = R.drawable.ic_all,
                     contentDescription = null,
-                    tint = contentColor,
+                    modifier = Modifier.size(Dimension.smIcon),
+                    colorFilter = ColorFilter.tint(contentColor),
                 )
                 if (activeBrandIndex == -1) {
                     Text(
@@ -425,11 +426,11 @@ fun ManufacturersSection(
                         vertical = Dimension.sm,
                     )
             ) {
-                Icon(
-                    modifier = Modifier.size(Dimension.smIcon),
-                    painter = painterResource(id = icon),
+                AsyncImage(
+                    model = icon,
                     contentDescription = null,
-                    tint = contentColor,
+                    modifier = Modifier.size(Dimension.smIcon),
+                    colorFilter = ColorFilter.tint(contentColor),
                 )
                 if (activeBrandIndex == index) {
                     Text(

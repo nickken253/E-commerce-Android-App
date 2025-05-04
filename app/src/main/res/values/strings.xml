@@ -68,7 +68,7 @@
     <string name="see_sellers">See sellers</string>
     <string name="no_ship_address_available">Chưa thiết lập địa chỉ nhận hàng</string>
     <string name="personal_info">Personal Info</string>
-    <string name="logout">Logout</string>
     <string name="shopping">Shopping</string>
     <string name="add">Add</string>
+    <string name="reset_password">Đặt lại mật khẩu</string>
 </resources>
