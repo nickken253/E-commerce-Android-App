@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace="com.mustfaibra.roffu"
+    namespace 'com.mustfaibra.roffubenchmark'
     compileSdk 32
 
     compileOptions {

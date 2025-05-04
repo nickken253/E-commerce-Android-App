@@ -1,10 +1,11 @@
 buildscript {
     ext {
         compose_version = '1.2.1'
-        hilt_plugin_version = '2.43.2'
-        kotlin_version = '1.7.0'
-        agp_version = '8.6.0'
+        hilt_plugin_version = '2.48' // <-- Đồng bộ với app-level
+        kotlin_version = '1.9.0'
+        agp_version = '8.1.0' // 8.6.0 chưa stable, dùng 8.1.0 sẽ ổn hơn
     }
+
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_plugin_version"
@@ -15,10 +16,11 @@ buildscript {
 plugins {
     id 'com.android.application' version '8.6.0' apply false
     id 'com.android.library' version '7.2.2' apply false
-    id 'org.jetbrains.kotlin.android' version '1.7.0' apply false
+    id 'org.jetbrains.kotlin.android' version '1.9.0' apply false
     id 'com.android.test' version '7.2.2' apply false
 
 }
+
 
 task clean(type: Delete) {
     delete rootProject.buildDir
