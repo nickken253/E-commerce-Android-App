@@ -485,7 +485,8 @@ fun ScaffoldSection(
                     SearchScreen(
                         onNavigateBack = {
                             controller.popBackStack()
-                        }
+                        },
+                        onProductClick = onShowProductRequest
                     )
                 }
                 composable(Screen.Bookmark.route) {

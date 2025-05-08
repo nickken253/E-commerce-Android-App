@@ -27,7 +27,11 @@ fun NavGraph(
                 cartOffset = IntOffset(0, 0),
                 cartProductsIds = emptyList(),
                 bookmarkProductsIds = emptyList(),
-                onProductClicked = { /* TODO */ },
+                onProductClicked = { productId ->
+                    navController.navigate(
+                        "product_details/$productId"
+                    )
+                },
                 onCartStateChanged = { /* TODO */ },
                 onBookmarkStateChanged = { /* TODO */ },
                 onNavigateToSearch = {
@@ -39,6 +43,11 @@ fun NavGraph(
             SearchScreen(
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onProductClick = { productId ->
+                    navController.navigate(
+                        "product_details/$productId"
+                    )
                 }
             )
         }
