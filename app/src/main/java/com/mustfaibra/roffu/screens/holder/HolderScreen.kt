@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -50,6 +51,7 @@ import com.mustfaibra.roffu.screens.home.HomeScreen
 import com.mustfaibra.roffu.screens.locationpicker.LocationPickerScreen
 import com.mustfaibra.roffu.screens.login.ForgotPasswordScreen
 import com.mustfaibra.roffu.screens.login.LoginScreen
+import com.mustfaibra.roffu.screens.login.LoginViewModel
 import com.mustfaibra.roffu.screens.login.ManHinhDangKy
 import com.mustfaibra.roffu.screens.login.OtpVerificationScreen
 import com.mustfaibra.roffu.screens.login.ResetPasswordScreen
@@ -587,8 +589,18 @@ fun ScaffoldSection(
                         onLocationPicked = {}
                     )
                 }
+
                 composable(Screen.Profile.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
+                    val context = LocalContext.current
+                    val loginViewModel: LoginViewModel = hiltViewModel()
+                    // Kiểm tra trạng thái đăng nhập
+                    LaunchedEffect(Unit) {
+                        if (UserPref.getToken(context) == null) {
+                            loginViewModel.logout() // Đặt lại trạng thái LoginViewModel
+                            onNavigationRequested(Screen.Login.route, true)
+                        }
+                    }
                     if (user?.isAdmin() != true) {
                         user.whatIfNotNull(
                             whatIf = {
@@ -596,14 +608,14 @@ fun ScaffoldSection(
                                     user = it,
                                     onNavigationRequested = onNavigationRequested,
                                     onLogoutRequested = {
-                                        UserPref.logout()
+                                        loginViewModel.logout()
                                         onNavigationRequested(Screen.Login.route, true)
                                     }
                                 )
                             },
                             whatIfNot = {
                                 LaunchedEffect(Unit) {
-                                    onUserNotAuthorized(false)
+                                    onNavigationRequested(Screen.Login.route, true)
                                 }
                             }
                         )

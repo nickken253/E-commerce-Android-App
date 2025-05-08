@@ -24,7 +24,6 @@ import com.mustfaibra.roffu.utils.LOGGED_USER_ID
 import com.mustfaibra.roffu.utils.UserPref
 import com.mustfaibra.roffu.utils.dataStore
 import com.resend.Resend
-import com.resend.*
 import com.resend.services.emails.model.SendEmailRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -49,12 +48,13 @@ class LoginViewModel @Inject constructor(
     val password = mutableStateOf<String?>("")
     val username = mutableStateOf<String?>(null)
 
-    fun updateUsername(username: String?) {
-        this.username.value = username
-    }
     companion object {
         private const val TAG = "LoginViewModel"
         private const val OTP_EXPIRY_MINUTES = 5
+    }
+
+    fun updateUsername(username: String?) {
+        this.username.value = username
     }
 
     fun updateEmailOrPhone(value: String?) {
@@ -102,7 +102,7 @@ class LoginViewModel @Inject constructor(
                 )
 
                 uiState.value = UiState.Success
-                UserPref.updateUser( user)
+                UserPref.updateUser(user)
                 UserPref.updateUserId(context, user.userId)
                 onAuthenticated()
             } catch (e: retrofit2.HttpException) {
@@ -121,6 +121,21 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+    fun logout() {
+        viewModelScope.launch {
+            // Xóa LOGGED_USER_ID từ DataStore
+            context.dataStore.edit {
+                it.remove(LOGGED_USER_ID)
+            }
+            // Xóa dữ liệu trong SharedPreferences và đặt lại UserPref
+            UserPref.logout(context)
+            // Đặt lại trạng thái trong ViewModel
+            username.value = null
+            emailOrPhone.value = ""
+            password.value = ""
+            uiState.value = UiState.Idle
+        }
+    }
 
     fun checkEmailForPasswordReset(
         email: String,
@@ -259,7 +274,6 @@ class LoginViewModel @Inject constructor(
         onRegistered: () -> Unit,
         onRegistrationFailed: (String) -> Unit
     ) {
-
         // Kiểm tra các trường bắt buộc
         if (username.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() || name.isBlank() || phoneNumber.isBlank()) {
             onRegistrationFailed("Vui lòng điền đầy đủ thông tin!")

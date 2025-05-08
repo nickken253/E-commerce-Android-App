@@ -20,11 +20,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Snackbar
 import androidx.compose.material.SnackbarData
 import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Text
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowLeft
 import androidx.compose.runtime.Composable
@@ -82,70 +84,57 @@ fun CustomInputField(
     shape: Shape = MaterialTheme.shapes.small,
     padding: PaddingValues = PaddingValues(horizontal = Dimension.xs),
     leadingIcon: @Composable () -> Unit = {},
-    trailingIcon: @Composable() (() -> Unit)? = {},
+    trailingIcon: @Composable (() -> Unit)? = null,
     onValueChange: (string: String) -> Unit,
     onFocusChange: (focused: Boolean) -> Unit,
     onKeyboardActionClicked: KeyboardActionScope.() -> Unit,
 ) {
-    val focusRequester = remember { FocusRequester() }
-    val inputService = LocalTextInputService.current
-
-    Row(
+    OutlinedTextField(
+        value = value,
+        onValueChange = {
+            if (it.length <= maxLength) {
+                onValueChange(it)
+            }
+        },
         modifier = modifier
-            .clip(shape = shape)
-            .background(backgroundColor)
-            .padding(paddingValues = padding),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding.div(2))
-    ) {
-        leadingIcon()
-        BasicTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(focusRequester)
-                .onFocusChanged {
-                    onFocusChange(it.isFocused)
-                },
-            value = value,
-            onValueChange = {
-                if (it.length <= maxLength) {
-                    /** when the value change and maxLength is not reached yet then pass it up **/
-                    onValueChange(it)
-                }
-            },
-            decorationBox = { container ->
-                Box(
-                    contentAlignment = if (textShouldBeCentered) Alignment.Center else Alignment.CenterStart,
-                ) {
-                    if (value.isEmpty()) {
-                        Text(
-                            text = placeholder,
-                            style = textStyle,
-                            color = textColor.copy(alpha = 0.3f),
-                            maxLines = if (requireSingleLine) 1 else Int.MAX_VALUE,
-                        )
-                    }
-                    container()
-                }
-            },
-            visualTransformation = visualTransformation,
-            singleLine = requireSingleLine,
-            textStyle = textStyle.copy(color = textColor),
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
-            keyboardActions = KeyboardActions(
-                onAny = {
-                    focusRequester.freeFocus()
-                    /** It doesn't has the focus now, hide the input keyboard */
-                    inputService?.hideSoftwareKeyboard()
-                    onKeyboardActionClicked()
-                }
-            ),
-            cursorBrush = SolidColor(value = textColor),
-        )
-        if (trailingIcon != null) {
-            trailingIcon()
-        }
-    }
+            .background(backgroundColor, shape)
+            .padding(padding)
+            .onFocusChanged { onFocusChange(it.isFocused) },
+        textStyle = textStyle.copy(
+            color = textColor,
+            textAlign = if (textShouldBeCentered) androidx.compose.ui.text.style.TextAlign.Center else androidx.compose.ui.text.style.TextAlign.Start
+        ),
+        placeholder = {
+            Text(
+                text = placeholder,
+                style = textStyle,
+                color = textColor.copy(alpha = 0.3f),
+                maxLines = if (requireSingleLine) 1 else Int.MAX_VALUE,
+            )
+        },
+        colors = TextFieldDefaults.outlinedTextFieldColors(
+            backgroundColor = backgroundColor,
+            textColor = textColor,
+            placeholderColor = textColor.copy(alpha = 0.3f),
+            focusedBorderColor = MaterialTheme.colors.primary,
+            unfocusedBorderColor = textColor.copy(alpha = 0.3f),
+            cursorColor = textColor,
+        ),
+        shape = shape,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        visualTransformation = visualTransformation,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = keyboardType,
+            imeAction = imeAction
+        ),
+        keyboardActions = KeyboardActions(
+            onAny = {
+                onKeyboardActionClicked()
+            }
+        ),
+        singleLine = requireSingleLine,
+    )
 }
 
 @Composable
@@ -532,7 +521,7 @@ fun ProductItemLayout(
             ) {
                 Text(
                     modifier = Modifier.weight(1f),
-                    text = stringResource(id = R.string.x_dollar, price),
+                    text = stringResource( id = R.string.x_VND,price),
                     style = MaterialTheme.typography.body1.copy(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colors.onBackground.copy(alpha = 0.7f),

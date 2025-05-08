@@ -50,6 +50,7 @@ import com.mustfaibra.roffu.ui.theme.Dimension
 import com.mustfaibra.roffu.utils.getDp
 import com.skydoves.whatif.whatIfNotNull
 import kotlinx.coroutines.launch
+import java.text.DecimalFormat
 
 @Composable
 fun CartScreen(
@@ -67,6 +68,7 @@ fun CartScreen(
 
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val decimalFormat = DecimalFormat("#,###")
 
     LaunchedEffect(cartUiState) {
         if (cartUiState is UiState.Error) {
@@ -202,7 +204,7 @@ fun CartScreen(
                 ) {
                     SummaryRow(
                         title = stringResource(id = R.string.total),
-                        value = "₹${totalPrice.toInt()}",
+                        value = "${decimalFormat.format(totalPrice.toInt())} VND",
                         valueColor = Color.Blue
                     )
                     CustomButton(
@@ -245,6 +247,8 @@ fun CartItemLayout(
     onQuantityChanged: (qty: Int) -> Unit,
     onProductRemoved: () -> Unit,
 ) {
+    val decimalFormat = DecimalFormat("#,###")
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -275,7 +279,7 @@ fun CartItemLayout(
                 fontWeight = FontWeight.Normal
             )
             Text(
-                text = "₹${productPrice.toInt()}",
+                text = "${decimalFormat.format(productPrice.toInt())} VND",
                 style = MaterialTheme.typography.body2,
                 fontWeight = FontWeight.Bold,
                 color = Color.Blue

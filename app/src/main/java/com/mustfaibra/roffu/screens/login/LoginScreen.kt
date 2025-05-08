@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -41,6 +42,7 @@ fun LoginScreen(
     val uiState by remember { loginViewModel.uiState }
     val username by remember { loginViewModel.username }
     val password by remember { loginViewModel.password }
+    var showPassword by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -99,7 +101,7 @@ fun LoginScreen(
             value = password ?: "",
             onValueChange = { loginViewModel.updatePassword(it.ifBlank { null }) },
             placeholder = "Nhập mật khẩu của bạn",
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
             padding = PaddingValues(Dimension.pagePadding, Dimension.pagePadding.times(0.7f)),
             backgroundColor = MaterialTheme.colors.surface,
@@ -114,6 +116,19 @@ fun LoginScreen(
                     modifier = Modifier
                         .padding(end = Dimension.pagePadding.div(2))
                         .size(Dimension.mdIcon.times(0.7f))
+                )
+            },
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(
+                        id = if (showPassword) R.drawable.ic_eye else R.drawable.ic_eye_off
+                    ),
+                    contentDescription = if (showPassword) "Ẩn mật khẩu" else "Hiện mật khẩu",
+                    tint = Color.Black, // Bỏ alpha
+                    modifier = Modifier
+                        .clickable { showPassword = !showPassword }
+                        .padding(start = Dimension.pagePadding.div(2))
+                        .size(Dimension.mdIcon) // Tăng kích thước
                 )
             },
             onFocusChange = {},

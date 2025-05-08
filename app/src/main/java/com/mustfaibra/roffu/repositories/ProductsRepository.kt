@@ -60,7 +60,7 @@ class ProductsRepository @Inject constructor(
 
     suspend fun getProductByBarcode(barcode: String): com.mustfaibra.roffu.models.dto.Product? {
         return try {
-            val response: HttpResponse = client.get("http://34.9.68.100:8000/api/v1/products/barcode/$barcode") {
+            val response: HttpResponse = client.get("http://170.205.36.201:8000/api/v1/products/barcode/$barcode") {
                 header("accept", "application/json")
             }
             if (response.status == HttpStatusCode.OK) {
@@ -75,7 +75,7 @@ class ProductsRepository @Inject constructor(
     }
     suspend fun getProductDetails(productId: Int): DataResponse<com.mustfaibra.roffu.models.dto.Product> {
         return try {
-            val response = client.get("http://34.9.68.100:8000/api/v1/products/$productId") {
+            val response = client.get("http://170.205.36.201:8000/api/v1/products/$productId") {
                 header("accept", "application/json")
             }
             if (response.status == HttpStatusCode.OK) {
