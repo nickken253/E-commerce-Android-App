@@ -127,6 +127,9 @@ class LoginViewModel @Inject constructor(
             context.dataStore.edit {
                 it.remove(LOGGED_USER_ID)
             }
+            context.dataStore.data.first().let {
+                Log.d("DataStore", "LOGGED_USER_ID after logout: ${it[LOGGED_USER_ID]}")
+            }
             // Xóa dữ liệu trong SharedPreferences và đặt lại UserPref
             UserPref.logout(context)
             // Đặt lại trạng thái trong ViewModel
