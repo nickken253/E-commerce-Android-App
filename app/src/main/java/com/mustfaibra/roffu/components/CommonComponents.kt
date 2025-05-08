@@ -32,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -431,25 +432,21 @@ fun ReactiveBookmarkIcon(
 fun ProductItemLayout(
     modifier: Modifier = Modifier,
     cartOffset: IntOffset,
-    price: Double,
+    price: Int,
     title: String,
-    discount: Int,
+    imageUrl: String,
     onCart: Boolean = false,
     onBookmark: Boolean = false,
     onProductClicked: () -> Unit,
     onChangeCartState: () -> Unit,
     onChangeBookmarkState: () -> Unit,
-    image: Int,
 ) {
-    val (productFloatToCartAnim, setFloatingAnim) =
-        remember { mutableStateOf(false) }
+    var productFloatToCartAnim by remember { mutableStateOf(false) }
     val productTransition = updateTransition(
         targetState = productFloatToCartAnim,
         label = "Product transition"
     )
-    val (floatingProductOffset, setFloatingProductOffset) = remember {
-        mutableStateOf(cartOffset)
-    }
+    var floatingProductOffset by remember { mutableStateOf(cartOffset) }
     val animatedFloatingProductOffset by productTransition.animateIntOffset(
         label = "Product transition - offset",
         targetValueByState = {
@@ -464,9 +461,7 @@ fun ProductItemLayout(
         },
     )
 
-    val (floatingProductSize, setFloatingProductSize) = remember {
-        mutableStateOf(0)
-    }
+    var floatingProductSize by remember { mutableStateOf(0) }
     val animatedFloatProductSize by productTransition.animateInt(
         label = "Product transition - size",
         targetValueByState = {
@@ -482,7 +477,7 @@ fun ProductItemLayout(
     )
     LaunchedEffect(key1 = onCart) {
         if (!onCart) {
-            setFloatingAnim(false)
+            productFloatToCartAnim = false
         }
     }
 
@@ -507,18 +502,16 @@ fun ProductItemLayout(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .height(this.constraints.maxHeight
-                        .div(2)
-                        .getDp())
+                    .height(this.constraints.maxHeight.div(2).getDp())
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colors.surface),
             )
             AsyncImage(
-                model = image,
+                model = imageUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .onGloballyPositioned {
-                        setFloatingProductSize(it.size.width)
+                        floatingProductSize = it.size.width
                     }
                     .fillMaxSize()
                     .clip(MaterialTheme.shapes.medium)
@@ -533,20 +526,13 @@ fun ProductItemLayout(
         Column(
             verticalArrangement = Arrangement.spacedBy(Dimension.xs)
         ) {
-            /** Product's interactions */
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                /** Price */
-                val cost = stringResource(
-                    id = R.string.x_dollar,
-                    price.getDiscountedValue(discount = discount)
-                )
                 Text(
                     modifier = Modifier.weight(1f),
-                    text = cost,
+                    text = stringResource(id = R.string.x_dollar, price),
                     style = MaterialTheme.typography.body1.copy(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colors.onBackground.copy(alpha = 0.7f),
@@ -555,17 +541,15 @@ fun ProductItemLayout(
                 ReactiveCartIcon(
                     isOnCart = onCart,
                     onCartChange = {
-                        /** Prevent multiple click */
                         if (animatedFloatProductSize !in 1..floatingProductSize.dec()) {
                             if (!onCart) {
-                                setFloatingAnim(true)
+                                productFloatToCartAnim = true
                             }
                             onChangeCartState()
                         }
                     },
                 )
             }
-            /** Product's name */
             Text(
                 modifier = Modifier,
                 text = title,
@@ -573,25 +557,20 @@ fun ProductItemLayout(
                 maxLines = 2,
             )
         }
-
     }
     AsyncImage(
-        model = image,
+        model = imageUrl,
         contentDescription = null,
         modifier = Modifier
             .onGloballyPositioned {
-                it
-                    .positionInWindow()
-                    .let { originalOffset ->
-                        val requiredX = cartOffset.x - originalOffset.x
-                        val requiredY = cartOffset.y - originalOffset.y
-                        setFloatingProductOffset(
-                            IntOffset(
-                                x = requiredX.roundToInt(),
-                                y = requiredY.roundToInt(),
-                            )
-                        )
-                    }
+                it.positionInWindow().let { originalOffset ->
+                    val requiredX = cartOffset.x - originalOffset.x
+                    val requiredY = cartOffset.y - originalOffset.y
+                    floatingProductOffset = IntOffset(
+                        x = requiredX.roundToInt(),
+                        y = requiredY.roundToInt(),
+                    )
+                }
             }
             .offset { animatedFloatingProductOffset }
             .size(animatedFloatProductSize.getDp())

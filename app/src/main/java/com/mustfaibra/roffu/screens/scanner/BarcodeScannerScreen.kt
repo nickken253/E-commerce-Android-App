@@ -6,25 +6,34 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
+import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.components.CameraPreview
 import com.mustfaibra.roffu.sealed.Screen
+import com.mustfaibra.roffu.sealed.UiState
 import com.mustfaibra.roffu.utils.BarcodeAnalyzer
-import com.mustfaibra.roffu.models.Product
+import timber.log.Timber
 
 @Composable
 fun BarcodeScannerScreen(
@@ -32,9 +41,11 @@ fun BarcodeScannerScreen(
     viewModel: BarcodeScannerViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    var hasCameraPermission by remember { mutableStateOf(
-        ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-    ) }
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        )
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -81,16 +92,43 @@ fun BarcodeScannerScreen(
         )
 
         val scannedProduct by viewModel.scannedProduct.collectAsState()
-        scannedProduct?.let { product ->
-            ProductDisplay(
-                product = product,
-                onProductClicked = {
-                    navController.navigate(
-                        Screen.ProductDetails.route.replace("{productId}", "${product.id}")
+        val uiState by viewModel.uiState.collectAsState()
+
+        when (uiState) {
+            is UiState.Loading -> {
+                Text(
+                    text = "Đang quét...",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+            is UiState.Success -> {
+                scannedProduct?.let { product ->
+                    ProductDisplay(
+                        product = product,
+                        onProductClicked = {
+                            navController.navigate(
+                                Screen.ProductDetails.route.replace("{productId}", "${product.id}")
+                            )
+                        }
                     )
                 }
-            )
-        } ?: Text(text = "Đang quét...", modifier = Modifier.padding(16.dp))
+            }
+            is UiState.Error -> {
+                Text(
+                    text = "Lỗi: ${(uiState as UiState.Error).error.message}",
+                    modifier = Modifier.padding(16.dp),
+                    color = Color.Red
+                )
+            }
+            is UiState.Idle -> {
+                Text(
+                    text = "Quét mã vạch để bắt đầu",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
 
         Row(
             modifier = Modifier
@@ -110,7 +148,7 @@ fun BarcodeScannerScreen(
 
 @Composable
 fun ProductDisplay(
-    product: Product,
+    product: com.mustfaibra.roffu.models.dto.Product,
     onProductClicked: () -> Unit
 ) {
     Row(
@@ -122,14 +160,41 @@ fun ProductDisplay(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = product.image,
-            contentDescription = "Product Image",
-            modifier = Modifier.size(50.dp)
-        )
+        val imageUrl = product.images.firstOrNull()?.imageUrl
+        if (imageUrl != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(imageUrl)
+                    .crossfade(true)
+                    .listener(
+                        onError = { _, result ->
+                            Timber.e("Failed to load image: $imageUrl, error: ${result.throwable.message}")
+                        },
+                        onSuccess = { _, _ ->
+                            Timber.d("Successfully loaded image: $imageUrl")
+                        }
+                    )
+                    .build(),
+                contentDescription = "Product Image",
+                modifier = Modifier.size(80.dp), // Tăng kích thước để dễ nhìn
+                placeholder = painterResource(R.drawable.placeholder),
+                error = painterResource(R.drawable.error),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Image(
+                painter = painterResource(R.drawable.placeholder),
+                contentDescription = "No image available",
+                modifier = Modifier.size(80.dp)
+            )
+            Timber.w("No images available for product: ${product.productName}")
+        }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = product.name, style = MaterialTheme.typography.body1)
+            Text(
+                text = product.productName,
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
     }
 }

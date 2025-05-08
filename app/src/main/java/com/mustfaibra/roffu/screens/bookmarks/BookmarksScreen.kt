@@ -67,25 +67,25 @@ fun BookmarksScreen(
                     )
                 }
                 /** Show bookmarked products */
-                items(bookmarkProducts) { product ->
-                    ProductItemLayout(
-                        modifier = Modifier.fillMaxWidth(),
-                        cartOffset = cartOffset,
-                        price = product.price,
-                        title = product.name,
-                        discount = product.discount,
-                        onCart = product.id in cartProductsIds,
-                        onBookmark = product in bookmarkProducts,
-                        onProductClicked = {
-                            onProductClicked(product.id)
-                        },
-                        onChangeCartState = {
-                            onCartStateChanged(product.id)
-                        },
-                        onChangeBookmarkState = { onBookmarkStateChanged(product.id) },
-                        image = product.image,
-                    )
-                }
+//                items(bookmarkProducts) { product ->
+//                    ProductItemLayout(
+//                        modifier = Modifier.fillMaxWidth(),
+//                        cartOffset = cartOffset,
+//                        price = product.price,
+//                        title = product.name,
+//                        discount = product.discount,
+//                        onCart = product.id in cartProductsIds,
+//                        onBookmark = product in bookmarkProducts,
+//                        onProductClicked = {
+//                            onProductClicked(product.id)
+//                        },
+//                        onChangeCartState = {
+//                            onCartStateChanged(product.id)
+//                        },
+//                        onChangeBookmarkState = { onBookmarkStateChanged(product.id) },
+//                        image = product.image,
+//                    )
+ //               }
             }
             is UiState.Error -> {
                 /** An error occur */

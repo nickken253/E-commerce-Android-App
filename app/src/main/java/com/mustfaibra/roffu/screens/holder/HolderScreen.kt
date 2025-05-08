@@ -535,7 +535,6 @@ fun ScaffoldSection(
                     if (user?.isAdmin() != true) {
                         CartScreen(
                             user = user,
-                            cartItems = cartItems,
                             onProductClicked = onShowProductRequest,
                             onUserNotAuthorized = { onUserNotAuthorized(false) },
                             onCheckoutRequest = {
@@ -651,9 +650,7 @@ fun ScaffoldSection(
                     ProductDetailsScreen(
                         productId = productId,
                         cartItemsCount = cartItems.size,
-                        isOnCartStateProvider = { productId in productsOnCartIds },
                         isOnBookmarksStateProvider = { productId in productsOnBookmarksIds },
-                        onUpdateCartState = onUpdateCartRequest,
                         onUpdateBookmarksState = onUpdateBookmarkRequest,
                         onBackRequested = onBackRequested
                     )

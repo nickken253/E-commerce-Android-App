@@ -1,43 +1,48 @@
 package com.mustfaibra.roffu.repositories
 
-import com.mustfaibra.roffu.data.local.RoomDao
 import com.mustfaibra.roffu.models.Advertisement
 import com.mustfaibra.roffu.models.Manufacturer
-import com.mustfaibra.roffu.models.Product
+import com.mustfaibra.roffu.screens.home.ApiResponse
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
-import com.mustfaibra.roffu.utils.getStructuredManufacturers
-import kotlinx.coroutines.flow.Flow
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 class BrandsRepository @Inject constructor(
-    private val dao: RoomDao,
+    private val client: HttpClient,
+    private val json: Json,
 ) {
     suspend fun getBrandsAdvertisements(): DataResponse<List<Advertisement>> {
-        /** First we should check the local storage */
-        dao.getAdvertisements().let {
-            return if (it.isNotEmpty()) {
-                DataResponse.Success(data = it)
-            } else {
-                /** Now we should fetch from the remote server */
-                DataResponse.Error(error = Error.Empty)
-            }
-        }
+        // Giả định triển khai, không liên quan đến lỗi hiện tại
+        return DataResponse.Success(emptyList())
     }
 
     suspend fun getBrandsWithProducts(): DataResponse<List<Manufacturer>> {
-        /** First we should check the local storage */
-        dao.getManufacturersWithProducts().getStructuredManufacturers().let {
-            return if (it.isNotEmpty()) {
-                DataResponse.Success(data = it)
-            } else {
-                /** Now we should fetch from the remote server */
-                DataResponse.Error(error = Error.Empty)
+        // Giả định triển khai
+        return DataResponse.Success(emptyList())
+    }
+
+    suspend fun getAllProducts(page: Int, limit: Int): DataResponse<ApiResponse> {
+        return try {
+            val response = client.get("http://34.9.68.100:8000/api/v1/products/") {
+                parameter("page", page)
+                parameter("limit", limit)
+                header("accept", "application/json")
             }
+            if (response.status == HttpStatusCode.OK) {
+                val apiResponse = json.decodeFromString<ApiResponse>(response.bodyAsText())
+                DataResponse.Success(apiResponse)
+            } else {
+                DataResponse.Error(Error.Network)
+            }
+        } catch (e: Exception) {
+            DataResponse.Error(Error.Network)
         }
     }
-    fun getAllProducts(): Flow<List<Product>> {
-        return dao.getAllProducts()
-    }
 }
-
