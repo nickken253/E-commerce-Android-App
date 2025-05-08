@@ -146,9 +146,8 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .clickable {
                         profileViewModel.logout {
-                            onNavigationRequested(Screen.Login.route, true)
+                            onLogoutRequested()
                         }
-                        onNavigationRequested(Screen.Login.route, true)
                     },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
@@ -179,6 +178,7 @@ fun ProfileScreen(
                 )
             }
         }
+
     }
 }
 

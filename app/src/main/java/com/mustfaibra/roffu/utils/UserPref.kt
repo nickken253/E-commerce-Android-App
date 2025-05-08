@@ -2,6 +2,7 @@ package com.mustfaibra.roffu.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import com.mustfaibra.roffu.models.User
@@ -30,9 +31,13 @@ object UserPref {
 
     fun logout(context: Context) {
         _user.value = null
-        // Xóa tất cả dữ liệu trong SharedPreferences
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         prefs.edit().clear().apply()
+        // Thêm log để kiểm tra
+        val tokenAfterLogout = prefs.getString(KEY_TOKEN, null)
+        val userIdAfterLogout = prefs.getString(KEY_USER_ID, null)
+        Log.d("UserPref", "Token after logout: $tokenAfterLogout, UserId after logout: $userIdAfterLogout")
+
     }
 
     fun getToken(context: Context): String? {
