@@ -97,7 +97,7 @@ class ProductDetailsViewModel @Inject constructor(
                     }
 
                     Log.d("ProductDetailsViewModel", "Attempting to delete cart item with itemId=$itemId")
-                    val response = client.delete("http://34.9.68.100:8000/api/v1/carts/items/$itemId") {
+                    val response = client.delete("http://170.205.36.201:8000/api/v1/carts/items/$itemId") {
                         header("accept", "application/json")
                         header("Authorization", "Bearer $token")
                     }
@@ -125,7 +125,7 @@ class ProductDetailsViewModel @Inject constructor(
                 } else {
                     Log.d("ProductDetailsViewModel", "Attempting to add cart item with productId=$productId")
                     val token = UserPref.getToken(context)
-                    val response = client.post("http://34.9.68.100:8000/api/v1/carts/items") {
+                    val response = client.post("http://170.205.36.201:8000/api/v1/carts/items") {
                         header("accept", "application/json")
                         header("Content-Type", "application/json")
                         if (!token.isNullOrBlank()) {
@@ -178,7 +178,7 @@ class ProductDetailsViewModel @Inject constructor(
             }
 
             Log.d("ProductDetailsViewModel", "Checking cart for productId=$productId")
-            val response = client.get("http://34.9.68.100:8000/api/v1/carts/") {
+            val response = client.get("http://170.205.36.201:8000/api/v1/carts/") {
                 header("accept", "application/json")
                 header("Authorization", "Bearer $token")
             }

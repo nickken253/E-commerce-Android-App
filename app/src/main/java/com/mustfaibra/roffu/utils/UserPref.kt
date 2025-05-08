@@ -1,4 +1,5 @@
 package com.mustfaibra.roffu.utils
+
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.State
@@ -27,8 +28,11 @@ object UserPref {
         prefs.edit().putString(KEY_USER_ID, userId.toString()).apply()
     }
 
-    fun logout() {
+    fun logout(context: Context) {
         _user.value = null
+        // Xóa tất cả dữ liệu trong SharedPreferences
+        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        prefs.edit().clear().apply()
     }
 
     fun getToken(context: Context): String? {

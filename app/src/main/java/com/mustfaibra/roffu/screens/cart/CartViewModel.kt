@@ -74,7 +74,7 @@ class CartViewModel @Inject constructor(
                 }
 
                 Log.d("CartViewModel", "Fetching cart items with token: $token")
-                val response = client.get("http://34.9.68.100:8000/api/v1/carts/") {
+                val response = client.get("http://170.205.36.201:8000/api/v1/carts/") {
                     header("accept", "application/json")
                     header("Authorization", "Bearer $token")
                 }
@@ -85,7 +85,7 @@ class CartViewModel @Inject constructor(
                         val updatedItems = items.map { item ->
                             if (item.product == null) {
                                 try {
-                                    val productResponse = client.get("http://34.9.68.100:8000/api/v1/products/${item.product_id}") {
+                                    val productResponse = client.get("http://170.205.36.201:8000/api/v1/products/${item.product_id}") {
                                         header("accept", "application/json")
                                     }
                                     if (productResponse.status == HttpStatusCode.OK) {
@@ -152,7 +152,7 @@ class CartViewModel @Inject constructor(
 
                 val itemId = cartItem.id
                 Log.d("CartViewModel", "Attempting to update quantity for itemId=$itemId (productId=$productId) to $quantity")
-                val response = client.put("http://34.9.68.100:8000/api/v1/carts/items/$itemId") {
+                val response = client.put("http://170.205.36.201:8000/api/v1/carts/items/$itemId") {
                     header("accept", "application/json")
                     header("Content-Type", "application/json")
                     header("Authorization", "Bearer $token")
@@ -208,7 +208,7 @@ class CartViewModel @Inject constructor(
 
                 val itemId = cartItem.id
                 Log.d("CartViewModel", "Attempting to delete itemId=$itemId (productId=$productId)")
-                val response = client.delete("http://34.9.68.100:8000/api/v1/carts/items/$itemId") {
+                val response = client.delete("http://170.205.36.201:8000/api/v1/carts/items/$itemId") {
                     header("accept", "application/json")
                     header("Authorization", "Bearer $token")
                 }
@@ -253,7 +253,7 @@ class CartViewModel @Inject constructor(
                     return@launch
                 }
 
-                val response = client.delete("http://34.9.68.100:8000/api/v1/carts/") {
+                val response = client.delete("http://170.205.36.201:8000/api/v1/carts/") {
                     header("accept", "application/json")
                     header("Authorization", "Bearer $token")
                 }
@@ -296,7 +296,7 @@ class CartViewModel @Inject constructor(
                     return@launch
                 }
 
-                val response = client.get("http://34.9.68.100:8000/api/v1/carts/") {
+                val response = client.get("http://170.205.36.201:8000/api/v1/carts/") {
                     header("accept", "application/json")
                     header("Authorization", "Bearer $token")
                 }
@@ -307,7 +307,7 @@ class CartViewModel @Inject constructor(
                         val updatedItems = items.map { item ->
                             if (item.product == null) {
                                 try {
-                                    val productResponse = client.get("http://34.9.68.100:8000/api/v1/products/${item.product_id}") {
+                                    val productResponse = client.get("http://170.205.36.201:8000/api/v1/products/${item.product_id}") {
                                         header("accept", "application/json")
                                     }
                                     if (productResponse.status == HttpStatusCode.OK) {
