@@ -1,5 +1,6 @@
 package com.mustfaibra.roffu.screens.search
 
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -71,6 +72,7 @@ fun SearchScreen(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(
                     onSearch = {
+                        Log.d("DEBUG", "Search button clicked with query: $searchQuery")
                         focusManager.clearFocus()
                         viewModel.resetSearch()
                         viewModel.onSearch(searchQuery)
@@ -79,6 +81,7 @@ fun SearchScreen(
             )
             IconButton(
                 onClick = {
+                    Log.d("DEBUG", "Search button clicked with query: $searchQuery")
                     focusManager.clearFocus()
                     viewModel.resetSearch()
                     viewModel.onSearch(searchQuery)
@@ -241,45 +244,45 @@ fun SearchScreen(
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            LazyColumn {
+        LazyColumn {
                 if (searchQuery.isEmpty()) {
                     // Show search history
-                    if (searchHistory.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Lịch sử tìm kiếm",
+            if (searchHistory.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Lịch sử tìm kiếm",
                                 style = MaterialTheme.typography.subtitle1,
                                 modifier = Modifier.padding(16.dp)
-                            )
-                        }
+                    )
+                }
                         items(searchHistory) { historyItem ->
-                            Text(
+                    Text(
                                 text = historyItem,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { 
                                         searchQuery = historyItem
                                         focusManager.clearFocus()
                                         viewModel.onSearch(historyItem)
-                                    }
-                                    .padding(16.dp)
-                            )
-                        }
-                    }
+                            }
+                            .padding(16.dp)
+                    )
+                }
+            }
                 } else {
                     // Show search suggestions
-                    items(searchSuggestions) { suggestion ->
-                        Text(
-                            text = suggestion,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    searchQuery = suggestion
+            items(searchSuggestions) { suggestion ->
+                Text(
+                    text = suggestion,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { 
+                            searchQuery = suggestion
                                     focusManager.clearFocus()
                                     viewModel.onSearch(suggestion)
-                                }
-                                .padding(16.dp)
-                        )
+                        }
+                        .padding(16.dp)
+                )
                     }
                 }
             }
@@ -314,14 +317,17 @@ fun SearchScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onProductClick(product.id) }
+                            .clickable {
+                                Log.d("DEBUG", "Product clicked: ${product.id}")
+                                onProductClick(product.id)
+                            }
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         // Product image
                         AsyncImage(
-                            model = product.imagePath,
-                            contentDescription = product.name,
+                            model = product.images.firstOrNull()?.image_url,
+                            contentDescription = product.product_name,
                             modifier = Modifier
                                 .size(80.dp),
                             contentScale = ContentScale.Crop
@@ -330,7 +336,7 @@ fun SearchScreen(
                         // Product details
                         Column {
                             Text(
-                                text = product.name,
+                                text = product.product_name,
                                 style = MaterialTheme.typography.subtitle1
                             )
                             Text(

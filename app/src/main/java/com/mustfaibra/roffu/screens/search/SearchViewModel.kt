@@ -1,12 +1,14 @@
 package com.mustfaibra.roffu.screens.search
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mustfaibra.roffu.api.ProductApi
-import com.mustfaibra.roffu.models.Product
+import com.mustfaibra.roffu.api.ApiService
+import com.mustfaibra.roffu.models.ProductResponse
 import com.mustfaibra.roffu.models.SearchFilters
 import com.mustfaibra.roffu.utils.SearchHistoryPref
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -14,10 +16,11 @@ import javax.inject.Inject
 /**
  * A View model with hiltViewModel annotation that is used to access this view model everywhere needed
  */
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchHistoryPref: SearchHistoryPref,
-    private val productApi: ProductApi
+    private val apiService: ApiService
 ) : ViewModel() {
     // Mock data cho gợi ý tìm kiếm
     private val mockSuggestions = listOf(
@@ -42,8 +45,8 @@ class SearchViewModel @Inject constructor(
     private val _searchSuggestions = MutableStateFlow<List<String>>(mockSuggestions)
     val searchSuggestions: StateFlow<List<String>> = _searchSuggestions
 
-    private val _searchResults = MutableStateFlow<List<Product>>(emptyList())
-    val searchResults: StateFlow<List<Product>> = _searchResults
+    private val _searchResults = MutableStateFlow<List<ProductResponse>>(emptyList())
+    val searchResults: StateFlow<List<ProductResponse>> = _searchResults
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -102,30 +105,32 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    fun resetSearch() {
+        _currentPage.value = 1
+        _hasMoreData.value = true
+        _searchResults.value = emptyList()
+    }
+
     fun onSearch(query: String) {
         if (query.isNotEmpty()) {
             val currentHistory = _searchHistory.value.toMutableList()
             if (!currentHistory.contains(query)) {
-                // Thêm vào đầu danh sách
-                currentHistory.add(0, query)
-                // Giới hạn lịch sử tối đa 10 mục
-                if (currentHistory.size > 10) {
-                    currentHistory.removeAt(currentHistory.size - 1)
-                }
-                _searchHistory.value = currentHistory
-                // Lưu lịch sử tìm kiếm
-                searchHistoryPref.saveSearchHistory(currentHistory)
+            currentHistory.add(0, query)
+            if (currentHistory.size > 10) {
+                currentHistory.removeAt(currentHistory.size - 1)
+            }
+            _searchHistory.value = currentHistory
+            searchHistoryPref.saveSearchHistory(currentHistory)
             }
 
-            // Thực hiện tìm kiếm với bộ lọc
             viewModelScope.launch {
                 try {
                     _isLoading.value = true
                     _error.value = null
                     
                     val filters = currentFilters.value
-                    val response = productApi.searchProducts(
-                        query = query,
+                    val response = apiService.searchProducts(
+                        query = query,  // parameter name không quan trọng ở đây
                         minPrice = filters.minPrice,
                         maxPrice = filters.maxPrice,
                         sortBy = filters.sortBy,
@@ -134,40 +139,27 @@ class SearchViewModel @Inject constructor(
                         pageSize = PAGE_SIZE
                     )
                     
-                    val products = response.products.map { productResponse ->
-                        Product(
-                            id = productResponse.id,
-                            name = productResponse.product_name,
-                            description = productResponse.description,
-                            price = productResponse.price,
-                            barcode = productResponse.barcode,
-                            imagePath = productResponse.images.firstOrNull()?.image_url,
-                            manufacturerId = productResponse.brand_id,
-                            basicColorName = "", // Default value as it's not in response
-                            image = 0 // Default value as we're using imagePath instead
-                        )
-                    }
-
+                    Log.d("DEBUG", "Search results: ${response.products}")
+                    
                     if (currentPage.value == 1) {
-                        _searchResults.value = products
+                        _searchResults.value = response.products
                     } else {
-                        _searchResults.value = _searchResults.value + products
+                        _searchResults.value = _searchResults.value + response.products
                     }
 
-                    _hasMoreData.value = products.size >= PAGE_SIZE
+                    _hasMoreData.value = response.products.size >= PAGE_SIZE
 
+                } catch (e: retrofit2.HttpException) {
+                    val errorBody = e.response()?.errorBody()?.string()
+                    android.util.Log.e("SearchAPIError", "HTTP Code: \\${e.code()}, Error Body: \\${errorBody}")
+                    _error.value = "Lỗi \\${e.code()}: \\${errorBody ?: e.message()}"
                 } catch (e: Exception) {
+                    android.util.Log.e("SearchAPIError", "Generic Exception: \\${e.message}", e)
                     _error.value = e.message ?: "Có lỗi xảy ra khi tìm kiếm"
                 } finally {
                     _isLoading.value = false
                 }
             }
         }
-    }
-
-    fun resetSearch() {
-        _currentPage.value = 1
-        _hasMoreData.value = true
-        _searchResults.value = emptyList()
     }
 }

@@ -13,10 +13,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,246 +46,274 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.components.AddedToCartDialog
 import com.mustfaibra.roffu.components.CustomButton
 import com.mustfaibra.roffu.components.DrawableButton
 import com.mustfaibra.roffu.components.ReactiveBookmarkIcon
-import com.mustfaibra.roffu.sealed.Orientation
 import com.mustfaibra.roffu.sealed.Screen
 import com.mustfaibra.roffu.ui.theme.Dimension
 import com.mustfaibra.roffu.utils.addMoveAnimation
 import com.mustfaibra.roffu.utils.getValidColor
+import com.mustfaibra.roffu.sealed.UiState
+import java.text.NumberFormat
+import java.util.*
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material.Button
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.pager.PageSize
 
 @Composable
 fun ProductDetailsScreen(
     productId: Int,
-    cartItemsCount: Int,
-    isOnCartStateProvider: () -> Boolean,
-    isOnBookmarksStateProvider: () -> Boolean,
-    onUpdateCartState: (productId: Int) -> Unit,
-    onUpdateBookmarksState: (productId: Int) -> Unit,
-    onBackRequested: () -> Unit,
     navController: NavHostController,
-    productDetailsViewModel: ProductDetailsViewModel = hiltViewModel(),
+    viewModel: ProductDetailsViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(key1 = Unit) {
-        productDetailsViewModel.getProductDetails(productId = productId)
+        viewModel.getProductDetails(productId = productId)
     }
 
-    var showAddedDialog by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colors.background)
-            .padding(Dimension.pagePadding),
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
     ) {
-        val product by remember { productDetailsViewModel.product }
-        val color by remember { productDetailsViewModel.selectedColor }
-        val size by remember { productDetailsViewModel.selectedSize }
-        val scale by remember { productDetailsViewModel.sizeScale }
-        val animatedScale by animateFloatAsState(
-            targetValue = scale,
-            animationSpec = TweenSpec(
-                durationMillis = 500,
-                easing = LinearEasing,
-            )
-        )
-
-        /** Details screen header */
-        DetailsHeader(
+        // Header with back button
+        Row(
             modifier = Modifier
-                .addMoveAnimation(
-                    orientation = Orientation.Vertical,
-                    from = (-100).dp,
-                    to = 0.dp,
-                    duration = 700,
-                ),
-            cartItemsCount = cartItemsCount,
-            onBackRequested = onBackRequested,
-        )
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            product?.let {
-                /** Product's name */
-                Text(
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Quay lại",
                     modifier = Modifier
-                        .padding(horizontal = Dimension.pagePadding)
-                        .addMoveAnimation(
-                            orientation = Orientation.Vertical,
-                            from = 100.dp,
-                            to = 0.dp,
-                            duration = 700,
-                        ),
-                    text = it.name,
-                    style = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Black),
-                    textAlign = TextAlign.Center,
-                )
+                    .clickable { navController.popBackStack() }
+                    .padding(8.dp),
+                tint = MaterialTheme.colors.onBackground
+            )
+        }
+
+        when (val uiState = viewModel.uiState.value) {
+            is UiState.Loading -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = Dimension.pagePadding)
-                        .weight(1f),
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth(animatedScale)
-                            .align(Alignment.Center)
-                            .offset(x = (-20).dp)
-                    ) {
-                        val infiniteTransition = rememberInfiniteTransition()
-                        val animatedOffset by infiniteTransition.animateFloat(
-                            initialValue = -20f, targetValue = 40f,
-                            animationSpec = InfiniteRepeatableSpec(
-                                animation = TweenSpec(
-                                    durationMillis = 1300,
-                                    easing = LinearEasing,
-                                ),
-                                repeatMode = RepeatMode.Reverse,
-                            ),
-                        )
-                        Image(
-                            painter = rememberAsyncImagePainter(model = it.colors?.find { productColor ->
-                                productColor.colorName == color
-                            }?.image ?: it.image
-                            ),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .offset { IntOffset(y = animatedOffset.toInt(), x = 0) }
-                                .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .rotate(-(40f)),
-                        )
-                        Canvas(modifier = Modifier.fillMaxWidth()) {
-
-                        }
-                    }
-                    /** Sizes section */
-                    if (it.sizes != null && it.sizes!!.isNotEmpty()) {
-                        SizesSection(
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .addMoveAnimation(
-                                    orientation = Orientation.Horizontal,
-                                    from = (-60).dp,
-                                    to = 0.dp,
-                                    duration = 700,
-                                ),
-                            sizes = it.sizes!!.map { size -> size.size },
-                            pickedSizeProvider = { size },
-                            onSizePicked = productDetailsViewModel::updateSelectedSize,
-                        )
-                    }
-                    /** Price section */
+                    CircularProgressIndicator()
+                }
+            }
+            is UiState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .addMoveAnimation(
-                                orientation = Orientation.Vertical,
-                                from = 200.dp,
-                                to = 0.dp,
-                                duration = 700,
-                            ),
-                        text = "$${it.price}",
-                        style = MaterialTheme.typography.h4,
-                    )
-                    /** Bookmarking button */
-                    ReactiveBookmarkIcon(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .addMoveAnimation(
-                                orientation = Orientation.Horizontal,
-                                from = 60.dp,
-                                to = 0.dp,
-                                duration = 700,
-                            ),
-                        iconSize = Dimension.smIcon,
-                        isOnBookmarks = isOnBookmarksStateProvider(),
-                        onBookmarkChange = { onUpdateBookmarksState(productId) }
-                    )
-                    /** colors section */
-                    if (it.colors != null && it.colors!!.size > 1) {
-                        ColorsSection(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .addMoveAnimation(
-                                    orientation = Orientation.Vertical,
-                                    from = 200.dp,
-                                    to = 0.dp,
-                                    duration = 700,
-                                ),
-                            colors = it.colors!!.map { color -> color.colorName },
-                            pickedColorProvider = { color },
-                            onColorPicked = productDetailsViewModel::updateSelectedColor,
-                        )
-                    }
-                }
-                /** Add / Remove from cart button */
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    CustomButton(
-                        modifier = Modifier.weight(1f),
-                        text = "Add to cart",
-                        buttonColor = MaterialTheme.colors.primary,
-                        contentColor = MaterialTheme.colors.onPrimary,
-                        onButtonClicked = {
-                            // Lấy thông tin biến thể đang chọn
-                            val selectedSize = productDetailsViewModel.selectedSize.value.toString()
-                            val selectedColor = productDetailsViewModel.selectedColor.value
-                            // Gọi logic mới, truyền đủ productId, size, color
-                            productDetailsViewModel.addToCart(
-                                productId = productId,
-                                size = selectedSize,
-                                color = selectedColor
-                            )
-                            showAddedDialog = true
-                        },
-                    )
-                    
-                    CustomButton(
-                        modifier = Modifier.weight(1f),
-                        text = "So sánh",
-                        buttonColor = MaterialTheme.colors.secondary,
-                        contentColor = MaterialTheme.colors.onSecondary,
-                        onButtonClicked = {
-                            navController.navigate(
-                                Screen.ProductSelection.route.replace("{productId}", productId.toString())
-                            )
-                        },
-                    )
-                }
-
-                // Popup xác nhận đã thêm vào giỏ hàng
-                if (showAddedDialog) {
-                    val product = productDetailsViewModel.product.value
-                    AddedToCartDialog(
-                        productName = product?.name ?: "",
-                        productImage = product?.image ?: 0,
-                        productPrice = product?.price ?: 0.0,
-                        onContinue = {
-                            showAddedDialog = false
-                            navController.popBackStack()
-                        },
-                        onViewCart = {
-                            showAddedDialog = false
-                            navController.navigate("cart") {
-                                launchSingleTop = true
-                            }
-                        },
-                        onDismiss = { showAddedDialog = false }
+                        text = "Có lỗi xảy ra khi tải thông tin sản phẩm",
+                        color = MaterialTheme.colors.error
                     )
                 }
             }
+            is UiState.Success -> {
+                viewModel.product.value?.let { product ->
+                    val images = product.images
+                    val pagerState = rememberPagerState(pageCount = { images.size })
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Slider ảnh
+                        if (images.isNotEmpty()) {
+                            HorizontalPager(
+                                pageSize = PageSize.Fill,
+                                state = pagerState,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(240.dp)
+                            ) { page ->
+                                AsyncImage(
+                                    model = images[page].image_url,
+                                    contentDescription = product.product_name,
+                                    modifier = Modifier
+                                        .fillMaxSize(),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+                            // Ảnh nhỏ chọn chuyển trang
+                            Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(top = 8.dp),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                images.forEachIndexed { idx, img ->
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(horizontal = 4.dp)
+                                            .size(56.dp)
+                                            .clip(MaterialTheme.shapes.medium)
+                                            .border(
+                                                width = if (pagerState.currentPage == idx) 2.dp else 1.dp,
+                                                color = if (pagerState.currentPage == idx) MaterialTheme.colors.primary else Color.Gray,
+                                                shape = MaterialTheme.shapes.medium
+                                            )
+                                            .clickable {
+                                                coroutineScope.launch {
+                                                    pagerState.animateScrollToPage(idx)
+                                                }
+                                            }
+                                    ) {
+                                        AsyncImage(
+                                            model = img.image_url,
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Fit
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        // Tên sản phẩm
+                        Text(
+                            text = product.product_name,
+                            style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        // Khuyến mãi (nếu có)
+                        if (product.price <  product.variants.getOrNull(0)?.let { (it as? Map<*, *>)?.get("original_price") as? Double ?: product.price } ?: product.price) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                    Text(
+                                    text = "Khuyến mãi",
+                                    color = Color.White,
+                        modifier = Modifier
+                                        .background(Color.Red, MaterialTheme.shapes.small)
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                                // Giả lập thời gian kết thúc khuyến mãi
+                                Text(
+                                    text = "Kết thúc trong 00:11",
+                                    color = Color.Red,
+                        modifier = Modifier
+                                        .background(Color(0xFFFFE0E0), MaterialTheme.shapes.small)
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        // Giá bán & giá gốc
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "₫${product.price.toInt()}",
+                                style = MaterialTheme.typography.h5.copy(
+                                    color = Color.Red,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            val originalPrice = product.variants.getOrNull(0)?.let { (it as? Map<*, *>)?.get("original_price") as? Double }
+                            if (originalPrice != null && originalPrice > product.price) {
+                                Text(
+                                    text = "₫${originalPrice.toInt()}",
+                                    style = MaterialTheme.typography.body2.copy(
+                                        color = Color.Gray,
+                                        textDecoration = TextDecoration.LineThrough
+                                    )
+                                )
+                            }
+                        }
+                        // Đánh giá (nếu có)
+                        if (product.variants.getOrNull(0)?.let { (it as? Map<*, *>)?.get("rating") as? Double } != null) {
+                            val rating = product.variants[0].let { (it as? Map<*, *>)?.get("rating") as? Double } ?: 0.0
+                            val reviewCount = product.variants[0].let { (it as? Map<*, *>)?.get("review_count") as? Int } ?: 0
+                            Text(
+                                text = "${rating}⭐ Đánh giá sản phẩm ($reviewCount)",
+                                style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFFFFA000)
+                            )
+                        }
+                        // Mô tả sản phẩm
+                        if (product.description.isNotBlank()) {
+                            Text(
+                                text = "MÔ TẢ SẢN PHẨM",
+                                style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Text(
+                                text = product.description,
+                                style = MaterialTheme.typography.body2
+                            )
+                        }
+                        // Hashtag (nếu có)
+                        if (product.variants.getOrNull(0)?.let { (it as? Map<*, *>)?.get("hashtags") as? String } != null) {
+                            val hashtags = product.variants[0].let { (it as? Map<*, *>)?.get("hashtags") as? String } ?: ""
+                            Text(
+                                text = hashtags,
+                                style = MaterialTheme.typography.caption.copy(color = Color.Gray)
+                            )
+                        }
+                        // Ảnh mô tả thêm (nếu có)
+                        if (product.images.size > 1) {
+                            product.images.drop(1).forEach { image ->
+                                AsyncImage(
+                                    model = image.image_url,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(120.dp)
+                                        .padding(vertical = 4.dp),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                        // Nút chức năng
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Button(
+                                onClick = { viewModel.addToCart(product.id) },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Thêm vào giỏ hàng")
+                            }
+                            Button(
+                                onClick = { /* TODO: Xử lý thanh toán */ },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Thanh toán ngay")
+                            }
+                            Button(
+                                onClick = { /* TODO: So sánh sản phẩm */ },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("So sánh")
+                            }
+                        }
+                    }
+                }
+            }
+            is UiState.Idle -> {}
         }
     }
 }

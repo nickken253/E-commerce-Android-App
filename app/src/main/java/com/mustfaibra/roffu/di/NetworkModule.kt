@@ -1,6 +1,6 @@
 package com.mustfaibra.roffu.di
 
-import com.mustfaibra.roffu.api.ProductApi
+import com.mustfaibra.roffu.api.ApiService
 import com.mustfaibra.roffu.utils.Constants
 import dagger.Module
 import dagger.Provides
@@ -44,7 +44,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideProductApi(retrofit: Retrofit): ProductApi {
-        return retrofit.create(ProductApi::class.java)
+    fun provideApiService(retrofit: Retrofit): ApiService {
+        return retrofit.create(ApiService::class.java)
     }
 } 

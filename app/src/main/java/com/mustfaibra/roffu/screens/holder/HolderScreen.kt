@@ -611,23 +611,14 @@ fun ScaffoldSection(
                 composable(
                     route = Screen.ProductDetails.route,
                     arguments = listOf(
-                        navArgument("productId") { type = NavType.IntType }
+                        navArgument("productId") {
+                            type = NavType.IntType
+                        }
                     )
                 ) { backStackEntry ->
                     val productId = backStackEntry.arguments?.getInt("productId") ?: 0
-                    onStatusBarColorChange(MaterialTheme.colors.background)
                     ProductDetailsScreen(
                         productId = productId,
-                        cartItemsCount = cartItems.size,
-                        isOnCartStateProvider = { productsOnCartIds.contains(productId) },
-                        isOnBookmarksStateProvider = { productsOnBookmarksIds.contains(productId) },
-                        onUpdateCartState = { productId ->
-                            onUpdateCartRequest(productId)
-                        },
-                        onUpdateBookmarksState = { productId ->
-                            onUpdateBookmarkRequest(productId)
-                        },
-                        onBackRequested = onBackRequested,
                         navController = controller
                     )
                 }

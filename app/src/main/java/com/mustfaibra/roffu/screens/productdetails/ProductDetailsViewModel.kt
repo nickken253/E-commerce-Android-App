@@ -1,11 +1,11 @@
 package com.mustfaibra.roffu.screens.productdetails
 
-
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mustfaibra.roffu.models.Product
+import com.mustfaibra.roffu.api.ApiService
+import com.mustfaibra.roffu.models.ProductResponse
 import com.mustfaibra.roffu.repositories.ProductsRepository
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
@@ -19,73 +19,40 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class ProductDetailsViewModel @Inject constructor(
-    private val productsRepository: ProductsRepository,
+    private val apiService: ApiService,
+    private val productsRepository: ProductsRepository
 ) : ViewModel() {
-    private val _detailsUiState = mutableStateOf<UiState>(UiState.Loading)
-    val detailsUiState: State<UiState> = _detailsUiState
+    private val _uiState = mutableStateOf<UiState>(UiState.Loading)
+    val uiState: State<UiState> = _uiState
 
-    private val _product = mutableStateOf<Product?>(null)
-    val product: State<Product?> = _product
-
-    private val _selectedSize = mutableStateOf(0)
-    val selectedSize: State<Int> = _selectedSize
-
-    private val _sizeScale = mutableStateOf(1f)
-    val sizeScale: State<Float> = _sizeScale
-
-    private val _selectedColor = mutableStateOf("")
-    val selectedColor: State<String> = _selectedColor
+    private val _product = mutableStateOf<ProductResponse?>(null)
+    val product: State<ProductResponse?> = _product
 
     fun getProductDetails(productId: Int) {
-        _detailsUiState.value = UiState.Loading
         viewModelScope.launch {
-            productsRepository.getProductDetails(productId = productId).let {
-                when (it) {
-                    is DataResponse.Success -> {
-                        /** Got a response from the server successfully */
-                        _detailsUiState.value = UiState.Success
-                        it.data?.let { product ->
-                            _product.value = product
-                            _selectedColor.value = product.basicColorName
-                            _selectedSize.value = product.sizes?.maxOf { size -> size.size } ?: 0
-                        }
+            try {
+                _uiState.value = UiState.Loading
+                val response = apiService.getProductDetails(productId)
+                if (response.isSuccessful) {
+                    response.body()?.let {
+                        _product.value = it
+                        _uiState.value = UiState.Success
+                    } ?: run {
+                        _uiState.value = UiState.Error(error = Error.Network)
                     }
-                    is DataResponse.Error -> {
-                        /** An error happened when fetching data from the server */
-                        _detailsUiState.value = UiState.Error(error = it.error ?: Error.Network)
+                } else {
+                    _uiState.value = UiState.Error(error = Error.Network)
                     }
-                }
+            } catch (e: Exception) {
+                _uiState.value = UiState.Error(error = Error.Network)
             }
         }
     }
 
-    /**
-     * Update the current product's color.
-     * @param color The new color name
-     */
-    fun updateSelectedColor(color: String) {
-        _selectedColor.value = color
-    }
-
-    /**
-     * Update the current product's size.
-     * @param size the new selected size.
-     */
-    fun updateSelectedSize(size: Int) {
-        /** Check when user click again on the same size ! */
-        if(size == _selectedSize.value) return
-        /** Update the product's image scale depending on the new size */
-        _sizeScale.value = if (size < _selectedSize.value) {
-            _sizeScale.value.minus(0.1f)
-        } else {
-            _sizeScale.value.plus(0.1f)
-        }
-        _selectedSize.value = size
-    }
-
-    fun addToCart(productId: Int, size: String, color: String) {
+    fun addToCart(productId: Int) {
         viewModelScope.launch {
-            productsRepository.updateCartState(productId, size, color)
+            // Tạm thời truyền giá trị mặc định cho size và color vì chưa có trong API
+            productsRepository.updateCartState(productId, "Default", "Default")
         }
     }
 }
