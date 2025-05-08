@@ -184,12 +184,14 @@ fun ResetPasswordScreen(
                     viewModel.resetPassword(
                         email = email,
                         newPassword = newPassword,
-                        onSuccess = {
-                            onToastRequested("Đặt lại mật khẩu thành công!", Color.Green)
+                        onSuccess = { message ->
+                            // Hiển thị thông báo thành công
+                            onToastRequested(message, Color.Green)
+                            // Quay lại màn hình đăng nhập
                             navController.navigate("login")
                         },
-                        onFailure = { error ->
-                            onToastRequested(error, Color.Red)
+                        onFailure = { errorMessage ->
+                            onToastRequested(errorMessage, Color.Red)
                         }
                     )
                 }

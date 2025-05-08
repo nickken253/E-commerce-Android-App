@@ -46,6 +46,7 @@ fun ManHinhDangKy(
     val selectedDistrict = remember { mutableStateOf("") }
     val soNha = remember { mutableStateOf("") }
     val tenNguoiDung = remember { mutableStateOf("") }
+    val phoneNumber = remember { mutableStateOf("") }
 
     // Trạng thái lỗi cho từng trường
     val errorTenNguoiDung = remember { mutableStateOf<String?>(null) }
@@ -55,6 +56,7 @@ fun ManHinhDangKy(
     val errorProvince = remember { mutableStateOf<String?>(null) }
     val errorDistrict = remember { mutableStateOf<String?>(null) }
     val errorSoNha = remember { mutableStateOf<String?>(null) }
+    val errorPhoneNumber = remember { mutableStateOf<String?>(null) }
 
     val categories = listOf(
         "Máy tính & laptop", "Đồ gia dụng", "Quần áo",
@@ -301,6 +303,56 @@ fun ManHinhDangKy(
                 onKeyboardActionClicked = {},
             )
             errorMatKhauXacNhan.value?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+
+        // Số điện thoại
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Số điện thoại",
+                    style = MaterialTheme.typography.body2.copy(
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colors.onBackground
+                    )
+                )
+                Text(
+                    text = "*",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.body2
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            CustomInputField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = if (errorPhoneNumber.value != null) 1.dp else 0.dp,
+                        color = if (errorPhoneNumber.value != null) Color.Red else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
+                value = phoneNumber.value,
+                onValueChange = {
+                    phoneNumber.value = it
+                    errorPhoneNumber.value = null
+                },
+                placeholder = "Nhập số điện thoại",
+                textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
+                padding = PaddingValues(Dimension.pagePadding),
+                backgroundColor = MaterialTheme.colors.surface,
+                textColor = MaterialTheme.colors.onBackground,
+                imeAction = ImeAction.Next,
+                shape = RoundedCornerShape(8.dp),
+                onFocusChange = {},
+                onKeyboardActionClicked = {},
+            )
+            errorPhoneNumber.value?.let {
                 Text(
                     text = it,
                     color = Color.Red,
@@ -565,6 +617,14 @@ fun ManHinhDangKy(
                     errorMatKhauXacNhan.value = null
                 }
 
+                // Kiểm tra số điện thoại
+                if (phoneNumber.value.isBlank()) {
+                    errorPhoneNumber.value = "Trường này là bắt buộc"
+                    hasError = true
+                } else {
+                    errorPhoneNumber.value = null
+                }
+
                 // Kiểm tra tỉnh/thành phố
                 if (selectedProvince.value == "Chọn tỉnh/thành phố") {
                     errorProvince.value = "Trường này là bắt buộc"
@@ -592,11 +652,13 @@ fun ManHinhDangKy(
                 if (!hasError) {
                     val fullEmail = "$rawEmail@gmail.com"
                     loginViewModel.registerUser(
+                        username = tenNguoiDung.value, // Dùng họ và tên làm username
                         email = fullEmail,
                         password = password,
                         confirmPassword = matKhauXacNhan.value,
                         name = tenNguoiDung.value,
                         address = "${soNha.value}, ${selectedDistrict.value}, ${selectedProvince.value}",
+                        phoneNumber = phoneNumber.value,
                         onRegistered = {
                             onYeuCauToast("Đăng ký thành công!", Color.Green)
                             onDangKyThanhCong()

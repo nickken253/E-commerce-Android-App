@@ -14,14 +14,23 @@ import com.mustfaibra.roffu.sealed.Error
 import com.mustfaibra.roffu.utils.UserPref
 import com.mustfaibra.roffu.utils.getFormattedDate
 import com.mustfaibra.roffu.utils.getStructuredProducts
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import java.util.*
 import javax.inject.Inject
 
 class ProductsRepository @Inject constructor(
     private val dao: RoomDao,
+    private val client: HttpClient,
+    private val json: Json,
 ) {
 
     suspend fun updateCartState(productId: Int, alreadyOnCart: Boolean) {
@@ -49,9 +58,33 @@ class ProductsRepository @Inject constructor(
         }
     }
 
-    suspend fun getProductByBarcode(barcode: String): Product? {
-        return withContext(Dispatchers.IO) {
-            dao.getProductByBarcode(barcode)
+    suspend fun getProductByBarcode(barcode: String): com.mustfaibra.roffu.models.dto.Product? {
+        return try {
+            val response: HttpResponse = client.get("http://34.9.68.100:8000/api/v1/products/barcode/$barcode") {
+                header("accept", "application/json")
+            }
+            if (response.status == HttpStatusCode.OK) {
+                response.body<com.mustfaibra.roffu.models.dto.Product>()
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+    suspend fun getProductDetails(productId: Int): DataResponse<com.mustfaibra.roffu.models.dto.Product> {
+        return try {
+            val response = client.get("http://34.9.68.100:8000/api/v1/products/$productId") {
+                header("accept", "application/json")
+            }
+            if (response.status == HttpStatusCode.OK) {
+                DataResponse.Success(response.body<com.mustfaibra.roffu.models.dto.Product>())
+            } else {
+                DataResponse.Error(com.mustfaibra.roffu.sealed.Error.Network)
+            }
+        } catch (e: Exception) {
+            DataResponse.Error(com.mustfaibra.roffu.sealed.Error.Network)
         }
     }
     private suspend fun addToLocalCart(cartItem: CartItem) {
@@ -132,14 +165,7 @@ class ProductsRepository @Inject constructor(
 
     fun getLocalBookmarks() = dao.getBookmarkItems()
 
-    suspend fun getProductDetails(productId: Int): DataResponse<Product> {
-        /** Check the local storage */
-        dao.getProductDetails(productId = productId)?.let {
-            return DataResponse.Success(data = it.getStructuredProducts())
-        }
-        /** Doesn't exist on the local, check remote */
-        return DataResponse.Error(error = Error.Network)
-    }
+
 
     suspend fun getOrdersHistory(): DataResponse<List<OrderDetails>> {
         /** Check the local storage */

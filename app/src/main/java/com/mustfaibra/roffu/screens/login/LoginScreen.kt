@@ -1,5 +1,6 @@
 package com.mustfaibra.roffu.screens.login
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -38,7 +39,7 @@ fun LoginScreen(
     onNavigateToRegister: () -> Unit,
 ) {
     val uiState by remember { loginViewModel.uiState }
-    val emailOrPhone by remember { loginViewModel.emailOrPhone }
+    val username by remember { loginViewModel.username }
     val password by remember { loginViewModel.password }
 
     Column(
@@ -60,14 +61,14 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(Dimension.pagePadding.times(2)))
 
-        /** Trường Email */
+        /** Trường Username */
         CustomInputField(
             modifier = Modifier
                 .shadow(Dimension.elevation, MaterialTheme.shapes.large)
                 .fillMaxWidth(),
-            value = emailOrPhone ?: "",
-            onValueChange = { loginViewModel.updateEmailOrPhone(it.ifBlank { null }) },
-            placeholder = "Nhập Email của bạn",
+            value = username ?: "",
+            onValueChange = { loginViewModel.updateUsername(it.ifBlank { null }) },
+            placeholder = "Nhập tên đăng nhập",
             textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
             padding = PaddingValues(Dimension.pagePadding, Dimension.pagePadding.times(0.7f)),
             backgroundColor = MaterialTheme.colors.surface,
@@ -132,11 +133,11 @@ fun LoginScreen(
             textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
             onButtonClicked = {
                 loginViewModel.authenticateUser(
-                    emailOrPhone ?: "",
-                    password ?: "",
+                    username = username ?: "",
+                    password = password ?: "",
                     onAuthenticated = { onUserAuthenticated() },
-                    onAuthenticationFailed = {
-                        onToastRequested("Vui lòng kiểm tra thông tin đăng nhập!", Color.Red)
+                    onAuthenticationFailed = { message ->
+                        onToastRequested(message, Color.Red)
                     }
                 )
             },
