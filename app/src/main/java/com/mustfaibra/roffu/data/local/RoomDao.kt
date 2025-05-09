@@ -178,4 +178,13 @@ interface RoomDao {
     @Query("SELECT * FROM Manufacturer")
     fun getAllManufacturers(): Flow<List<Manufacturer>>
 
+    // Virtual Card operations
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertVirtualCard(card: VirtualCard)
+
+    @Query("SELECT * FROM virtual_cards WHERE userId = :userId LIMIT 1")
+    suspend fun getVirtualCardByUser(userId: Int): VirtualCard?
+
+    @Delete
+    suspend fun deleteVirtualCard(card: VirtualCard)
 }

@@ -1,0 +1,78 @@
+package com.mustfaibra.roffu.ui.theme
+
+import androidx.compose.material.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.mustfaibra.roffu.R
+
+val font = FontFamily(
+    Font(resId = R.font.pop, weight = FontWeight.Normal, style = FontStyle.Normal),
+    Font(resId = R.font.montserrat, weight = FontWeight.Medium, style = FontStyle.Normal),
+    Font(resId = R.font.montserrat, weight = FontWeight.Bold, style = FontStyle.Normal),
+    Font(resId = R.font.montserrat, weight = FontWeight.Black, style = FontStyle.Normal),
+    Font(resId = R.font.montserrat_italic, weight = FontWeight.Normal, style = FontStyle.Italic),
+)
+
+// Set of Material typography styles to start with
+val Typography = Typography(
+    h1 = TextStyle(
+        fontFamily = font,
+        fontWeight = FontWeight.Black,
+        fontSize = 35.sp
+    ),
+    h2 = TextStyle(
+        fontFamily = font,
+        fontWeight = FontWeight.Black,
+        fontSize = 32.sp
+    ),
+    h3 = TextStyle(
+        fontFamily = font,
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp
+    ),
+    h4 = TextStyle(
+        fontFamily = font,
+        fontWeight = FontWeight.Bold,
+        fontSize = 25.sp
+    ),
+    h5 = TextStyle(
+        fontFamily = font,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 22.sp
+    ),
+    body1 = TextStyle(
+        fontFamily = font,
+        fontWeight = FontWeight.Bold,
+        fontSize = 17.sp
+    ),
+    body2 = TextStyle(
+        fontFamily = font,
+        fontWeight = FontWeight.Medium,
+        fontSize = 16.sp
+    ),
+    button = TextStyle(
+        fontFamily = font,
+        fontWeight = FontWeight.Bold,
+        fontSize = 19.sp
+    ),
+    caption = TextStyle(
+        fontFamily = font,
+        fontWeight = FontWeight.Medium,
+        fontSize = 16.sp
+    ),
+    subtitle1 = TextStyle(
+        fontFamily = font,
+        fontWeight = FontWeight.Medium,
+        fontSize = 15.sp
+    ),
+    subtitle2 = TextStyle(
+        fontFamily = font,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp
+    ),
+    defaultFontFamily = font,
+)

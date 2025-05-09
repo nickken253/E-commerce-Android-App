@@ -2,21 +2,31 @@ package com.mustfaibra.roffu.screens.bookmarks
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.components.ProductItemLayout
@@ -31,19 +41,37 @@ fun BookmarksScreen(
     onProductClicked: (productId: Int) -> Unit,
     onCartStateChanged: (productId: Int) -> Unit,
     onBookmarkStateChanged: (productId: Int) -> Unit,
+    onBackRequested: () -> Unit,
 ) {
     val bookmarksUiState by remember { bookmarkViewModel.bookmarkState }
     val bookmarkProducts = bookmarkViewModel.bookmarkItems
 
-    LazyVerticalGrid(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colors.background),
-        columns = GridCells.Fixed(2),
-        horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
-        verticalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
-        contentPadding = PaddingValues(horizontal = Dimension.pagePadding),
-    ) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = stringResource(id = R.string.bookmarks)) },
+                navigationIcon = {
+                    IconButton(onClick = { onBackRequested() }) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                backgroundColor = MaterialTheme.colors.background,
+                contentColor = MaterialTheme.colors.onBackground,
+                elevation = 0.dp
+            )
+        },
+        backgroundColor = MaterialTheme.colors.background
+    ) { paddingValues ->
+        LazyVerticalGrid(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(MaterialTheme.colors.background),
+            columns = GridCells.Fixed(2),
+            horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
+            verticalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
+            contentPadding = PaddingValues(horizontal = Dimension.pagePadding),
+        ) {
         /** Handling what to show depending on bookmark ui state */
         when (bookmarksUiState) {
             is UiState.Idle -> {
@@ -55,17 +83,8 @@ fun BookmarksScreen(
 
             }
             is UiState.Success -> {
-                /** Loading finished successfully, Shoes header first! */
-                item(
-                    span = {
-                        GridItemSpan(2)
-                    }
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.bookmarks),
-                        style = MaterialTheme.typography.h3,
-                    )
-                }
+                /** Loading finished successfully */
+                // Header removed since we now have a TopAppBar
                 /** Show bookmarked products */
                 items(bookmarkProducts) { product ->
                     ProductItemLayout(
@@ -89,6 +108,7 @@ fun BookmarksScreen(
             }
             is UiState.Error -> {
                 /** An error occur */
+            }
             }
         }
     }

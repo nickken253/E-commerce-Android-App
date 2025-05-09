@@ -72,7 +72,7 @@ fun HolderScreen(
     holderViewModel: HolderViewModel = hiltViewModel(),
 ) {
     val destinations = remember {
-        listOf(Screen.Home, Screen.Bookmark, Screen.Cart, Screen.Profile)
+        listOf(Screen.Home, Screen.OrderHistory, Screen.Cart, Screen.Profile)
     }
 
 
@@ -153,6 +153,7 @@ fun HolderScreen(
                     currentRouteAsState in destinations.map { it.route }
                     || currentRouteAsState == Screen.BarcodeScanner.route
                     || currentRouteAsState == Screen.OrderManager.route
+                    || currentRouteAsState == Screen.Bookmark.route
                 ) {
                     AppBottomNav(
                         activeRoute = currentRouteAsState,
@@ -480,6 +481,7 @@ fun ScaffoldSection(
                             onProductClicked = onShowProductRequest,
                             onCartStateChanged = onUpdateCartRequest,
                             onBookmarkStateChanged = onUpdateBookmarkRequest,
+                            onBackRequested = onBackRequested,
                         )
                     } else {
                         LaunchedEffect(Unit) {
