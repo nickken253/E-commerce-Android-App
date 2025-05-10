@@ -352,7 +352,7 @@ fun ScaffoldSection(
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     ManHinhDangKy(
                         onQuayLaiDangNhap = { controller.popBackStack() },
-                        onDangKyThanhCong = { controller.navigate(Screen.Home.route) },
+                        onDangKyThanhCong = { controller.navigate(Screen.Login.route) },
                         onYeuCauToast = onToastRequested
                     )
                 }
