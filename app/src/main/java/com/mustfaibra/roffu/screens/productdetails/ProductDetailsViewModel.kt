@@ -80,14 +80,14 @@ class ProductDetailsViewModel @Inject constructor(
         _cartUiState.value = UiState.Loading
         viewModelScope.launch {
             try {
+                val token = UserPref.getToken(context)
+                if (token.isNullOrBlank()) {
+                    _cartUiState.value = UiState.Error(error = Error.Unknown) // Sử dụng Error.Unknown cho lỗi xác thực
+                    Log.e("ProductDetailsViewModel", "No token found, user not authenticated")
+                    return@launch
+                }
+                // Phần còn lại của hàm giữ nguyên
                 if (_isInCart.value) {
-                    val token = UserPref.getToken(context)
-                    if (token.isNullOrBlank()) {
-                        _cartUiState.value = UiState.Error(error = Error.Unknown)
-                        Log.e("ProductDetailsViewModel", "No token found, user not authenticated")
-                        return@launch
-                    }
-
                     val (isInCart, itemId) = checkIfInCart(productId)
                     if (!isInCart || itemId == null) {
                         _cartUiState.value = UiState.Error(error = Error.Unknown)
@@ -95,9 +95,8 @@ class ProductDetailsViewModel @Inject constructor(
                         _isInCart.value = false
                         return@launch
                     }
-
                     Log.d("ProductDetailsViewModel", "Attempting to delete cart item with itemId=$itemId")
-                    val response = client.delete("http://170.205.36.201:8000/api/v1/carts/items/$itemId") {
+                    val response = client.delete("http://103.90.226.131:8000/api/v1/carts/items/$itemId") {
                         header("accept", "application/json")
                         header("Authorization", "Bearer $token")
                     }
@@ -114,7 +113,7 @@ class ProductDetailsViewModel @Inject constructor(
                             _isInCart.value = false
                         }
                         HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
-                            _cartUiState.value = UiState.Error(error = Error.Unknown)
+                            _cartUiState.value = UiState.Error(error = Error.Unknown) // Sử dụng Error.Unknown cho lỗi xác thực
                             Log.e("ProductDetailsViewModel", "Delete failed: Unauthorized, body: ${response.bodyAsText()}")
                         }
                         else -> {
@@ -124,13 +123,10 @@ class ProductDetailsViewModel @Inject constructor(
                     }
                 } else {
                     Log.d("ProductDetailsViewModel", "Attempting to add cart item with productId=$productId")
-                    val token = UserPref.getToken(context)
-                    val response = client.post("http://170.205.36.201:8000/api/v1/carts/items") {
+                    val response = client.post("http://103.90.226.131:8000/api/v1/carts/items") {
                         header("accept", "application/json")
                         header("Content-Type", "application/json")
-                        if (!token.isNullOrBlank()) {
-                            header("Authorization", "Bearer $token")
-                        }
+                        header("Authorization", "Bearer $token")
                         setBody(
                             AddToCartRequest(
                                 items = listOf(
@@ -156,6 +152,10 @@ class ProductDetailsViewModel @Inject constructor(
                                 Log.e("ProductDetailsViewModel", "Add to cart failed: CartItem not found in cart after POST")
                             }
                         }
+                        HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
+                            _cartUiState.value = UiState.Error(error = Error.Unknown) // Sử dụng Error.Unknown cho lỗi xác thực
+                            Log.e("ProductDetailsViewModel", "Add to cart failed: Unauthorized, body: ${response.bodyAsText()}")
+                        }
                         else -> {
                             _cartUiState.value = UiState.Error(error = Error.Network)
                             Log.e("ProductDetailsViewModel", "Add to cart failed: ${response.status}, body: ${response.bodyAsText()}")
@@ -167,6 +167,7 @@ class ProductDetailsViewModel @Inject constructor(
                 Log.e("ProductDetailsViewModel", "Cart operation error: ${e.message}", e)
             }
         }
+
     }
 
     private suspend fun checkIfInCart(productId: Int): Pair<Boolean, Int?> {
@@ -178,7 +179,7 @@ class ProductDetailsViewModel @Inject constructor(
             }
 
             Log.d("ProductDetailsViewModel", "Checking cart for productId=$productId")
-            val response = client.get("http://170.205.36.201:8000/api/v1/carts/") {
+            val response = client.get("http://103.90.226.131:8000/api/v1/carts/") {
                 header("accept", "application/json")
                 header("Authorization", "Bearer $token")
             }
@@ -192,9 +193,9 @@ class ProductDetailsViewModel @Inject constructor(
                     Log.d("ProductDetailsViewModel", "Check cart: productId=$productId, isInCart=$isInCart, itemId=$itemId")
                     Pair(isInCart, itemId)
                 }
-                HttpStatusCode.Unauthorized -> {
+                HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
                     Log.e("ProductDetailsViewModel", "Token expired or invalid")
-                    _cartUiState.value = UiState.Error(error = Error.Unknown)
+                    _cartUiState.value = UiState.Error(error = Error.Unknown) // Sử dụng Error.Unknown
                     Pair(false, null)
                 }
                 else -> {

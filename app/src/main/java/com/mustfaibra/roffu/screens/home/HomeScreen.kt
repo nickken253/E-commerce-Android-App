@@ -60,6 +60,13 @@ import com.mustfaibra.roffu.sealed.UiState
 import com.mustfaibra.roffu.ui.theme.Dimension
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.text.DecimalFormat
+
+// Hàm định dạng giá với dấu chấm sau mỗi 3 chữ số
+fun formatPrice(price: Int): String {
+    val formatter = DecimalFormat("#,###")
+    return formatter.format(price).replace(",", ".")
+}
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
@@ -228,9 +235,8 @@ fun HomeScreen(
                                         modifier = Modifier.fillMaxWidth(),
                                         cartOffset = cartOffset,
                                         imageUrl = primaryImage ?: "",
-                                        price = Integer.parseInt(product.price.toString()),
+                                        price = formatPrice(Integer.parseInt(product.price.toString())),
                                         title = product.productName,
-                                        onCart = product.id in cartProductsIds,
                                         onBookmark = product.id in bookmarkProductsIds,
                                         onProductClicked = { onProductClicked(product.id) },
                                         onChangeCartState = { onCartStateChanged(product.id) },
@@ -269,9 +275,8 @@ fun HomeScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     cartOffset = cartOffset,
                                     imageUrl = primaryImage ?: "",
-                                    price = Integer.parseInt(product.price.toString()),
+                                    price = formatPrice(Integer.parseInt(product.price.toString())),
                                     title = product.productName,
-                                    onCart = product.id in cartProductsIds,
                                     onBookmark = product.id in bookmarkProductsIds,
                                     onProductClicked = { onProductClicked(product.id) },
                                     onChangeCartState = { onCartStateChanged(product.id) },
@@ -300,7 +305,7 @@ fun SearchField(
             .fillMaxWidth(),
         value = value,
         onValueChange = onValueChange,
-        placeholder = "What are you looking for?",
+        placeholder = "Bạn đang tìm kiếm gì?",
         textStyle = MaterialTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
         padding = PaddingValues(
             horizontal = Dimension.pagePadding,

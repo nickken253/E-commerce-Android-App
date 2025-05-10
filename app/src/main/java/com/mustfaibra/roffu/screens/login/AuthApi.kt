@@ -13,14 +13,18 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 interface AuthApi {
     @POST("api/v1/auth/login")
     suspend fun login(@Body request: LoginRequest): LoginResponse
+
     @POST("api/v1/auth/register")
     suspend fun register(@Body request: RegisterRequest): RegisterResponse
+
     @GET("api/v1/users/me")
     suspend fun getUserProfile(@Header("Authorization") token: String): UserResponse
+
     @Headers(
         "accept: application/json",
         "Content-Type: application/json"
@@ -29,4 +33,13 @@ interface AuthApi {
     suspend fun resetPassword(
         @Body request: ResetPasswordRequest
     ): Response<ResetPasswordResponse>
+
+    @Headers(
+        "accept: application/json",
+        "Content-Type: application/json"
+    )
+    @POST("api/v1/auth/google")
+    suspend fun loginWithGoogle(
+        @Query("email") email: String
+    ): LoginResponse
 }

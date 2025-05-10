@@ -30,7 +30,7 @@ class BrandsRepository @Inject constructor(
 
     suspend fun getAllProducts(page: Int, limit: Int): DataResponse<ApiResponse> {
         return try {
-            val response = client.get("http://170.205.36.201:8000/api/v1/products/") {
+            val response = client.get("http://103.90.226.131:8000/api/v1/products/") {
                 parameter("page", page)
                 parameter("limit", limit)
                 header("accept", "application/json")

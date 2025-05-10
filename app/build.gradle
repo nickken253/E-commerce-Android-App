@@ -25,7 +25,7 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
-        //buildConfigField "String", "GOOGLE_CLIENT_ID", "1017192238651-suna7h6e36q6k8q3e7ffl8196sdugn46.apps.googleusercontent.com"
+        buildConfigField "String", "GOOGLE_CLIENT_ID", "\"1017192238651-suna7h6e36q6k8q3e7ffl8196sdugn46.apps.googleusercontent.com\""
     }
 
     buildTypes {
@@ -71,7 +71,7 @@ android {
         exclude 'META-INF/ASL2.0'
     }
 }
-//apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.gms.google-services'
 
 dependencies {
     implementation 'androidx.core:core-ktx:1.12.0'

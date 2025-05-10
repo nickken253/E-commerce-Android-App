@@ -23,7 +23,7 @@
     <string name="share">Share</string>
     <string name="empty_cart">Clear cart</string>
     <string name="checkout_now">Checkout now</string>
-    <string name="proceed_to_checkout">Thanh toánout</string>
+    <string name="proceed_to_checkout">Thanh toán</string>
     <string name="checkout">Checkout</string>
     <string name="barcode_scanner">Scanner</string>
     <string name="total">Total</string>

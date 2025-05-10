@@ -1,6 +1,8 @@
 package com.mustfaibra.roffu.screens.login
 
-import android.content.Context
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -24,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.components.CustomButton
 import com.mustfaibra.roffu.components.CustomInputField
@@ -43,6 +47,28 @@ fun LoginScreen(
     val username by remember { loginViewModel.username }
     val password by remember { loginViewModel.password }
     var showPassword by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    // Launcher for Google Sign-In
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            loginViewModel.handleGoogleSignIn(
+                task = task,
+                onAutoLoginSuccess = { onUserAuthenticated() },
+                onNavigateToRegisterWithGoogle = { name, email ->
+                    loginViewModel.updateUsername(name)
+                    loginViewModel.updateEmailOrPhone(email)
+                    onNavigateToRegister()
+                },
+                onFailure = { message -> onToastRequested(message, Color.Red) }
+            )
+        } else {
+            onToastRequested("Đăng nhập Google thất bại", Color.Red)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -124,11 +150,11 @@ fun LoginScreen(
                         id = if (showPassword) R.drawable.ic_eye else R.drawable.ic_eye_off
                     ),
                     contentDescription = if (showPassword) "Ẩn mật khẩu" else "Hiện mật khẩu",
-                    tint = Color.Black, // Bỏ alpha
+                    tint = Color.Black,
                     modifier = Modifier
                         .clickable { showPassword = !showPassword }
                         .padding(start = Dimension.pagePadding.div(2))
-                        .size(Dimension.mdIcon) // Tăng kích thước
+                        .size(Dimension.mdIcon)
                 )
             },
             onFocusChange = {},
@@ -223,7 +249,18 @@ fun LoginScreen(
                     paddingValue = PaddingValues(Dimension.sm),
                     elevation = Dimension.elevation,
                     painter = painterResource(id = iconId),
-                    onButtonClicked = { /* TODO: handle auth */ },
+                    onButtonClicked = {
+                        if (iconId == R.drawable.ic_google) {
+                            loginViewModel.startGoogleSignIn(
+                                context = context,
+                                onIntentReady = { intent ->
+                                    googleSignInLauncher.launch(intent)
+                                }
+                            )
+                        } else {
+                            onToastRequested("Chức năng đang phát triển", Color.Gray)
+                        }
+                    },
                     backgroundColor = MaterialTheme.colors.background,
                     shape = MaterialTheme.shapes.medium,
                     iconSize = Dimension.mdIcon.times(0.8f),

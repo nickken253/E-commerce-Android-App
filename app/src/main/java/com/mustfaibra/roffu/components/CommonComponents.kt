@@ -56,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import coil.compose.AsyncImage
@@ -67,6 +68,7 @@ import com.mustfaibra.roffu.utils.getDiscountedValue
 import com.mustfaibra.roffu.utils.getDp
 import kotlin.math.roundToInt
 
+
 @Composable
 fun CustomInputField(
     modifier: Modifier = Modifier,
@@ -74,7 +76,7 @@ fun CustomInputField(
     placeholder: String,
     textStyle: TextStyle = MaterialTheme.typography.body1,
     textColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.8f),
-    backgroundColor: Color = MaterialTheme.colors.surface,
+    backgroundColor: Color = Color.White, // Đổi nền thành màu trắng
     requireSingleLine: Boolean = true,
     textShouldBeCentered: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
@@ -102,7 +104,7 @@ fun CustomInputField(
             .onFocusChanged { onFocusChange(it.isFocused) },
         textStyle = textStyle.copy(
             color = textColor,
-            textAlign = if (textShouldBeCentered) androidx.compose.ui.text.style.TextAlign.Center else androidx.compose.ui.text.style.TextAlign.Start
+            textAlign = if (textShouldBeCentered) TextAlign.Center else TextAlign.Start
         ),
         placeholder = {
             Text(
@@ -116,8 +118,8 @@ fun CustomInputField(
             backgroundColor = backgroundColor,
             textColor = textColor,
             placeholderColor = textColor.copy(alpha = 0.3f),
-            focusedBorderColor = MaterialTheme.colors.primary,
-            unfocusedBorderColor = textColor.copy(alpha = 0.3f),
+            focusedBorderColor = Color.Transparent, // Bỏ viền khi focus
+            unfocusedBorderColor = Color.Transparent, // Bỏ viền khi không focus
             cursorColor = textColor,
         ),
         shape = shape,
@@ -136,7 +138,6 @@ fun CustomInputField(
         singleLine = requireSingleLine,
     )
 }
-
 @Composable
 fun SecondaryTopBar(
     title: String,
@@ -374,17 +375,6 @@ fun ReactiveCartIcon(
         }
     }
     val rotation by transition.animateFloat(label = "rotation") { if (it) 360f else -360f }
-    Icon(
-        painter = painterResource(id = R.drawable.ic_shopping_bag),
-        contentDescription = null,
-        modifier = modifier
-            .rotate(rotation)
-            .clip(CircleShape)
-            .clickable { onCartChange() }
-            .padding(Dimension.elevation)
-            .size(Dimension.smIcon),
-        tint = tint
-    )
 }
 
 @Composable
@@ -421,7 +411,7 @@ fun ReactiveBookmarkIcon(
 fun ProductItemLayout(
     modifier: Modifier = Modifier,
     cartOffset: IntOffset,
-    price: Int,
+    price: String,
     title: String,
     imageUrl: String,
     onCart: Boolean = false,

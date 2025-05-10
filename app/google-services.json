@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "799574727455",
+    "project_id": "android-cb2c2",
+    "storage_bucket": "android-cb2c2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:799574727455:android:f4a2913e938878e9656e2a",
+        "android_client_info": {
+          "package_name": "com.mustfaibra.roffu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAadKSQnS1pWZW2pEma-YWak0AvkVb8k10"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

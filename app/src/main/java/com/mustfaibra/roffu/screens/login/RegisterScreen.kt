@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActionScope
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -12,10 +13,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.components.CustomButton
@@ -24,10 +30,6 @@ import com.mustfaibra.roffu.sealed.UiState
 import com.mustfaibra.roffu.ui.theme.Dimension
 import com.mustfaibra.roffu.utils.LocationData
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -37,9 +39,23 @@ fun ManHinhDangKy(
     onDangKyThanhCong: () -> Unit,
     onYeuCauToast: (String, Color) -> Unit,
 ) {
+    // Sử dụng googleEmail từ ViewModel để điền sẵn email
+    val googleEmail by remember { loginViewModel.googleEmail }
     val emailOrPhone by remember { loginViewModel.emailOrPhone }
     val matKhau by remember { loginViewModel.password }
     val trangThaiUi by remember { loginViewModel.uiState }
+
+    // Khởi tạo email với googleEmail nếu có, nếu không thì dùng emailOrPhone
+    val initialEmail = googleEmail?.removeSuffix("@gmail.com") ?: emailOrPhone ?: ""
+    val emailState = remember { mutableStateOf(initialEmail) }
+
+    // Cập nhật emailOrPhone trong ViewModel khi màn hình được tạo
+    LaunchedEffect(googleEmail) {
+        if (googleEmail != null) {
+            loginViewModel.updateEmailOrPhone(googleEmail!!.removeSuffix("@gmail.com"))
+            emailState.value = googleEmail!!.removeSuffix("@gmail.com")
+        }
+    }
 
     val matKhauXacNhan = remember { mutableStateOf("") }
     val selectedProvince = remember { mutableStateOf("Chọn tỉnh/thành phố") }
@@ -57,6 +73,10 @@ fun ManHinhDangKy(
     val errorDistrict = remember { mutableStateOf<String?>(null) }
     val errorSoNha = remember { mutableStateOf<String?>(null) }
     val errorPhoneNumber = remember { mutableStateOf<String?>(null) }
+
+    // Trạng thái hiển thị/ẩn mật khẩu
+    val showPassword = remember { mutableStateOf(false) }
+    val showConfirmPassword = remember { mutableStateOf(false) }
 
     val categories = listOf(
         "Máy tính & laptop", "Đồ gia dụng", "Quần áo",
@@ -175,8 +195,9 @@ fun ManHinhDangKy(
             ) {
                 CustomInputField(
                     modifier = Modifier.weight(1f),
-                    value = emailOrPhone ?: "",
+                    value = emailState.value,
                     onValueChange = {
+                        emailState.value = it
                         loginViewModel.updateEmailOrPhone(it.ifBlank { null })
                         errorEmail.value = null
                     },
@@ -189,7 +210,7 @@ fun ManHinhDangKy(
                     textColor = MaterialTheme.colors.onBackground,
                     onFocusChange = {},
                     onKeyboardActionClicked = {},
-                    trailingIcon = null,
+                    trailingIcon = null
                 )
                 Text(
                     text = "@gmail.com",
@@ -241,7 +262,7 @@ fun ManHinhDangKy(
                     errorMatKhau.value = null
                 },
                 placeholder = "Nhập mật khẩu",
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (showPassword.value) VisualTransformation.None else PasswordVisualTransformation(),
                 textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
                 padding = PaddingValues(Dimension.pagePadding),
                 backgroundColor = MaterialTheme.colors.surface,
@@ -250,6 +271,16 @@ fun ManHinhDangKy(
                 shape = RoundedCornerShape(8.dp),
                 onFocusChange = {},
                 onKeyboardActionClicked = {},
+                trailingIcon = {
+                    IconButton(onClick = { showPassword.value = !showPassword.value }) {
+                        Icon(
+                            painter = painterResource(id = if (showPassword.value) R.drawable.ic_eye else R.drawable.ic_eye_off),
+                            contentDescription = if (showPassword.value) "Ẩn mật khẩu" else "Hiện mật khẩu",
+                            tint = MaterialTheme.colors.onBackground.copy(alpha = 0.6f),
+                            modifier = Modifier.size(Dimension.mdIcon)
+                        )
+                    }
+                }
             )
             errorMatKhau.value?.let {
                 Text(
@@ -292,7 +323,7 @@ fun ManHinhDangKy(
                     errorMatKhauXacNhan.value = null
                 },
                 placeholder = "Nhập lại mật khẩu",
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (showConfirmPassword.value) VisualTransformation.None else PasswordVisualTransformation(),
                 textStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp),
                 padding = PaddingValues(Dimension.pagePadding),
                 backgroundColor = MaterialTheme.colors.surface,
@@ -301,6 +332,16 @@ fun ManHinhDangKy(
                 shape = RoundedCornerShape(8.dp),
                 onFocusChange = {},
                 onKeyboardActionClicked = {},
+                trailingIcon = {
+                    IconButton(onClick = { showConfirmPassword.value = !showConfirmPassword.value }) {
+                        Icon(
+                            painter = painterResource(id = if (showConfirmPassword.value) R.drawable.ic_eye else R.drawable.ic_eye_off),
+                            contentDescription = if (showConfirmPassword.value) "Ẩn mật khẩu" else "Hiện mật khẩu",
+                            tint = MaterialTheme.colors.onBackground.copy(alpha = 0.6f),
+                            modifier = Modifier.size(Dimension.mdIcon)
+                        )
+                    }
+                }
             )
             errorMatKhauXacNhan.value?.let {
                 Text(
@@ -586,7 +627,7 @@ fun ManHinhDangKy(
                 }
 
                 // Kiểm tra email
-                val rawEmail = emailOrPhone ?: ""
+                val rawEmail = emailState.value
                 if (rawEmail.isBlank()) {
                     errorEmail.value = "Trường này là bắt buộc"
                     hasError = true
@@ -652,7 +693,7 @@ fun ManHinhDangKy(
                 if (!hasError) {
                     val fullEmail = "$rawEmail@gmail.com"
                     loginViewModel.registerUser(
-                        username = tenNguoiDung.value, // Dùng họ và tên làm username
+                        username = tenNguoiDung.value,
                         email = fullEmail,
                         password = password,
                         confirmPassword = matKhauXacNhan.value,

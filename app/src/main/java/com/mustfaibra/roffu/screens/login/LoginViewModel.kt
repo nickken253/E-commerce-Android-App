@@ -2,12 +2,19 @@ package com.mustfaibra.roffu.screens.login
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.mustfaibra.roffu.BuildConfig
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.models.User
@@ -16,7 +23,6 @@ import com.mustfaibra.roffu.models.dto.RegisterRequest
 import com.mustfaibra.roffu.models.dto.ResetPasswordRequest
 import com.mustfaibra.roffu.models.dto.ResetPasswordResponse
 import com.mustfaibra.roffu.repositories.UserRepository
-import com.mustfaibra.roffu.screens.login.RetrofitClient.authApi
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
 import com.mustfaibra.roffu.sealed.UiState
@@ -27,7 +33,6 @@ import com.resend.Resend
 import com.resend.services.emails.model.SendEmailRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -47,6 +52,7 @@ class LoginViewModel @Inject constructor(
     val emailOrPhone = mutableStateOf<String?>("")
     val password = mutableStateOf<String?>("")
     val username = mutableStateOf<String?>(null)
+    val googleEmail = mutableStateOf<String?>(null)
 
     companion object {
         private const val TAG = "LoginViewModel"
@@ -65,23 +71,37 @@ class LoginViewModel @Inject constructor(
         this.password.value = value
     }
 
-    fun authenticateUser(
-        username: String,
-        password: String,
-        onAuthenticated: () -> Unit,
-        onAuthenticationFailed: (String) -> Unit
-    ) {
-        if (username.isBlank() || password.isBlank()) {
-            onAuthenticationFailed("Vui lòng nhập đầy đủ thông tin")
-            return
-        }
+    fun startGoogleSignIn(context: Context, onIntentReady: (Intent) -> Unit) {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .build()
 
-        uiState.value = UiState.Loading
+        val googleSignInClient = GoogleSignIn.getClient(context, gso)
+
+        // Đăng xuất tài khoản cũ để buộc chọn lại tài khoản
+        viewModelScope.launch {
+            googleSignInClient.signOut().addOnCompleteListener {
+                val signInIntent = googleSignInClient.signInIntent
+                onIntentReady(signInIntent)
+            }
+        }
+    }
+    fun handleGoogleSignIn(
+        task: Task<GoogleSignInAccount>,
+        onAutoLoginSuccess: () -> Unit,
+        onNavigateToRegisterWithGoogle: (name: String, email: String) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
         viewModelScope.launch {
             try {
-                // Đăng nhập để lấy token
-                val request = LoginRequest(username = username, password = password)
-                val loginResponse = RetrofitClient.authApi.login(request)
+                val account = task.getResult(ApiException::class.java)
+                val email = account.email ?: throw Exception("Không lấy được email")
+                val name = account.displayName ?: ""
+
+                uiState.value = UiState.Loading
+
+                // Gọi API Google Sign-In
+                val loginResponse = RetrofitClient.authApi.loginWithGoogle(email)
 
                 // Lưu access_token
                 UserPref.updateUserToken(context, loginResponse.access_token)
@@ -94,94 +114,42 @@ class LoginViewModel @Inject constructor(
                     name = userResponse.full_name,
                     email = userResponse.email,
                     phone = userResponse.phone_number,
-                    password = password,
+                    password = "", // Không cần password cho Google Sign-In
                     gender = 1,
                     role = "user",
                     profile = R.drawable.default_avatar,
                     address = userResponse.address ?: ""
                 )
 
-                uiState.value = UiState.Success
                 UserPref.updateUser(user)
                 UserPref.updateUserId(context, user.userId)
-                onAuthenticated()
+                uiState.value = UiState.Success
+                onAutoLoginSuccess()
+
+            } catch (e: ApiException) {
+                uiState.value = UiState.Error(error = Error.Network)
+                Log.e(TAG, "Google Sign-In failed: ${e.statusCode}")
+                onFailure("Đăng nhập Google thất bại: ${e.message}")
             } catch (e: retrofit2.HttpException) {
                 uiState.value = UiState.Error(error = Error.Network)
                 val errorBody = e.response()?.errorBody()?.string() ?: "Không nhận được chi tiết lỗi"
-                val errorMessage = when (e.code()) {
-                    401 -> "Tên đăng nhập hoặc mật khẩu không đúng"
-                    422 -> "Thông tin không hợp lệ: $errorBody"
-                    else -> "Đăng nhập thất bại: HTTP ${e.code()} - $errorBody"
-                }
-                onAuthenticationFailed(errorMessage)
-            } catch (e: Exception) {
-                uiState.value = UiState.Error(error = Error.Network)
-                onAuthenticationFailed("Lỗi hệ thống: ${e.message}")
-            }
-        }
-    }
-
-    fun logout() {
-        viewModelScope.launch {
-            // Xóa LOGGED_USER_ID từ DataStore
-            context.dataStore.edit {
-                it.remove(LOGGED_USER_ID)
-            }
-            context.dataStore.data.first().let {
-                Log.d("DataStore", "LOGGED_USER_ID after logout: ${it[LOGGED_USER_ID]}")
-            }
-            // Xóa dữ liệu trong SharedPreferences và đặt lại UserPref
-            UserPref.logout(context)
-            // Đặt lại trạng thái trong ViewModel
-            username.value = null
-            emailOrPhone.value = ""
-            password.value = ""
-            uiState.value = UiState.Idle
-        }
-    }
-
-    fun checkEmailForPasswordReset(
-        email: String,
-        onEmailExists: () -> Unit,
-        onEmailNotFound: (String) -> Unit
-    ) {
-        if (email.isBlank()) {
-            onEmailNotFound("Vui lòng nhập email!")
-            return
-        }
-
-        if (!isValidEmail(email)) {
-            onEmailNotFound("Email không hợp lệ!")
-            return
-        }
-
-        uiState.value = UiState.Loading
-        viewModelScope.launch {
-            try {
-                delay(1000) // Simulate network delay
-
-                userRepository.checkEmailExists(email).let { response ->
+                if (e.code() == 404 || e.code() == 500) {
+                    val account = task.getResult(ApiException::class.java)
+                    val email = account.email ?: ""
+                    val name = account.displayName ?: ""
+                    updateGoogleEmail(email) // Lưu email để điền sẵn
                     uiState.value = UiState.Idle
-                    when (response) {
-                        is DataResponse.Success -> {
-                            if (response.data == true) {
-                                onEmailExists()
-                            } else {
-                                onEmailNotFound("Không tìm thấy tài khoản với email này!")
-                            }
-                        }
-                        is DataResponse.Error -> {
-                            onEmailNotFound("Lỗi khi kiểm tra email: ${response.error?.message}")
-                        }
-                    }
+                    onNavigateToRegisterWithGoogle(name, email)
+                } else {
+                    onFailure("Đăng nhập Google thất bại: HTTP ${e.code()} - $errorBody")
                 }
             } catch (e: Exception) {
                 uiState.value = UiState.Error(error = Error.Network)
-                onEmailNotFound("Lỗi hệ thống: ${e.message}")
+                Log.e(TAG, "Unexpected error: ${e.message}")
+                onFailure("Lỗi hệ thống: ${e.message}")
             }
         }
     }
-
     fun resetPassword(
         email: String,
         newPassword: String,
@@ -266,6 +234,64 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+
+    fun authenticateUser(
+        username: String,
+        password: String,
+        onAuthenticated: () -> Unit,
+        onAuthenticationFailed: (String) -> Unit,
+        isGoogleLogin: Boolean = false
+    ) {
+        if (!isGoogleLogin && (username.isBlank() || password.isBlank())) {
+            onAuthenticationFailed("Vui lòng nhập đầy đủ thông tin")
+            return
+        }
+
+        uiState.value = UiState.Loading
+        viewModelScope.launch {
+            try {
+                // Call login API
+                val request = LoginRequest(username = username, password = password)
+                val loginResponse = RetrofitClient.authApi.login(request)
+
+                // Save access_token
+                UserPref.updateUserToken(context, loginResponse.access_token)
+
+                // Get user profile
+                val userResponse = RetrofitClient.authApi.getUserProfile("Bearer ${loginResponse.access_token}")
+
+                val user = User(
+                    userId = userResponse.id,
+                    name = userResponse.full_name,
+                    email = userResponse.email,
+                    phone = userResponse.phone_number,
+                    password = password,
+                    gender = 1,
+                    role = "user",
+                    profile = R.drawable.default_avatar,
+                    address = userResponse.address ?: ""
+                )
+
+                uiState.value = UiState.Success
+                UserPref.updateUser(user)
+                UserPref.updateUserId(context, user.userId)
+                onAuthenticated()
+            } catch (e: retrofit2.HttpException) {
+                uiState.value = UiState.Error(error = Error.Network)
+                val errorBody = e.response()?.errorBody()?.string() ?: "Không nhận được chi tiết lỗi"
+                val errorMessage = when (e.code()) {
+                    401 -> if (isGoogleLogin) "Tài khoản chưa được đăng ký" else "Tên đăng nhập hoặc mật khẩu không đúng"
+                    422 -> "Thông tin không hợp lệ: $errorBody"
+                    else -> "Đăng nhập thất bại: HTTP ${e.code()} - $errorBody"
+                }
+                onAuthenticationFailed(errorMessage)
+            } catch (e: Exception) {
+                uiState.value = UiState.Error(error = Error.Network)
+                onAuthenticationFailed("Lỗi hệ thống: ${e.message}")
+            }
+        }
+    }
+
     fun registerUser(
         username: String,
         email: String,
@@ -277,31 +303,27 @@ class LoginViewModel @Inject constructor(
         onRegistered: () -> Unit,
         onRegistrationFailed: (String) -> Unit
     ) {
-        // Kiểm tra các trường bắt buộc
+        // Validate inputs
         if (username.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() || name.isBlank() || phoneNumber.isBlank()) {
             onRegistrationFailed("Vui lòng điền đầy đủ thông tin!")
             return
         }
 
-        // Kiểm tra mật khẩu xác nhận
         if (password != confirmPassword) {
             onRegistrationFailed("Mật khẩu xác nhận không khớp!")
             return
         }
 
-        // Kiểm tra định dạng mật khẩu
         if (!isValidPassword(password)) {
             onRegistrationFailed("Mật khẩu phải dài 8-20 ký tự, chứa chữ hoa, chữ thường, số và ký tự đặc biệt!")
             return
         }
 
-        // Kiểm tra định dạng email
         if (!isValidEmail(email)) {
             onRegistrationFailed("Email không hợp lệ!")
             return
         }
 
-        // Kiểm tra định dạng số điện thoại
         if (!isValidPhoneNumber(phoneNumber)) {
             onRegistrationFailed("Số điện thoại không hợp lệ! Phải là số và dài 10-12 chữ số.")
             return
@@ -333,8 +355,9 @@ class LoginViewModel @Inject constructor(
                     address = address
                 )
 
-                uiState.value = UiState.Success
                 UserPref.updateUser(user = newUser)
+
+                uiState.value = UiState.Success
                 onRegistered()
             } catch (e: retrofit2.HttpException) {
                 uiState.value = UiState.Error(error = Error.Network)
@@ -347,11 +370,21 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    private fun isValidPhoneNumber(phone: String): Boolean {
-        val phoneRegex = "^[0-9]{10,12}$"
-        return phone.matches(phoneRegex.toRegex())
+    fun logout() {
+        viewModelScope.launch {
+            context.dataStore.edit {
+                it.remove(LOGGED_USER_ID)
+            }
+            context.dataStore.data.first().let {
+                Log.d("DataStore", "LOGGED_USER_ID after logout: ${it[LOGGED_USER_ID]}")
+            }
+            UserPref.logout(context)
+            username.value = null
+            emailOrPhone.value = ""
+            password.value = ""
+            uiState.value = UiState.Idle
+        }
     }
-
     fun sendOtp(
         email: String,
         onOtpSent: () -> Unit,
@@ -426,6 +459,9 @@ class LoginViewModel @Inject constructor(
             Result.failure(e)
         }
     }
+    fun updateGoogleEmail(email: String?) {
+        this.googleEmail.value = email
+    }
 
     fun verifyOtp(
         email: String,
@@ -442,6 +478,7 @@ class LoginViewModel @Inject constructor(
             onOtpFailed("Mã OTP phải là 6 chữ số!")
             return
         }
+
 
         uiState.value = UiState.Loading
         viewModelScope.launch {
@@ -473,6 +510,9 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
+    private fun isValidOtpFormat(otp: String): Boolean {
+        return otp.length == 6 && otp.all { it.isDigit() }
+    }
 
     private suspend fun saveUserIdToPreferences(userId: Int) {
         context.dataStore.edit {
@@ -486,7 +526,6 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    // Validation helpers
     private fun isValidEmail(email: String): Boolean {
         val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
         return email.matches(emailRegex.toRegex())
@@ -497,7 +536,8 @@ class LoginViewModel @Inject constructor(
         return password.matches(passwordRegex.toRegex())
     }
 
-    private fun isValidOtpFormat(otp: String): Boolean {
-        return otp.length == 6 && otp.all { it.isDigit() }
+    private fun isValidPhoneNumber(phone: String): Boolean {
+        val phoneRegex = "^[0-9]{10,12}$"
+        return phone.matches(phoneRegex.toRegex())
     }
 }
