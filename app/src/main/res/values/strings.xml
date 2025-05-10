@@ -49,4 +49,6 @@
     <string name="onboard">Onboard</string>
     <string name="signup">Sign up</string>
     <string name="order_manager">Order Management</string>
+    <string name="product_comparison">So sánh sản phẩm</string>
+    <string name="product_selection">Chọn sản phẩm để so sánh</string>
 </resources>

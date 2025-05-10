@@ -79,6 +79,11 @@ sealed class Screen(
         title = R.string.product_details,
     )
 
+    object ProductComparison : Screen(
+        route = "product-comparison/{productId1}/{productId2}",
+        title = R.string.product_comparison,
+    )
+
     object LocationPicker : Screen(
         route = "location-picker",
         title = R.string.delivery_address,
@@ -112,5 +117,10 @@ sealed class Screen(
         route = "terms-conditions",
         title = R.string.terms_and_conditions,
         icon = R.drawable.ic_terms,
+    )
+
+    object ProductSelection : Screen(
+        route = "product-selection/{productId}",
+        title = R.string.product_selection
     )
 }

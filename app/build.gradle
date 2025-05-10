@@ -174,4 +174,7 @@ dependencies {
     // Material Components for TabLayout
     implementation 'com.google.android.material:material:1.11.0'
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
+
+    // Gson
+    implementation 'com.google.code.gson:gson:2.10.1'
 }

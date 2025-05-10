@@ -57,6 +57,7 @@ fun HomeScreen(
     onProductClicked: (productId: Int) -> Unit,
     onCartStateChanged: (productId: Int) -> Unit,
     onBookmarkStateChanged: (productId: Int) -> Unit,
+    onNavigateToSearch: () -> Unit,
 ) {
     LaunchedEffect(key1 = Unit) {
         homeViewModel.getHomeAdvertisements()
@@ -164,7 +165,9 @@ fun HomeScreen(
                             homeViewModel.updateSearchInputValue(it)
                         },
                         onFocusChange = {
-
+                            if (it) {
+                                onNavigateToSearch()
+                            }
                         },
                         onImeActionClicked = {
                             /** We should run the search now */
