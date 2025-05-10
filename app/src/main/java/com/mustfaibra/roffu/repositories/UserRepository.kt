@@ -2,7 +2,6 @@ package com.mustfaibra.roffu.repositories
 
 import com.mustfaibra.roffu.data.local.RoomDao
 import com.mustfaibra.roffu.models.User
-import com.mustfaibra.roffu.models.VirtualCard
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
 import javax.inject.Inject
@@ -53,8 +52,4 @@ class UserRepository @Inject constructor(
 
     /** Get the available locations for current user */
     suspend fun getUserLocations() = dao.getUserLocations()
-
-    suspend fun addVirtualCard(card: VirtualCard) = dao.insertVirtualCard(card)
-    suspend fun getVirtualCardByUser(userId: Int) = dao.getVirtualCardByUser(userId)
-    suspend fun deleteVirtualCard(card: VirtualCard) = dao.deleteVirtualCard(card)
 }

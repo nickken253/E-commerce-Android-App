@@ -29,9 +29,8 @@ import javax.inject.Provider
         Notification::class,
         ProductColor::class,
         ProductSize::class,
-        VirtualCard::class
     ],
-    version = 7, exportSchema = false)
+    version = 6, exportSchema = false)
 abstract class RoomDb : RoomDatabase() {
 
     /** A function that used to retrieve Room's related dao instance */

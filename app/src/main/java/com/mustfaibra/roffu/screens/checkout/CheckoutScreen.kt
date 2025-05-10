@@ -2,7 +2,6 @@ package com.mustfaibra.roffu.screens.checkout
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -10,18 +9,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Divider
-import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.RadioButton
 import androidx.compose.material.RadioButtonDefaults
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.rounded.KeyboardArrowRight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -33,7 +28,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,8 +45,6 @@ import com.mustfaibra.roffu.components.SecondaryTopBar
 import com.mustfaibra.roffu.components.SummaryRow
 import com.mustfaibra.roffu.models.CartItem
 import com.mustfaibra.roffu.models.UserPaymentProviderDetails
-import com.mustfaibra.roffu.models.VirtualCard
-import com.mustfaibra.roffu.screens.profile.ProfileViewModel
 import com.mustfaibra.roffu.sealed.UiState
 import com.mustfaibra.roffu.ui.theme.Dimension
 import com.mustfaibra.roffu.utils.encryptCardNumber
@@ -67,7 +59,6 @@ fun CheckoutScreen(
     onCheckoutSuccess: () -> Unit,
     onToastRequested: (message: String, color: Color) -> Unit,
     checkoutViewModel: CheckoutViewModel = hiltViewModel(),
-    profileViewModel: ProfileViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(key1 = cartItems) {
         checkoutViewModel.setUserCart(cartItems = cartItems)
@@ -75,7 +66,6 @@ fun CheckoutScreen(
 
     val checkoutUiState by remember { checkoutViewModel.checkoutState }
     val context = LocalContext.current
-    val isVirtualCardAdded by profileViewModel.isVirtualCardAdded.collectAsState()
 
     if (checkoutUiState is UiState.Loading) {
         Dialog(
@@ -131,14 +121,15 @@ fun CheckoutScreen(
                 .weight(weight = 1f)
                 .verticalScroll(state = rememberScrollState()),
         ) {
+            val paymentMethods = checkoutViewModel.paymentProviders
+            val location by remember {
+                checkoutViewModel.deliveryAddress
+            }
             val selectedPaymentMethodId by remember {
                 checkoutViewModel.selectedPaymentMethodId
             }
             val subTotal by remember { checkoutViewModel.subTotalPrice }
             /** Delivery Location */
-            val location by remember {
-                checkoutViewModel.deliveryAddress
-            }
             location?.whatIfNotNull(
                 whatIf = {
                     DeliveryLocationSection(
@@ -152,9 +143,9 @@ fun CheckoutScreen(
             )
             /** Payment methods */
             PaymentMethodsSection(
-                isVirtualCardAdded = isVirtualCardAdded,
-                selectedPayment = selectedPaymentMethodId,
-                onPaymentSelected = { newMethodId ->
+                methods = paymentMethods,
+                selectedPaymentMethodId = selectedPaymentMethodId,
+                onMethodChange = { newMethodId ->
                     newMethodId.whatIf(
                         given = { it == selectedPaymentMethodId },
                         whatIfNot = {
@@ -306,80 +297,54 @@ fun DeliveryLocationSection(
 
 @Composable
 fun PaymentMethodsSection(
-    isVirtualCardAdded: Boolean,
-    selectedPayment: String?,
-    onPaymentSelected: (String) -> Unit
+    methods: List<UserPaymentProviderDetails>,
+    selectedPaymentMethodId: String?,
+    onMethodChange: (methodId: String) -> Unit,
 ) {
     Column(
         modifier = Modifier.padding(Dimension.pagePadding),
         verticalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
     ) {
         Text(
-            text = "Phương thức thanh toán",
+            text = stringResource(R.string.payment_methods),
             style = MaterialTheme.typography.button,
         )
-        // Visa option
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.medium)
-                .background(if (selectedPayment == "visa") MaterialTheme.colors.primary.copy(alpha = 0.1f) else Color.Transparent)
-                .clickable(enabled = isVirtualCardAdded) { onPaymentSelected("visa") },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
-        ) {
-            Icon(
-                imageVector = Icons.Default.CreditCard,
-                contentDescription = null,
-                tint = if (isVirtualCardAdded) MaterialTheme.colors.primary else Color.Gray,
-                modifier = Modifier.size(32.dp)
-            )
-            Text(
-                text = "Visa",
-                style = MaterialTheme.typography.body1,
-                color = if (isVirtualCardAdded) MaterialTheme.colors.onSurface else Color.Gray,
-                modifier = Modifier.weight(1f)
-            )
-            RadioButton(
-                selected = selectedPayment == "visa",
-                onClick = { if (isVirtualCardAdded) onPaymentSelected("visa") },
-                enabled = isVirtualCardAdded,
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = MaterialTheme.colors.secondary,
-                    unselectedColor = MaterialTheme.colors.onSurface.copy(alpha = 0.7f),
+        methods.forEach { method ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
+            ) {
+                DrawableButton(
+                    paddingValue = PaddingValues(Dimension.sm),
+                    elevation = Dimension.elevation,
+                    painter = painterResource(id = method.paymentProvider.icon),
+                    onButtonClicked = { },
+                    backgroundColor = MaterialTheme.colors.background,
+                    shape = MaterialTheme.shapes.medium,
+                    iconSize = Dimension.mdIcon,
                 )
-            )
-        }
-        // Cash option
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.medium)
-                .background(if (selectedPayment == "cash") MaterialTheme.colors.primary.copy(alpha = 0.1f) else Color.Transparent)
-                .clickable { onPaymentSelected("cash") },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
-        ) {
-            Icon(
-                imageVector = Icons.Default.AttachMoney,
-                contentDescription = null,
-                tint = MaterialTheme.colors.primary,
-                modifier = Modifier.size(32.dp)
-            )
-            Text(
-                text = "Tiền mặt (thanh toán khi nhận hàng)",
-                style = MaterialTheme.typography.body1,
-                color = MaterialTheme.colors.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            RadioButton(
-                selected = selectedPayment == "cash",
-                onClick = { onPaymentSelected("cash") },
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = MaterialTheme.colors.secondary,
-                    unselectedColor = MaterialTheme.colors.onSurface.copy(alpha = 0.7f),
+                Column(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = stringResource(id = method.paymentProvider.title),
+                        style = MaterialTheme.typography.body1,
+                    )
+                    Text(
+                        text = method.userPaymentProvider.cardNumber.encryptCardNumber(),
+                        style = MaterialTheme.typography.caption,
+                    )
+                }
+                RadioButton(
+                    selected = method.userPaymentProvider.providerId == selectedPaymentMethodId,
+                    onClick = { onMethodChange(method.userPaymentProvider.providerId) },
+                    colors = RadioButtonDefaults.colors(
+                        selectedColor = MaterialTheme.colors.secondary,
+                        unselectedColor = MaterialTheme.colors.onSurface.copy(alpha = 0.7f),
+                    )
                 )
-            )
+            }
         }
     }
 }
