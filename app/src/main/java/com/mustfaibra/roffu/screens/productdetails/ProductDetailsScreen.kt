@@ -13,6 +13,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
@@ -30,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -47,6 +50,7 @@ import com.mustfaibra.roffu.components.DrawableButton
 import com.mustfaibra.roffu.components.ReactiveBookmarkIcon
 import com.mustfaibra.roffu.sealed.Orientation
 import com.mustfaibra.roffu.ui.theme.Dimension
+import com.mustfaibra.roffu.utils.PriceFormatter
 import com.mustfaibra.roffu.utils.addMoveAnimation
 import com.mustfaibra.roffu.utils.getValidColor
 
@@ -99,6 +103,8 @@ fun ProductDetailsScreen(
                 ),
             cartItemsCount = cartItemsCount,
             onBackRequested = onBackRequested,
+            isOnBookmarks = isOnBookmarksStateProvider(),
+            onBookmarkChange = { onUpdateBookmarksState(productId) }
         )
         Column(
             modifier = Modifier.weight(1f),
@@ -126,15 +132,16 @@ fun ProductDetailsScreen(
                         .padding(top = Dimension.pagePadding)
                         .weight(1f),
                 ) {
-                    Column(
+                    // Phần hiển thị ảnh sản phẩm
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth(animatedScale)
-                            .align(Alignment.Center)
-                            .offset(x = (-20).dp)
+                            .fillMaxWidth()
+                            .height(250.dp)
+                            .align(Alignment.TopCenter)
                     ) {
                         val infiniteTransition = rememberInfiniteTransition()
                         val animatedOffset by infiniteTransition.animateFloat(
-                            initialValue = -20f, targetValue = 40f,
+                            initialValue = -10f, targetValue = 10f,
                             animationSpec = InfiniteRepeatableSpec(
                                 animation = TweenSpec(
                                     durationMillis = 1300,
@@ -143,70 +150,143 @@ fun ProductDetailsScreen(
                                 repeatMode = RepeatMode.Reverse,
                             ),
                         )
+                        
+                        // Hiển thị ảnh sản phẩm từ URL với scale từ tâm
                         Image(
-                            painter = rememberAsyncImagePainter(model = it.colors?.find { productColor ->
-                                productColor.colorName == color
-                            }?.image ?: it.image
+                            painter = rememberAsyncImagePainter(
+                                model = it.imagePath ?: R.drawable.adidas_48
                             ),
-                            contentDescription = null,
+                            contentDescription = "Product Image",
+                            contentScale = androidx.compose.ui.layout.ContentScale.Inside,
                             modifier = Modifier
                                 .offset { IntOffset(y = animatedOffset.toInt(), x = 0) }
-                                .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .rotate(-(40f)),
+                                .fillMaxSize()
+                                .padding(16.dp)
+                                .rotate(-(40f))
                         )
-                        Canvas(modifier = Modifier.fillMaxWidth()) {
-
-                        }
                     }
-                    /** Sizes section */
-                    if (it.sizes != null && it.sizes!!.isNotEmpty()) {
-                        SizesSection(
+                    
+                    // Phần mô tả sản phẩm cố định
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .padding(horizontal = 16.dp)
+                            .align(Alignment.Center)
+                            .offset(y = 160.dp)
+                            .background(MaterialTheme.colors.background.copy(alpha = 0.9f), RoundedCornerShape(12.dp))
+                            .border(1.dp, MaterialTheme.colors.primary.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Mô tả sản phẩm",
+                            style = MaterialTheme.typography.h6,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        
+                        // Kẻ ngang ngăn cách - sử dụng Box với background
+                        Box(
                             modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .addMoveAnimation(
-                                    orientation = Orientation.Horizontal,
-                                    from = (-60).dp,
-                                    to = 0.dp,
-                                    duration = 700,
-                                ),
-                            sizes = it.sizes!!.map { size -> size.size },
-                            pickedSizeProvider = { size },
-                            onSizePicked = productDetailsViewModel::updateSelectedSize,
+                                .fillMaxWidth()
+                                .height(2.dp)
+                                .background(MaterialTheme.colors.primary.copy(alpha = 0.5f))
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        val scrollState = rememberScrollState()
+                        Text(
+                            text = it.description,
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier
+                                .weight(1f)
+                                .verticalScroll(scrollState)
                         )
                     }
-                    /** Price section */
-                    Text(
+                }
+                
+                /** Sizes section */
+                if (it.sizes != null && it.sizes!!.isNotEmpty()) {
+                    SizesSection(
                         modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .addMoveAnimation(
-                                orientation = Orientation.Vertical,
-                                from = 200.dp,
-                                to = 0.dp,
-                                duration = 700,
-                            ),
-                        text = "$${it.price}",
-                        style = MaterialTheme.typography.h4,
-                    )
-                    /** Bookmarking button */
-                    ReactiveBookmarkIcon(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
+                            .align(Alignment.Start)
                             .addMoveAnimation(
                                 orientation = Orientation.Horizontal,
-                                from = 60.dp,
+                                from = (-60).dp,
                                 to = 0.dp,
                                 duration = 700,
                             ),
-                        iconSize = Dimension.smIcon,
-                        isOnBookmarks = isOnBookmarksStateProvider(),
-                        onBookmarkChange = { onUpdateBookmarksState(productId) }
+                        sizes = it.sizes!!.map { size -> size.size },
+                        pickedSizeProvider = { size },
+                        onSizePicked = productDetailsViewModel::updateSelectedSize,
                     )
+                }
+                
+                /** Price section and quantity adjustment */
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.Start)
+                        .addMoveAnimation(
+                            orientation = Orientation.Vertical,
+                            from = 200.dp,
+                            to = 0.dp,
+                            duration = 700,
+                        ),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Giá tiền
+                    Text(
+                        text = "${PriceFormatter.formatPrice(it.price)} VND",
+                        style = MaterialTheme.typography.h4,
+                    )
+                    
+                    // Điều chỉnh số lượng
+                    val quantity = productDetailsViewModel.quantity.value
+                    Row(
+                        modifier = Modifier
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colors.primary,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Nút giảm
+                        Text(
+                            text = "-",
+                            style = MaterialTheme.typography.h6,
+                            modifier = Modifier
+                                .clickable { productDetailsViewModel.decreaseQuantity() }
+                                .padding(horizontal = 8.dp)
+                        )
+                        
+                        // Số lượng
+                        Text(
+                            text = "$quantity",
+                            style = MaterialTheme.typography.h6,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        
+                        // Nút tăng
+                        Text(
+                            text = "+",
+                            style = MaterialTheme.typography.h6,
+                            modifier = Modifier
+                                .clickable { productDetailsViewModel.increaseQuantity() }
+                                .padding(horizontal = 8.dp)
+                        )
+                    }
+                }
                     /** colors section */
                     if (it.colors != null && it.colors!!.size > 1) {
                         ColorsSection(
                             modifier = Modifier
-                                .align(Alignment.BottomEnd)
+                                .align(Alignment.End)
                                 .addMoveAnimation(
                                     orientation = Orientation.Vertical,
                                     from = 200.dp,
@@ -246,8 +326,10 @@ fun ProductDetailsScreen(
                     val product = productDetailsViewModel.product.value
                     AddedToCartDialog(
                         productName = product?.name ?: "",
-                        productImage = product?.image ?: 0,
+                        // Sử dụng imagePath từ API nếu có, nếu không thì dùng image cũ
+                        productImage = product?.imagePath ?: (product?.image ?: R.drawable.adidas_48),
                         productPrice = product?.price ?: 0.0,
+                        productQuantity = productDetailsViewModel.quantity.value,
                         onContinue = {
                             showAddedDialog = false
                             navController.popBackStack()
@@ -264,13 +346,15 @@ fun ProductDetailsScreen(
             }
         }
     }
-}
+
 
 @Composable
 fun DetailsHeader(
     modifier: Modifier = Modifier,
     cartItemsCount: Int,
     onBackRequested: () -> Unit,
+    isOnBookmarks: Boolean = false,
+    onBookmarkChange: () -> Unit = {},
 ) {
     Row(
         modifier = modifier
@@ -288,32 +372,47 @@ fun DetailsHeader(
             iconSize = Dimension.smIcon,
             paddingValue = PaddingValues(Dimension.sm),
         )
-        Box {
-            DrawableButton(
-                painter = painterResource(id = R.drawable.ic_shopping_bag),
-                iconTint = MaterialTheme.colors.onBackground,
-                backgroundColor = MaterialTheme.colors.background,
-                onButtonClicked = {
-//                    onNavigateToCartRequested()
-                },
-                shape = MaterialTheme.shapes.medium,
-                elevation = Dimension.elevation,
+        
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Nút bookmark
+            ReactiveBookmarkIcon(
+                modifier = Modifier,
                 iconSize = Dimension.smIcon,
-                paddingValue = PaddingValues(Dimension.sm),
+                isOnBookmarks = isOnBookmarks,
+                onBookmarkChange = { onBookmarkChange() }
             )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .size(Dimension.smIcon.times(0.85f))
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colors.onBackground),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "$cartItemsCount",
-                    style = MaterialTheme.typography.subtitle2,
-                    color = MaterialTheme.colors.background,
+            
+            // Giỏ hàng
+            Box {
+                DrawableButton(
+                    painter = painterResource(id = R.drawable.ic_shopping_bag),
+                    iconTint = MaterialTheme.colors.onBackground,
+                    backgroundColor = MaterialTheme.colors.background,
+                    onButtonClicked = {
+    //                    onNavigateToCartRequested()
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                    elevation = Dimension.elevation,
+                    iconSize = Dimension.smIcon,
+                    paddingValue = PaddingValues(Dimension.sm),
                 )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .size(Dimension.smIcon.times(0.85f))
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colors.onBackground),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "$cartItemsCount",
+                        style = MaterialTheme.typography.subtitle2,
+                        color = MaterialTheme.colors.background,
+                    )
+                }
             }
         }
     }

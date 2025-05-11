@@ -15,12 +15,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
+import com.mustfaibra.roffu.utils.PriceFormatter
 
 @Composable
 fun AddedToCartDialog(
     productName: String,
     productImage: Any,
     productPrice: Double,
+    productQuantity: Int = 1,
     onContinue: () -> Unit,
     onViewCart: () -> Unit,
     onDismiss: () -> Unit
@@ -60,11 +62,20 @@ fun AddedToCartDialog(
                         maxLines = 2
                     )
                     Spacer(Modifier.height(8.dp))
+                    // Giá tiền
                     Text(
-                        String.format("A$ %.2f", productPrice),
+                        "${PriceFormatter.formatPrice(productPrice)} VND",
                         style = MaterialTheme.typography.body1.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                         color = Color.White,
                         fontSize = 18.sp
+                    )
+                    
+                    // Số lượng
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Số lượng: $productQuantity",
+                        style = MaterialTheme.typography.body2,
+                        color = Color.LightGray
                     )
                 }
             }
