@@ -154,8 +154,8 @@ fun CartScreen(
                             items(cartItems, key = { it.id ?: it.product_id }) { cartItem ->
                                 cartItem.product?.let { product ->
                                     CartItemLayout(
-                                        productName = product.productName,
-                                        productImage = product.images.find { it.isPrimary }?.imageUrl,
+                                        productName = product.product_name,
+                                        productImage = product.images.find { it.is_primary }?.image_url,
                                         productPrice = product.price.toDouble(),
                                         currentQty = cartItem.quantity,
                                         onProductClicked = { onProductClicked(product.id) },

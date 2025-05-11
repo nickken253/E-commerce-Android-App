@@ -1,5 +1,6 @@
 package com.mustfaibra.roffu.screens.home
 
+import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -11,7 +12,9 @@ import com.mustfaibra.roffu.repositories.BrandsRepository
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
 import com.mustfaibra.roffu.sealed.UiState
+import com.mustfaibra.roffu.utils.UserPref
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
@@ -28,6 +31,7 @@ data class ApiResponse(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val brandsRepository: BrandsRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
     val searchQuery = mutableStateOf("")
 
@@ -98,7 +102,17 @@ class HomeViewModel @Inject constructor(
         allProductsUiState.value = UiState.Loading
         viewModelScope.launch {
             try {
-                when (val response = brandsRepository.getAllProducts(page = currentPage, limit = pageLimit)) {
+                // Lấy token từ UserPref
+                val token = UserPref.getToken(context ) ?: run {
+                    allProductsUiState.value = UiState.Error(error = Error.Unknown)
+                    return@launch
+                }
+
+                when (val response = brandsRepository.getAllProducts(
+                    page = currentPage,
+                    limit = pageLimit,
+                    token = token
+                )) {
                     is DataResponse.Success -> {
                         response.data?.let { apiResponse ->
                             if (currentPage == 1) {

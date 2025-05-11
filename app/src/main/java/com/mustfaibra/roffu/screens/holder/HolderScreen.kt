@@ -81,6 +81,7 @@ fun HolderScreen(
     /** Our navigation controller that the MainActivity provides */
     val controller = LocalNavHost.current
 
+
     /** The current active navigation route */
     val currentRouteAsState = getActiveRoute(navController = controller)
 
@@ -313,6 +314,10 @@ fun ScaffoldSection(
                 )
             ) {
                 onUserNotAuthorized(true)
+                controller.navigate(Screen.Login.route) {
+                    popUpTo(0) { inclusive = true } // Xóa toàn bộ back stack
+                    launchSingleTop = true
+                }
             }
         }
     }
@@ -352,7 +357,11 @@ fun ScaffoldSection(
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     ManHinhDangKy(
                         onQuayLaiDangNhap = { controller.popBackStack() },
-                        onDangKyThanhCong = { controller.navigate(Screen.Login.route) },
+                        onDangKyThanhCong = {
+                            controller.navigate(Screen.Login.route) {
+                                popUpTo(Screen.Register.route) { inclusive = true } // Xóa Register
+                            }
+                        },
                         onYeuCauToast = onToastRequested
                     )
                 }

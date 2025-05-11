@@ -230,13 +230,13 @@ fun HomeScreen(
                             }
                             is UiState.Success -> {
                                 items(homeViewModel.allProducts) { product ->
-                                    val primaryImage = product.images.find { it.isPrimary }?.imageUrl
+                                    val primaryImage = product.images.find { it.is_primary }?.image_url
                                     ProductItemLayout(
                                         modifier = Modifier.fillMaxWidth(),
                                         cartOffset = cartOffset,
                                         imageUrl = primaryImage ?: "",
                                         price = formatPrice(Integer.parseInt(product.price.toString())),
-                                        title = product.productName,
+                                        title = product.product_name,
                                         onBookmark = product.id in bookmarkProductsIds,
                                         onProductClicked = { onProductClicked(product.id) },
                                         onChangeCartState = { onCartStateChanged(product.id) },
@@ -259,7 +259,7 @@ fun HomeScreen(
                     }
                     else -> {
                         val selectedBrandId = brands[currentSelectedBrandIndex].id
-                        val filteredProducts = homeViewModel.allProducts.filter { it.brandId == selectedBrandId }
+                        val filteredProducts = homeViewModel.allProducts.filter { it.brand_id == selectedBrandId }
                         if (filteredProducts.isEmpty()) {
                             item(span = { GridItemSpan(2) }) {
                                 Text(
@@ -270,13 +270,13 @@ fun HomeScreen(
                             }
                         } else {
                             items(filteredProducts) { product ->
-                                val primaryImage = product.images.find { it.isPrimary }?.imageUrl
+                                val primaryImage = product.images.find { it.is_primary }?.image_url
                                 ProductItemLayout(
                                     modifier = Modifier.fillMaxWidth(),
                                     cartOffset = cartOffset,
                                     imageUrl = primaryImage ?: "",
                                     price = formatPrice(Integer.parseInt(product.price.toString())),
-                                    title = product.productName,
+                                    title = product.product_name,
                                     onBookmark = product.id in bookmarkProductsIds,
                                     onProductClicked = { onProductClicked(product.id) },
                                     onChangeCartState = { onCartStateChanged(product.id) },

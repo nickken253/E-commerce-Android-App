@@ -31,13 +31,13 @@ class BarcodeScannerViewModel @Inject constructor(
                 val product = productRepository.getProductByBarcode(barcode)
                 _scannedProduct.value = product
                 if (product != null) {
-                    Timber.d("Product found: ${product.productName}")
+                    Timber.d("Product found: ${product.product_name}")
                     Timber.d("Product images: ${product.images}")
                     product.images.forEachIndexed { index, image ->
-                        Timber.d("Image $index: url=${image.imageUrl}, isPrimary=${image.isPrimary}")
+                        Timber.d("Image $index: url=${image.image_url}, isPrimary=${image.is_primary}")
                     }
                     if (product.images.isEmpty()) {
-                        Timber.w("No images found for product: ${product.productName}")
+                        Timber.w("No images found for product: ${product.product_name}")
                         _uiState.value ;
                     } else {
                         _uiState.value = UiState.Success

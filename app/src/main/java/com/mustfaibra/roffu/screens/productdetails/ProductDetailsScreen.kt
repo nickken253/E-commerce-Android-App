@@ -155,7 +155,7 @@ fun ProductContent(
         ) {
             item {
                 AsyncImage(
-                    model = product.images.find { it.isPrimary }?.imageUrl
+                    model = product.images.find { it.is_primary }?.image_url
                         ?: "https://example.com/placeholder.jpg",
                     contentDescription = "Product Image",
                     modifier = Modifier
@@ -172,7 +172,7 @@ fun ProductContent(
             }
             item {
                 Text(
-                    text = product.productName,
+                    text = product.product_name,
                     style = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Black),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()

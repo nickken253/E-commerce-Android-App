@@ -101,7 +101,7 @@ class LoginViewModel @Inject constructor(
                 uiState.value = UiState.Loading
 
                 // Gọi API Google Sign-In
-                val loginResponse = RetrofitClient.authApi.loginWithGoogle(email)
+                val loginResponse = RetrofitClient.authApi.loginWithGoogle(mapOf("email" to email))
 
                 // Lưu access_token
                 UserPref.updateUserToken(context, loginResponse.access_token)
@@ -303,29 +303,12 @@ class LoginViewModel @Inject constructor(
         onRegistered: () -> Unit,
         onRegistrationFailed: (String) -> Unit
     ) {
-        // Validate inputs
         if (username.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() || name.isBlank() || phoneNumber.isBlank()) {
             onRegistrationFailed("Vui lòng điền đầy đủ thông tin!")
             return
         }
-
         if (password != confirmPassword) {
             onRegistrationFailed("Mật khẩu xác nhận không khớp!")
-            return
-        }
-
-        if (!isValidPassword(password)) {
-            onRegistrationFailed("Mật khẩu phải dài 8-20 ký tự, chứa chữ hoa, chữ thường, số và ký tự đặc biệt!")
-            return
-        }
-
-        if (!isValidEmail(email)) {
-            onRegistrationFailed("Email không hợp lệ!")
-            return
-        }
-
-        if (!isValidPhoneNumber(phoneNumber)) {
-            onRegistrationFailed("Số điện thoại không hợp lệ! Phải là số và dài 10-12 chữ số.")
             return
         }
 
@@ -340,23 +323,8 @@ class LoginViewModel @Inject constructor(
                     phone_number = phoneNumber,
                     password = password
                 )
-
                 val response = RetrofitClient.authApi.register(request)
-
-                val newUser = User(
-                    userId = response.id,
-                    name = response.full_name,
-                    email = response.email,
-                    phone = response.phone_number,
-                    password = password,
-                    gender = 1,
-                    role = "user",
-                    profile = R.drawable.default_avatar,
-                    address = address
-                )
-
-                UserPref.updateUser(user = newUser)
-
+                // Không lưu user hoặc token
                 uiState.value = UiState.Success
                 onRegistered()
             } catch (e: retrofit2.HttpException) {

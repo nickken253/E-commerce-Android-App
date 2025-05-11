@@ -40,6 +40,6 @@ interface AuthApi {
     )
     @POST("api/v1/auth/google")
     suspend fun loginWithGoogle(
-        @Query("email") email: String
+        @Body body: Map<String, String>
     ): LoginResponse
 }

@@ -59,6 +59,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.sealed.MenuOption
@@ -68,15 +69,14 @@ import com.mustfaibra.roffu.utils.getDiscountedValue
 import com.mustfaibra.roffu.utils.getDp
 import kotlin.math.roundToInt
 
-
 @Composable
 fun CustomInputField(
     modifier: Modifier = Modifier,
     value: String,
     placeholder: String,
-    textStyle: TextStyle = MaterialTheme.typography.body1,
+    textStyle: TextStyle = MaterialTheme.typography.body2, // Giảm kích thước chữ
     textColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.8f),
-    backgroundColor: Color = Color.White, // Đổi nền thành màu trắng
+    backgroundColor: Color = Color.White,
     requireSingleLine: Boolean = true,
     textShouldBeCentered: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
@@ -84,7 +84,7 @@ fun CustomInputField(
     maxLength: Int = Int.MAX_VALUE,
     imeAction: ImeAction = ImeAction.Done,
     shape: Shape = MaterialTheme.shapes.small,
-    padding: PaddingValues = PaddingValues(horizontal = Dimension.xs),
+    padding: PaddingValues = PaddingValues(horizontal = 4.dp, vertical = 2.dp), // Giảm padding
     leadingIcon: @Composable () -> Unit = {},
     trailingIcon: @Composable (() -> Unit)? = null,
     onValueChange: (string: String) -> Unit,
@@ -101,6 +101,7 @@ fun CustomInputField(
         modifier = modifier
             .background(backgroundColor, shape)
             .padding(padding)
+            .height(48.dp) // Giới hạn chiều cao để nhỏ gọn hơn
             .onFocusChanged { onFocusChange(it.isFocused) },
         textStyle = textStyle.copy(
             color = textColor,
@@ -118,8 +119,8 @@ fun CustomInputField(
             backgroundColor = backgroundColor,
             textColor = textColor,
             placeholderColor = textColor.copy(alpha = 0.3f),
-            focusedBorderColor = Color.Transparent, // Bỏ viền khi focus
-            unfocusedBorderColor = Color.Transparent, // Bỏ viền khi không focus
+            focusedBorderColor = Color.Transparent,
+            unfocusedBorderColor = Color.Transparent,
             cursorColor = textColor,
         ),
         shape = shape,

@@ -56,7 +56,7 @@ fun SplashScreen(
                     },
                     whatIfNot = {
                         /** Launched before, we should go to home now */
-                        onSplashFinished(Screen.Home)
+                        onSplashFinished(Screen.Login)
                     }
                 )
 

@@ -160,7 +160,7 @@ fun ProductDisplay(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val imageUrl = product.images.firstOrNull()?.imageUrl
+        val imageUrl = product.images.firstOrNull()?.image_url
         if (imageUrl != null) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
@@ -187,12 +187,12 @@ fun ProductDisplay(
                 contentDescription = "No image available",
                 modifier = Modifier.size(80.dp)
             )
-            Timber.w("No images available for product: ${product.productName}")
+            Timber.w("No images available for product: ${product.product_name}")
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = product.productName,
+                text = product.product_name,
                 style = MaterialTheme.typography.bodyLarge
             )
         }

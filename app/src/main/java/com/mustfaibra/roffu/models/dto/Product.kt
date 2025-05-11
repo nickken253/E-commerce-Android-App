@@ -7,14 +7,16 @@ import kotlinx.serialization.SerialName
 data class Product(
     val id: Int,
     val barcode: String,
-    @SerialName("product_name") val productName: String,
+    val product_name: String,
     val description: String,
     val price: Long,
-    @SerialName("category_id") val categoryId: Int,
-    @SerialName("brand_id") val brandId: Int,
-    @SerialName("created_at") val createdAt: String,
-    @SerialName("updated_at") val updatedAt: String,
+    val category_id: Int,
+    val brand_id: Int,
+    val created_at: String,
+    val updated_at: String,
     val quantity: Int,
-    val variants: List<Variant>,
+    val variants: List<EmptyVariant>,
     val images: List<Image>
 )
+@Serializable
+object EmptyVariant
