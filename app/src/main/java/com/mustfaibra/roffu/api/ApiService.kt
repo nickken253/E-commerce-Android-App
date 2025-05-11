@@ -1,5 +1,6 @@
 package com.mustfaibra.roffu.api
 
+import android.content.Context
 import com.mustfaibra.roffu.models.Brand
 import com.mustfaibra.roffu.models.Category
 import com.mustfaibra.roffu.models.ProductResponse
@@ -12,12 +13,20 @@ import com.mustfaibra.roffu.models.dto.ResetPasswordRequest
 import com.mustfaibra.roffu.models.dto.ResetPasswordResponse
 import com.mustfaibra.roffu.models.dto.UserResponse
 import com.mustfaibra.roffu.utils.Constants
+import com.mustfaibra.roffu.utils.UserPref
 import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
     companion object {
         const val ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY5Nzc5MzksInN1YiI6IjIifQ.uFBKTDTwlenDuYF3EmMFetzoWXEwUCOhtaMp1nIlodo"
+
+        fun init(context: Context) {
+            val token = UserPref.getToken(context)
+            if (token != null) {
+                RetrofitClient.init(token)
+            }
+        }
     }
 
     // Auth endpoints
@@ -28,7 +37,7 @@ interface ApiService {
     suspend fun register(@Body request: RegisterRequest): RegisterResponse
 
     @GET("api/v1/users/me")
-    suspend fun getUserProfile(@Header("Authorization") token: String): UserResponse
+    suspend fun getUserProfile(): UserResponse
 
     @Headers(
         "accept: application/json",
@@ -52,7 +61,6 @@ interface ApiService {
     @GET("api/v1/products/{product_id}")
     suspend fun getProductDetails(
         @Path("product_id") productId: Int,
-//        @Header("Authorization") authorization: String = "Bearer $ACCESS_TOKEN"
     ): Response<ProductResponse>
 
     @GET("api/v1/products/")
@@ -68,16 +76,11 @@ interface ApiService {
         @Query("sort_order") sortOrder: String? = null,
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 20,
-//        @Header("Authorization") authorization: String = "Bearer $ACCESS_TOKEN"
     ): SearchResponse
 
     @GET("api/v1/products/brands")
-    suspend fun getBrands(
-//        @Header("Authorization") authorization: String = "Bearer $ACCESS_TOKEN"
-    ): List<Brand>
+    suspend fun getBrands(): List<Brand>
 
     @GET("api/v1/products/categories")
-    suspend fun getCategories(
-//        @Header("Authorization") authorization: String = "Bearer $ACCESS_TOKEN"
-    ): List<Category>
+    suspend fun getCategories(): List<Category>
 } 

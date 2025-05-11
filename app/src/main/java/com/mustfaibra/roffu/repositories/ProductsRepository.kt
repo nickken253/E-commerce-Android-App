@@ -5,7 +5,7 @@ import retrofit2.HttpException
 
 import android.os.Build
 import androidx.annotation.RequiresExtension
-import com.mustfaibra.roffu.RetrofitClient
+import com.mustfaibra.roffu.api.RetrofitClient
 import com.mustfaibra.roffu.data.local.RoomDao
 import com.mustfaibra.roffu.models.BookmarkItem
 import com.mustfaibra.roffu.models.CartItem
@@ -196,8 +196,10 @@ class ProductsRepository @Inject constructor(
                 return DataResponse.Error(error = Error.Unknown)
             }
 
+            // Set token cho RetrofitClient
+            RetrofitClient.init(token)
+
             val response = RetrofitClient.orderApiService.getOrders(
-                authToken = "Bearer $token",
                 page = 1,
                 limit = 10
             )

@@ -4,16 +4,20 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mustfaibra.roffu.api.ApiService
+import com.mustfaibra.roffu.api.RetrofitClient
 import com.mustfaibra.roffu.models.Brand
 import com.mustfaibra.roffu.models.Category
 import com.mustfaibra.roffu.models.ProductResponse
 import com.mustfaibra.roffu.models.SearchFilters
 import com.mustfaibra.roffu.utils.SearchHistoryPref
+import com.mustfaibra.roffu.utils.UserPref
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 
 /**
  * A View model with hiltViewModel annotation that is used to access this view model everywhere needed
@@ -22,8 +26,10 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchHistoryPref: SearchHistoryPref,
-    private val apiService: ApiService
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
+    private val userPref = UserPref.getToken(context)
+
     // Mock data cho gợi ý tìm kiếm
     private val mockSuggestions = listOf(
         "Giày thể thao nam",
@@ -123,8 +129,9 @@ class SearchViewModel @Inject constructor(
     private fun loadBrandsAndCategories() {
         viewModelScope.launch {
             try {
-                _brands.value = apiService.getBrands()
-                _categories.value = apiService.getCategories()
+                ApiService.init(context)
+                _brands.value = RetrofitClient.apiService.getBrands()
+                _categories.value = RetrofitClient.apiService.getCategories()
             } catch (e: Exception) {
                 Log.e("SearchViewModel", "Error loading brands/categories", e)
             }
@@ -148,8 +155,10 @@ class SearchViewModel @Inject constructor(
                     _isLoading.value = true
                     _error.value = null
                     
+                    ApiService.init(context)
+                    
                     val filters = currentFilters.value
-                    val response = apiService.searchProducts(
+                    val response = RetrofitClient.apiService.searchProducts(
                         search = query,
                         skip = (currentPage.value - 1) * PAGE_SIZE,
                         limit = PAGE_SIZE,

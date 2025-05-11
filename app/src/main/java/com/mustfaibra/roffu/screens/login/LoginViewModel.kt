@@ -17,6 +17,7 @@ import com.google.android.gms.tasks.Task
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.mustfaibra.roffu.BuildConfig
 import com.mustfaibra.roffu.R
+import com.mustfaibra.roffu.api.RetrofitClient
 import com.mustfaibra.roffu.models.User
 import com.mustfaibra.roffu.models.dto.LoginRequest
 import com.mustfaibra.roffu.models.dto.RegisterRequest
@@ -105,9 +106,11 @@ class LoginViewModel @Inject constructor(
 
                 // Lưu access_token
                 UserPref.updateUserToken(context, loginResponse.access_token)
+                // Set token cho RetrofitClient
+                RetrofitClient.init(loginResponse.access_token)
 
                 // Lấy thông tin người dùng
-                val userResponse = RetrofitClient.authApi.getUserProfile("Bearer ${loginResponse.access_token}")
+                val userResponse = RetrofitClient.authApi.getUserProfile()
 
                 val user = User(
                     userId = userResponse.id,
@@ -189,11 +192,12 @@ class LoginViewModel @Inject constructor(
                 Log.d("API_RESPONSE", "Code: ${response.code()}, Body: ${response.body()?.toString()}, Error: ${response.errorBody()?.string()}")
 
                 if (response.isSuccessful) {
-                    response.body()?.let { resetResponse ->
+                    val resetResponse = response.body()
+                    if (resetResponse != null) {
                         Log.d("API_SUCCESS", "Success message: ${resetResponse.message}")
                         uiState.value = UiState.Success
-                        onSuccess(resetResponse.message)
-                    } ?: run {
+                        onSuccess(resetResponse.message ?: "Đặt lại mật khẩu thành công")
+                    } else {
                         Log.w("API_WARNING", "Response body is null")
                         onFailure("Không nhận được phản hồi từ server")
                     }
@@ -256,9 +260,11 @@ class LoginViewModel @Inject constructor(
 
                 // Save access_token
                 UserPref.updateUserToken(context, loginResponse.access_token)
+                // Set token cho RetrofitClient
+                RetrofitClient.init(loginResponse.access_token)
 
                 // Get user profile
-                val userResponse = RetrofitClient.authApi.getUserProfile("Bearer ${loginResponse.access_token}")
+                val userResponse = RetrofitClient.authApi.getUserProfile()
 
                 val user = User(
                     userId = userResponse.id,
