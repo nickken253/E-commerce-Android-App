@@ -273,20 +273,20 @@ fun ManHinhDangKy(
                     return@CustomButton
                 }
 
-                loginViewModel.registerUser(
-                    email = fullEmail,
-                    password = matKhau ?: "",
-                    confirmPassword = matKhauXacNhan.value,
-                    name = tenNguoiDung.value,
-                    address = "${soNha.value}, ${selectedDistrict.value}, ${selectedProvince.value}",
-                    onRegistered = {
-                        onYeuCauToast("Register successful!", Color.Green)
-                        onDangKyThanhCong()
-                    },
-                    onRegistrationFailed = { loi ->
-                        onYeuCauToast(loi, Color.Red)
-                    }
-                )
+//                loginViewModel.registerUser(
+//                    email = fullEmail,
+//                    password = matKhau ?: "",
+//                    confirmPassword = matKhauXacNhan.value,
+//                    name = tenNguoiDung.value,
+//                    address = "${soNha.value}, ${selectedDistrict.value}, ${selectedProvince.value}",
+//                    onRegistered = {
+//                        onYeuCauToast("Register successful!", Color.Green)
+//                        onDangKyThanhCong()
+//                    },
+//                    onRegistrationFailed = { loi ->
+//                        onYeuCauToast(loi, Color.Red)
+//                    }
+//                )
 
             },
             leadingIcon = {

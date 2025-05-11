@@ -25,19 +25,12 @@ import androidx.core.text.layoutDirection
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.placeholder
 import com.google.accompanist.placeholder.shimmer
-import com.mustfaibra.roffu.models.BookmarkItemWithProduct
-import com.mustfaibra.roffu.models.CartItem
-import com.mustfaibra.roffu.models.CartItemWithProduct
-import com.mustfaibra.roffu.models.LocalManufacturer
-import com.mustfaibra.roffu.models.LocalProduct
-import com.mustfaibra.roffu.models.Manufacturer
-import com.mustfaibra.roffu.models.Product
-import com.mustfaibra.roffu.models.ProductDetails
+import com.mustfaibra.roffu.models.*
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
 import com.mustfaibra.roffu.sealed.Orientation
 import io.ktor.client.call.*
-import io.ktor.client.features.*
+import io.ktor.client.plugins.*
 import io.ktor.client.statement.*
 import org.json.JSONException
 import org.json.JSONObject
@@ -46,9 +39,7 @@ import java.util.*
 
 /** An extension function that is used to convert the API response to a JSONObject & return the field message from it */
 suspend fun HttpResponse.getMessage(): String {
-    /** The json string */
-    val responseAsString = this.receive<String>()
-    /** convert the json string to a JSONObject that we can extract the message from it */
+    val responseAsString = this.body<String>()
     return try {
         val jsonObj = JSONObject(responseAsString)
         jsonObj.getString("message") ?: "No message provided !"
@@ -57,42 +48,23 @@ suspend fun HttpResponse.getMessage(): String {
     }
 }
 
-/**
- * An extension function that is used to handle the exception that occur when fetching from server
- * it send the report log - later - to server and return a valid response
- */
+/** Handles Ktor exceptions and maps them to a DataResponse.Error */
 fun <T> Throwable.handleResponseException(): DataResponse<T> {
     return when (this) {
-        is RedirectResponseException -> {
-            DataResponse.Error(error = Error.Empty)
-        }
-        is ClientRequestException -> {
-            DataResponse.Error(error = Error.Network)
-        }
-        is ServerResponseException -> {
-            DataResponse.Error(error = Error.Unknown)
-        }
-        else -> {
-            DataResponse.Error(error = Error.Network)
-        }
+        is RedirectResponseException -> DataResponse.Error(error = Error.Empty)
+        is ClientRequestException -> DataResponse.Error(error = Error.Network)
+        is ServerResponseException -> DataResponse.Error(error = Error.Unknown)
+        else -> DataResponse.Error(error = Error.Network)
     }
 }
 
-
-/** An extension function that is used to mirror the compose icons when using rtl languages like arabic and urdu */
 fun Modifier.mirror(): Modifier {
     return when (Locale.getDefault().layoutDirection) {
-        /** If app layout direction is rtl , then flip our icon horizontally (as a mirror) */
         LayoutDirection.RTL -> this.scale(scaleX = -1f, scaleY = 1f)
-        /** If is ltr , just forget about this amigo ! */
         else -> this
     }
 }
 
-/** An extension function on Date's object that is used to get a formatted date & time.
- * It takes the pattern that you want.
- * Shortcuts: yyyy: year , MM: month , dd: day , HH: hour , mm: minutes.
- */
 fun Date.getFormattedDate(pattern: String): String {
     val simpleDateFormat = SimpleDateFormat(pattern, Locale.ENGLISH)
     return simpleDateFormat.format(this.time)
@@ -124,18 +96,10 @@ fun Context.showToast(message: Int) {
     Toast.makeText(this, this.getText(message), Toast.LENGTH_LONG).show()
 }
 
-/**
- *  An extension function that is used to append an element to a list - or remove it in case it already exist.
- * Return the element if added or null if removed
- */
 fun <T> MutableList<T>.appendOrRemove(element: T): T? {
     remove(element).also { removed ->
-        return if (removed) {
-            /** Removed successfully */
-            null
-        } else {
-            /** Not exist, we should add it */
-            this.add(element = element)
+        return if (removed) null else {
+            this.add(element)
             element
         }
     }
@@ -146,9 +110,7 @@ fun Modifier.addMoveAnimation(orientation: Orientation, from: Dp, to: Dp, durati
         var contentOffset by remember { mutableStateOf(from) }
         val animatedContentOffset by animateDpAsState(
             targetValue = contentOffset,
-            animationSpec = TweenSpec(
-                durationMillis = duration,
-            )
+            animationSpec = TweenSpec(durationMillis = duration)
         ).also {
             contentOffset = to
         }
@@ -162,9 +124,7 @@ fun Modifier.addFadeAnimation(from: Float, to: Float, duration: Int): Modifier =
     var contentAlpha by remember { mutableStateOf(from) }
     val animatedContentAlpha by animateFloatAsState(
         targetValue = contentAlpha,
-        animationSpec = TweenSpec(
-            durationMillis = duration,
-        )
+        animationSpec = TweenSpec(durationMillis = duration)
     ).also {
         contentAlpha = to
     }
@@ -189,7 +149,7 @@ fun String.encryptCardNumber(): String {
     return "**** ".repeat(3).plus(this.takeLast(4))
 }
 
-fun Double.getDiscountedValue(discount: Int) = this - this.times((discount.div(100)))
+fun Double.getDiscountedValue(discount: Int) = this - this * (discount / 100.0)
 
 fun List<LocalManufacturer>.getStructuredManufacturers(): List<Manufacturer> {
     return this.map { localManufacturer ->
@@ -239,4 +199,3 @@ fun ProductDetails.getStructuredProducts(): Product {
         it.manufacturer = this.manufacturer
     }
 }
-

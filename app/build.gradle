@@ -4,23 +4,28 @@ plugins {
     id 'kotlin-kapt'
     id 'dagger.hilt.android.plugin'
     id 'kotlinx-serialization'
+    id 'org.jetbrains.kotlin.plugin.serialization'
 }
 
 android {
-    namespace="com.mustfaibra.roffu"
-    compileSdk 34
+    namespace = "com.mustfaibra.roffu"
+    compileSdk = 34
 
     defaultConfig {
-        applicationId "com.mustfaibra.roffu"
-        minSdk 21
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        applicationId = "com.mustfaibra.roffu"
+        minSdk = 23
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+        def localProperties = new Properties()
+        localProperties.load(new FileInputStream(rootProject.file("local.properties")))
+        buildConfigField "String", "RESEND_API_KEY", "\"${localProperties['RESEND_API_KEY']}\""
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary true
         }
+        //buildConfigField "String", "GOOGLE_CLIENT_ID", "\"1017192238651-suna7h6e36q6k8q3e7ffl8196sdugn46.apps.googleusercontent.com\""
     }
 
     buildTypes {
@@ -43,135 +48,129 @@ android {
     }
     buildFeatures {
         compose true
+        buildConfig = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion "1.2.0"
-        kotlinCompilerVersion "1.7.0"
+        kotlinCompilerExtensionVersion = "1.5.1"
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
+    packagingOptions {
+        exclude 'META-INF/INDEX.LIST'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/license.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/notice.txt'
+        exclude 'META-INF/ASL2.0'
+    }
 }
+//apply plugin: 'com.google.gms.google-services'
 
 dependencies {
-
-    implementation 'androidx.core:core-ktx:1.8.0'
-    implementation "androidx.compose.ui:ui:$compose_version"
-    //noinspection GradleDependency
-    implementation "androidx.compose.material:material:$compose_version"
-    implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
-    implementation 'androidx.activity:activity-compose:1.5.1'
-    implementation 'androidx.compose.foundation:foundation-layout-android:1.7.8'
-    implementation 'androidx.compose.ui:ui-test-android:1.7.8'
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-    androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
-    debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
-    debugImplementation "androidx.compose.ui:ui-test-manifest:$compose_version"
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.0'
+    implementation "androidx.compose.ui:ui:1.5.1"
+    implementation "androidx.compose.material:material:1.5.1"
+    implementation "androidx.compose.ui:ui-tooling-preview:1.5.1"
+    implementation "androidx.activity:activity-compose:1.8.2"
+    implementation 'com.google.firebase:firebase-auth-ktx:23.0.0'
+    implementation "io.coil-kt:coil-compose:2.6.0"
+    implementation "androidx.datastore:datastore-preferences:1.1.1"
+    implementation 'com.google.android.gms:play-services-auth:21.0.0'
+    implementation "androidx.compose.material:material-icons-extended:1.5.1"
+    implementation "io.ktor:ktor-client-cio:2.3.12"
 
 
-    /** Compose navigation */
-    def compose_navigation_version = "2.5.1"
-    implementation "androidx.navigation:navigation-compose:$compose_navigation_version"
 
     // Ktor
-    def core_ktor_version = '1.5.0'
-    implementation "io.ktor:ktor-client-core:$core_ktor_version"
-    def android_ktor_version = "1.6.3"
-    implementation "io.ktor:ktor-client-android:$android_ktor_version"
-    implementation "io.ktor:ktor-client-serialization:$core_ktor_version"
-    implementation "io.ktor:ktor-client-logging:$core_ktor_version"
-    implementation "io.ktor:ktor-client-auth:$core_ktor_version"
-    implementation "ch.qos.logback:logback-classic:1.2.3"
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.20"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.20"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.20"
+    implementation "io.ktor:ktor-client-core:2.3.12"
+    implementation "io.ktor:ktor-client-android:2.3.12"
+    implementation "io.ktor:ktor-client-content-negotiation:2.3.12"
+    implementation "io.ktor:ktor-serialization-kotlinx-json:2.3.12"
+    implementation "io.ktor:ktor-client-logging:2.3.12"
+    implementation "io.ktor:ktor-client-auth:2.3.12"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3"
 
-    implementation 'com.google.mlkit:barcode-scanning:17.2.0'
-
-    // Thư viện CameraX để sử dụng camera
-    implementation 'androidx.camera:camera-core:1.2.3'
-    implementation 'androidx.camera:camera-camera2:1.2.3'
-    implementation 'androidx.camera:camera-lifecycle:1.2.3'
-    implementation 'androidx.camera:camera-view:1.3.0-alpha06'
-
-    // Xử lý permission
-    implementation 'com.google.accompanist:accompanist-permissions:0.28.0'
-    // Truth
-    def truth_version = "1.1.3"
-    testImplementation "com.google.truth:truth:$truth_version"
-    androidTestImplementation "com.google.truth:truth:$truth_version"
-
-    // Timber
-    def timber_version = "5.0.1"
-    implementation "com.jakewharton.timber:timber:$timber_version"
+    // Retrofit
+    implementation "com.squareup.retrofit2:retrofit:2.9.0"
+    implementation "com.squareup.retrofit2:converter-gson:2.9.0"
 
     // Coroutines
-    def core_coroutine_version = "1.6.1"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$core_coroutine_version"
-    def android_coroutine_version = "1.6.4"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$android_coroutine_version"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
 
-    // Coroutine Lifecycle Scopes
-    def lifecycle_version = "2.5.1"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
-    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version"
+    // Compose navigation
+    implementation "androidx.navigation:navigation-compose:2.7.7"
 
-    // compose coil to load images
-    def compose_coil_version = "2.2.0"
-    implementation "io.coil-kt:coil-compose:$compose_coil_version"
-    implementation "io.coil-kt:coil-svg:$compose_coil_version"
+    // ML Kit
+    implementation 'com.google.mlkit:barcode-scanning:17.3.0'
 
-    //Dagger - Hilt
-    implementation "com.google.dagger:hilt-android:$hilt_plugin_version"
-    kapt "com.google.dagger:hilt-android-compiler:$hilt_plugin_version"
-    kapt "androidx.hilt:hilt-compiler:1.0.0"
-    implementation 'androidx.hilt:hilt-navigation-compose:1.0.0'
+    // CameraX
+    implementation 'androidx.camera:camera-core:1.3.4'
+    implementation 'androidx.camera:camera-camera2:1.3.4'
+    implementation 'androidx.camera:camera-lifecycle:1.3.4'
+    implementation 'androidx.camera:camera-view:1.3.4'
+    implementation "com.google.accompanist:accompanist-placeholder-material:0.34.0"
+
+
+    // Accompanist Permissions
+    implementation 'com.google.accompanist:accompanist-permissions:0.34.0'
+
+    // Timber
+    implementation "com.jakewharton.timber:timber:5.0.1"
+
+    // Lifecycle
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.4"
+
+    // Coil
+    implementation "io.coil-kt:coil-svg:2.6.0"
+
+    // Hilt
+    implementation "com.google.dagger:hilt-android:2.48"
+    implementation 'androidx.compose.material3:material3-android:1.3.2'
+    kapt "com.google.dagger:hilt-android-compiler:2.48"
+    kapt "androidx.hilt:hilt-compiler:1.2.0"
+    implementation 'androidx.hilt:hilt-navigation-compose:1.2.0'
+
+    implementation 'com.resend:resend-java:2.0.0'
 
     // Room
-    def room_version = "2.4.3"
-    implementation "androidx.room:room-runtime:$room_version"
-    kapt "androidx.room:room-compiler:$room_version"
-    implementation "androidx.room:room-ktx:$room_version"
-    androidTestImplementation "androidx.room:room-testing:$room_version"
-    annotationProcessor "androidx.room:room-compiler:$room_version"
+    implementation "androidx.room:room-runtime:2.6.1"
+    kapt "androidx.room:room-compiler:2.6.1"
+    implementation "androidx.room:room-ktx:2.6.1"
+    androidTestImplementation "androidx.room:room-testing:2.6.1"
 
-    // live data with compose
-    def compose_livedata = "1.2.1"
-    implementation "androidx.compose.runtime:runtime-livedata:$compose_livedata"
+    // LiveData with Compose
+    implementation "androidx.compose.runtime:runtime-livedata:1.7.0"
 
-    // Lotti file
-    def lottie_files = "5.2.0"
-    implementation "com.airbnb.android:lottie-compose:$lottie_files"
+    // Lottie
+    implementation "com.airbnb.android:lottie-compose:6.5.0"
 
-    // accompanist - Placeholder
-    def accompanist_placeholder = "0.26.1-alpha"
-    implementation "com.google.accompanist:accompanist-placeholder:$accompanist_placeholder"
+    // Accompanist Pager
+    implementation "com.google.accompanist:accompanist-pager:0.34.0"
+    implementation "com.google.accompanist:accompanist-pager-indicators:0.34.0"
 
-    // accompanist - PagerView
-    def accompanist_pager = "0.26.1-alpha"
-    implementation "com.google.accompanist:accompanist-pager:$accompanist_pager"
-    implementation "com.google.accompanist:accompanist-pager-indicators:$accompanist_pager"
-
-    // Data store
-    def data_store_version = "1.0.0"
-    implementation "androidx.datastore:datastore-preferences:$data_store_version"
+    // DataStore
+    implementation "androidx.datastore:datastore-preferences:1.1.1"
 
     // WhatIf
-    implementation "com.github.skydoves:whatif:1.1.1"
+    implementation "com.github.skydoves:whatif:1.1.2"
 
-    // RecyclerView
-    implementation 'androidx.recyclerview:recyclerview:1.3.2'
-
-    // AppCompat
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-
-    // Material Components for TabLayout
-    implementation 'com.google.android.material:material:1.11.0'
-    implementation "androidx.compose.material:material-icons-extended:$compose_version"
+    // Test
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4:1.5.1"
+    debugImplementation "androidx.compose.ui:ui-tooling:1.5.1"
+    debugImplementation "androidx.compose.ui:ui-test-manifest:1.5.1"
+    testImplementation "com.google.truth:truth:1.4.4"
+    androidTestImplementation "com.google.truth:truth:1.4.4"
 }

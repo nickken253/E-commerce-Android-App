@@ -51,6 +51,7 @@ import com.mustfaibra.roffu.screens.checkout.CheckoutScreen
 import com.mustfaibra.roffu.screens.home.HomeScreen
 import com.mustfaibra.roffu.screens.locationpicker.LocationPickerScreen
 import com.mustfaibra.roffu.screens.login.LoginScreen
+import com.mustfaibra.roffu.screens.login.LoginViewModel
 import com.mustfaibra.roffu.screens.login.ManHinhDangKy
 import com.mustfaibra.roffu.screens.notifications.NotificationScreen
 import com.mustfaibra.roffu.screens.onboard.OnboardScreen
@@ -339,6 +340,7 @@ fun ScaffoldSection(
                 composable(Screen.Login.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     LoginScreen(
+                        navController = controller,
                         onUserAuthenticated = onBackRequested,
                         onToastRequested = onToastRequested,
                         onNavigateToRegister = { controller.navigate(Screen.Register.route) }
@@ -480,8 +482,7 @@ fun ScaffoldSection(
                             cartProductsIds = productsOnCartIds,
                             onProductClicked = onShowProductRequest,
                             onCartStateChanged = onUpdateCartRequest,
-                            onBookmarkStateChanged = onUpdateBookmarkRequest,
-                            onBackRequested = onBackRequested,
+                            onBookmarkStateChanged = onUpdateBookmarkRequest
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -560,6 +561,15 @@ fun ScaffoldSection(
                 }
                 composable(Screen.Profile.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
+                    val context = LocalContext.current
+                    val loginViewModel: LoginViewModel = hiltViewModel()
+                    // Kiểm tra trạng thái đăng nhập
+                    LaunchedEffect(Unit) {
+                        if (UserPref.getToken(context) == null) {
+                            loginViewModel.logout() // Đặt lại trạng thái LoginViewModel
+                            onNavigationRequested(Screen.Login.route, true)
+                        }
+                    }
                     if (user?.isAdmin() != true) {
                         user.whatIfNotNull(
                             whatIf = {
@@ -567,16 +577,16 @@ fun ScaffoldSection(
                                     user = it,
                                     onNavigationRequested = onNavigationRequested,
                                     onLogoutRequested = {
-                                        UserPref.logout()
+                                        loginViewModel.logout()
                                         onNavigationRequested(Screen.Login.route, true)
                                     }
                                 )
                             },
                             whatIfNot = {
                                 LaunchedEffect(Unit) {
-                                    onUserNotAuthorized(false)
+                                    onNavigationRequested(Screen.Login.route, true)
                                 }
-                            },
+                            }
                         )
                     } else {
                         LaunchedEffect(Unit) {

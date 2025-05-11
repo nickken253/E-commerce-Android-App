@@ -20,11 +20,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Snackbar
 import androidx.compose.material.SnackbarData
 import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Text
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowLeft
 import androidx.compose.runtime.Composable
@@ -32,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,8 +56,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.sealed.MenuOption
@@ -69,9 +74,9 @@ fun CustomInputField(
     modifier: Modifier = Modifier,
     value: String,
     placeholder: String,
-    textStyle: TextStyle = MaterialTheme.typography.body1,
+    textStyle: TextStyle = MaterialTheme.typography.body2, // Giảm kích thước chữ
     textColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.8f),
-    backgroundColor: Color = MaterialTheme.colors.surface,
+    backgroundColor: Color = Color.White,
     requireSingleLine: Boolean = true,
     textShouldBeCentered: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
@@ -79,74 +84,61 @@ fun CustomInputField(
     maxLength: Int = Int.MAX_VALUE,
     imeAction: ImeAction = ImeAction.Done,
     shape: Shape = MaterialTheme.shapes.small,
-    padding: PaddingValues = PaddingValues(horizontal = Dimension.xs),
+    padding: PaddingValues = PaddingValues(horizontal = 4.dp, vertical = 2.dp), // Giảm padding
     leadingIcon: @Composable () -> Unit = {},
-    trailingIcon: @Composable() (() -> Unit)? = {},
+    trailingIcon: @Composable (() -> Unit)? = null,
     onValueChange: (string: String) -> Unit,
     onFocusChange: (focused: Boolean) -> Unit,
     onKeyboardActionClicked: KeyboardActionScope.() -> Unit,
 ) {
-    val focusRequester = remember { FocusRequester() }
-    val inputService = LocalTextInputService.current
-
-    Row(
+    OutlinedTextField(
+        value = value,
+        onValueChange = {
+            if (it.length <= maxLength) {
+                onValueChange(it)
+            }
+        },
         modifier = modifier
-            .clip(shape = shape)
-            .background(backgroundColor)
-            .padding(paddingValues = padding),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding.div(2))
-    ) {
-        leadingIcon()
-        BasicTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(focusRequester)
-                .onFocusChanged {
-                    onFocusChange(it.isFocused)
-                },
-            value = value,
-            onValueChange = {
-                if (it.length <= maxLength) {
-                    /** when the value change and maxLength is not reached yet then pass it up **/
-                    onValueChange(it)
-                }
-            },
-            decorationBox = { container ->
-                Box(
-                    contentAlignment = if (textShouldBeCentered) Alignment.Center else Alignment.CenterStart,
-                ) {
-                    if (value.isEmpty()) {
-                        Text(
-                            text = placeholder,
-                            style = textStyle,
-                            color = textColor.copy(alpha = 0.3f),
-                            maxLines = if (requireSingleLine) 1 else Int.MAX_VALUE,
-                        )
-                    }
-                    container()
-                }
-            },
-            visualTransformation = visualTransformation,
-            singleLine = requireSingleLine,
-            textStyle = textStyle.copy(color = textColor),
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
-            keyboardActions = KeyboardActions(
-                onAny = {
-                    focusRequester.freeFocus()
-                    /** It doesn't has the focus now, hide the input keyboard */
-                    inputService?.hideSoftwareKeyboard()
-                    onKeyboardActionClicked()
-                }
-            ),
-            cursorBrush = SolidColor(value = textColor),
-        )
-        if (trailingIcon != null) {
-            trailingIcon()
-        }
-    }
+            .background(backgroundColor, shape)
+            .padding(padding)
+            .height(48.dp) // Giới hạn chiều cao để nhỏ gọn hơn
+            .onFocusChanged { onFocusChange(it.isFocused) },
+        textStyle = textStyle.copy(
+            color = textColor,
+            textAlign = if (textShouldBeCentered) TextAlign.Center else TextAlign.Start
+        ),
+        placeholder = {
+            Text(
+                text = placeholder,
+                style = textStyle,
+                color = textColor.copy(alpha = 0.3f),
+                maxLines = if (requireSingleLine) 1 else Int.MAX_VALUE,
+            )
+        },
+        colors = TextFieldDefaults.outlinedTextFieldColors(
+            backgroundColor = backgroundColor,
+            textColor = textColor,
+            placeholderColor = textColor.copy(alpha = 0.3f),
+            focusedBorderColor = Color.Transparent,
+            unfocusedBorderColor = Color.Transparent,
+            cursorColor = textColor,
+        ),
+        shape = shape,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        visualTransformation = visualTransformation,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = keyboardType,
+            imeAction = imeAction
+        ),
+        keyboardActions = KeyboardActions(
+            onAny = {
+                onKeyboardActionClicked()
+            }
+        ),
+        singleLine = requireSingleLine,
+    )
 }
-
 @Composable
 fun SecondaryTopBar(
     title: String,
@@ -384,17 +376,6 @@ fun ReactiveCartIcon(
         }
     }
     val rotation by transition.animateFloat(label = "rotation") { if (it) 360f else -360f }
-    Icon(
-        painter = painterResource(id = R.drawable.ic_shopping_bag),
-        contentDescription = null,
-        modifier = modifier
-            .rotate(rotation)
-            .clip(CircleShape)
-            .clickable { onCartChange() }
-            .padding(Dimension.elevation)
-            .size(Dimension.smIcon),
-        tint = tint
-    )
 }
 
 @Composable
@@ -431,25 +412,21 @@ fun ReactiveBookmarkIcon(
 fun ProductItemLayout(
     modifier: Modifier = Modifier,
     cartOffset: IntOffset,
-    price: Double,
+    price: String,
     title: String,
-    discount: Int,
+    imageUrl: String,
     onCart: Boolean = false,
     onBookmark: Boolean = false,
     onProductClicked: () -> Unit,
     onChangeCartState: () -> Unit,
     onChangeBookmarkState: () -> Unit,
-    image: Int,
 ) {
-    val (productFloatToCartAnim, setFloatingAnim) =
-        remember { mutableStateOf(false) }
+    var productFloatToCartAnim by remember { mutableStateOf(false) }
     val productTransition = updateTransition(
         targetState = productFloatToCartAnim,
         label = "Product transition"
     )
-    val (floatingProductOffset, setFloatingProductOffset) = remember {
-        mutableStateOf(cartOffset)
-    }
+    var floatingProductOffset by remember { mutableStateOf(cartOffset) }
     val animatedFloatingProductOffset by productTransition.animateIntOffset(
         label = "Product transition - offset",
         targetValueByState = {
@@ -464,9 +441,7 @@ fun ProductItemLayout(
         },
     )
 
-    val (floatingProductSize, setFloatingProductSize) = remember {
-        mutableStateOf(0)
-    }
+    var floatingProductSize by remember { mutableStateOf(0) }
     val animatedFloatProductSize by productTransition.animateInt(
         label = "Product transition - size",
         targetValueByState = {
@@ -482,7 +457,7 @@ fun ProductItemLayout(
     )
     LaunchedEffect(key1 = onCart) {
         if (!onCart) {
-            setFloatingAnim(false)
+            productFloatToCartAnim = false
         }
     }
 
@@ -507,18 +482,16 @@ fun ProductItemLayout(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .height(this.constraints.maxHeight
-                        .div(2)
-                        .getDp())
+                    .height(this.constraints.maxHeight.div(2).getDp())
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colors.surface),
             )
             AsyncImage(
-                model = image,
+                model = imageUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .onGloballyPositioned {
-                        setFloatingProductSize(it.size.width)
+                        floatingProductSize = it.size.width
                     }
                     .fillMaxSize()
                     .clip(MaterialTheme.shapes.medium)
@@ -533,20 +506,13 @@ fun ProductItemLayout(
         Column(
             verticalArrangement = Arrangement.spacedBy(Dimension.xs)
         ) {
-            /** Product's interactions */
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                /** Price */
-                val cost = stringResource(
-                    id = R.string.x_dollar,
-                    price.getDiscountedValue(discount = discount)
-                )
                 Text(
                     modifier = Modifier.weight(1f),
-                    text = cost,
+                    text = stringResource( id = R.string.x_VND,price),
                     style = MaterialTheme.typography.body1.copy(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colors.onBackground.copy(alpha = 0.7f),
@@ -555,17 +521,15 @@ fun ProductItemLayout(
                 ReactiveCartIcon(
                     isOnCart = onCart,
                     onCartChange = {
-                        /** Prevent multiple click */
                         if (animatedFloatProductSize !in 1..floatingProductSize.dec()) {
                             if (!onCart) {
-                                setFloatingAnim(true)
+                                productFloatToCartAnim = true
                             }
                             onChangeCartState()
                         }
                     },
                 )
             }
-            /** Product's name */
             Text(
                 modifier = Modifier,
                 text = title,
@@ -573,25 +537,20 @@ fun ProductItemLayout(
                 maxLines = 2,
             )
         }
-
     }
     AsyncImage(
-        model = image,
+        model = imageUrl,
         contentDescription = null,
         modifier = Modifier
             .onGloballyPositioned {
-                it
-                    .positionInWindow()
-                    .let { originalOffset ->
-                        val requiredX = cartOffset.x - originalOffset.x
-                        val requiredY = cartOffset.y - originalOffset.y
-                        setFloatingProductOffset(
-                            IntOffset(
-                                x = requiredX.roundToInt(),
-                                y = requiredY.roundToInt(),
-                            )
-                        )
-                    }
+                it.positionInWindow().let { originalOffset ->
+                    val requiredX = cartOffset.x - originalOffset.x
+                    val requiredY = cartOffset.y - originalOffset.y
+                    floatingProductOffset = IntOffset(
+                        x = requiredX.roundToInt(),
+                        y = requiredY.roundToInt(),
+                    )
+                }
             }
             .offset { animatedFloatingProductOffset }
             .size(animatedFloatProductSize.getDp())

@@ -1,5 +1,11 @@
 package com.mustfaibra.roffu.repositories
 
+import android.content.Context
+import retrofit2.HttpException
+
+import android.os.Build
+import androidx.annotation.RequiresExtension
+import com.mustfaibra.roffu.RetrofitClient
 import com.mustfaibra.roffu.data.local.RoomDao
 import com.mustfaibra.roffu.models.BookmarkItem
 import com.mustfaibra.roffu.models.CartItem
@@ -18,11 +24,13 @@ import com.mustfaibra.roffu.utils.getStructuredProducts
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.util.*
 import javax.inject.Inject
 
 class ProductsRepository @Inject constructor(
     private val dao: RoomDao,
+    private val context: Context
 ) {
 
     suspend fun updateCartState(productId: Int, size: String, color: String) {
@@ -153,12 +161,35 @@ class ProductsRepository @Inject constructor(
         return DataResponse.Error(error = Error.Empty)
     }
 
-    suspend fun getOrdersWithProducts(): DataResponse<List<OrderWithItemsAndProducts>> {
-        dao.getOrdersWithItemsAndProducts().let {
-            if (it.isNotEmpty())
-                return DataResponse.Success(data = it)
+    suspend fun getOrdersWithProducts(): DataResponse<List<com.mustfaibra.roffu.models.dto.OrderWithItemsAndProducts>> {
+        return try {
+            val token = UserPref.getToken(context)
+            if (token == null) {
+                return DataResponse.Error(error = Error.Unknown)
+            }
+
+            val response = RetrofitClient.orderApiService.getOrders(
+                authToken = "Bearer $token",
+                page = 1,
+                limit = 10
+            )
+
+            if (response.isNotEmpty()) {
+                DataResponse.Success(data = response)
+            } else {
+                DataResponse.Error(error = Error.Empty)
+            }
+        } catch (e: HttpException) {
+            when (e.code()) {
+                401 -> DataResponse.Error(error = Error.Unauthorized)
+                403 -> DataResponse.Error(error = Error.Forbidden)
+                else -> DataResponse.Error(error = Error.Network)
+            }
+        } catch (e: IOException) {
+            DataResponse.Error(error = Error.Network)
+        } catch (e: Exception) {
+            DataResponse.Error(error = Error.Unknown)
         }
-        return DataResponse.Error(error = Error.Empty)
     }
 
     fun getManufacturers(): Flow<List<Manufacturer>> {

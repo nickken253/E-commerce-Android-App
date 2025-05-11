@@ -1,19 +1,18 @@
 package com.mustfaibra.roffu.screens.order
 
+import android.os.Build
+import androidx.annotation.RequiresExtension
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mustfaibra.roffu.R
-import com.mustfaibra.roffu.models.OrderDetails
-import com.mustfaibra.roffu.models.OrderWithItemsAndProducts
+import com.mustfaibra.roffu.models.dto.OrderWithItemsAndProducts
 import com.mustfaibra.roffu.repositories.ProductsRepository
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
-import com.mustfaibra.roffu.sealed.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,47 +20,50 @@ import javax.inject.Inject
 class OrderViewModel @Inject constructor(
     private val productsRepository: ProductsRepository,
 ) : ViewModel() {
-    private val _orders = mutableStateListOf<OrderDetails>()
-    val orders: List<OrderDetails> = _orders
-
     private val _ordersWithProducts = mutableStateListOf<OrderWithItemsAndProducts>()
     val ordersWithProducts: List<OrderWithItemsAndProducts> = _ordersWithProducts
 
     private val _selectedTabIndex = MutableStateFlow(0)
-    val selectedTabIndex: StateFlow<Int> = _selectedTabIndex
+    val selectedTabIndex: StateFlow<Int> = _selectedTabIndex.asStateFlow()
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    private val _showNotifications = MutableStateFlow(false)
+    val showNotifications: StateFlow<Boolean> = _showNotifications.asStateFlow()
 
     private val tabStatus = listOf("Tất cả", "Chờ xác nhận", "Chờ lấy hàng", "Đang giao", "Đã giao", "Đã hủy")
-
-    fun getOrders() {
-        viewModelScope.launch {
-            productsRepository.getOrdersHistory().let {
-                when (it) {
-                    is DataResponse.Success -> {
-                        it.data?.let { data ->
-                            _orders.clear()
-                            _orders.addAll(data)
-                        }
-                    }
-                    is DataResponse.Error -> {
-                        // handle error
-                    }
-                }
-            }
-        }
-    }
+    private val statusMapping = mapOf(
+        "pending" to "Chờ xác nhận",
+        "processing" to "Chờ lấy hàng",
+        "shipped" to "Đang giao",
+        "delivered" to "Đã giao",
+        "cancelled" to "Đã hủy"
+    )
 
     fun getOrdersWithProducts() {
         viewModelScope.launch {
-            productsRepository.getOrdersWithProducts().let {
-                when (it) {
+            productsRepository.getOrdersWithProducts().let { response ->
+                when (response) {
                     is DataResponse.Success -> {
-                        it.data?.let { data ->
+                        response.data?.let { data ->
                             _ordersWithProducts.clear()
                             _ordersWithProducts.addAll(data)
+                            _errorMessage.value = null // Xóa thông báo lỗi
+                        } ?: run {
+                            _errorMessage.value = "Không có đơn hàng nào"
                         }
                     }
                     is DataResponse.Error -> {
-                        // handle error
+                        when (response.error) {
+                            is Error.Unauthorized -> _errorMessage.value = "Vui lòng đăng nhập lại"
+                            is Error.Forbidden -> _errorMessage.value = "Bạn không có quyền truy cập"
+                            is Error.Empty -> _errorMessage.value = "Không có đơn hàng nào"
+                            is Error.Network -> _errorMessage.value = "Lỗi mạng: ${(response.error as Error.Network).message}"
+                            is Error.Unknown -> _errorMessage.value = "Lỗi không xác định: ${(response.error as Error.Unknown).message}"
+                            is Error.Custom -> TODO()
+                            null -> TODO()
+                        }
                     }
                 }
             }
@@ -70,14 +72,17 @@ class OrderViewModel @Inject constructor(
 
     fun selectTab(index: Int) {
         _selectedTabIndex.value = index
-        val status = tabStatus.getOrNull(index)
-        // TODO: Update filtered orders logic
     }
 
     fun showNotifications() {
-        // TODO: Update show notifications logic
+        _showNotifications.value = true
     }
+
     fun hideNotifications() {
-        // TODO: Update hide notifications logic
+        _showNotifications.value = false
+    }
+
+    fun clearErrorMessage() {
+        _errorMessage.value = null
     }
 }

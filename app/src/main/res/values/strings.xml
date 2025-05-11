@@ -26,6 +26,7 @@
     <string name="proceed_to_checkout">Proceed to checkout</string>
     <string name="checkout">Checkout</string>
     <string name="barcode_scanner">Scanner</string>
+    <string name="x_VND">%1$s VND</string>
     <string name="total">Total</string>
     <string name="favorite">Favorite</string>
     <string name="bookmarks">Bookmarks</string>
@@ -49,4 +50,8 @@
     <string name="onboard">Onboard</string>
     <string name="signup">Sign up</string>
     <string name="order_manager">Order Management</string>
+    <string name="unauthorized_err_title">Lỗi xác thực</string>
+    <string name="unauthorized_err_body">Vui lòng đăng nhập lại</string>
+    <string name="forbidden_err_title">Truy cập bị từ chối</string>
+    <string name="forbidden_err_body">Bạn không có quyền truy cập</string>
 </resources>
