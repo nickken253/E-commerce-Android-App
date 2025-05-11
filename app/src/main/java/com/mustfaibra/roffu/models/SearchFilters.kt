@@ -1,10 +1,12 @@
 package com.mustfaibra.roffu.models
 
 data class SearchFilters(
-    var minPrice: Float = 0f,
-    var maxPrice: Float = 100000000f, // 100 triệu
-    var sortBy: String = "name",
-    var sortOrder: String = "asc"
+    val minPrice: Float? = null,
+    val maxPrice: Float? = null,
+    val sortBy: String? = null,
+    val sortOrder: String? = null,
+    val categoryId: Int? = null,
+    val brandId: Int? = null
 )
 
 // Các tùy chọn sắp xếp

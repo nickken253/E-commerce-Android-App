@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mustfaibra.roffu.api.ApiService
+import com.mustfaibra.roffu.models.Brand
+import com.mustfaibra.roffu.models.Category
 import com.mustfaibra.roffu.models.ProductResponse
 import com.mustfaibra.roffu.models.SearchFilters
 import com.mustfaibra.roffu.utils.SearchHistoryPref
@@ -68,6 +70,12 @@ class SearchViewModel @Inject constructor(
 
     private val PAGE_SIZE = 20
 
+    private val _brands = MutableStateFlow<List<Brand>>(emptyList())
+    val brands: StateFlow<List<Brand>> = _brands
+
+    private val _categories = MutableStateFlow<List<Category>>(emptyList())
+    val categories: StateFlow<List<Category>> = _categories
+
     init {
         // Debounce search query changes
         viewModelScope.launch {
@@ -80,6 +88,7 @@ class SearchViewModel @Inject constructor(
                     }
                 }
         }
+        loadBrandsAndCategories()
     }
 
     fun onSearchQueryChanged(query: String) {
@@ -111,16 +120,27 @@ class SearchViewModel @Inject constructor(
         _searchResults.value = emptyList()
     }
 
+    private fun loadBrandsAndCategories() {
+        viewModelScope.launch {
+            try {
+                _brands.value = apiService.getBrands()
+                _categories.value = apiService.getCategories()
+            } catch (e: Exception) {
+                Log.e("SearchViewModel", "Error loading brands/categories", e)
+            }
+        }
+    }
+
     fun onSearch(query: String) {
         if (query.isNotEmpty()) {
             val currentHistory = _searchHistory.value.toMutableList()
             if (!currentHistory.contains(query)) {
-            currentHistory.add(0, query)
-            if (currentHistory.size > 10) {
-                currentHistory.removeAt(currentHistory.size - 1)
-            }
-            _searchHistory.value = currentHistory
-            searchHistoryPref.saveSearchHistory(currentHistory)
+                currentHistory.add(0, query)
+                if (currentHistory.size > 10) {
+                    currentHistory.removeAt(currentHistory.size - 1)
+                }
+                _searchHistory.value = currentHistory
+                searchHistoryPref.saveSearchHistory(currentHistory)
             }
 
             viewModelScope.launch {
@@ -130,7 +150,11 @@ class SearchViewModel @Inject constructor(
                     
                     val filters = currentFilters.value
                     val response = apiService.searchProducts(
-                        query = query,  // parameter name không quan trọng ở đây
+                        search = query,
+                        skip = (currentPage.value - 1) * PAGE_SIZE,
+                        limit = PAGE_SIZE,
+                        categoryId = filters.categoryId,
+                        brandId = filters.brandId,
                         minPrice = filters.minPrice,
                         maxPrice = filters.maxPrice,
                         sortBy = filters.sortBy,
@@ -147,14 +171,14 @@ class SearchViewModel @Inject constructor(
                         _searchResults.value = _searchResults.value + response.products
                     }
 
-                    _hasMoreData.value = response.products.size >= PAGE_SIZE
+                    _hasMoreData.value = response.page < response.pages
 
                 } catch (e: retrofit2.HttpException) {
                     val errorBody = e.response()?.errorBody()?.string()
-                    android.util.Log.e("SearchAPIError", "HTTP Code: \\${e.code()}, Error Body: \\${errorBody}")
-                    _error.value = "Lỗi \\${e.code()}: \\${errorBody ?: e.message()}"
+                    Log.e("SearchAPIError", "HTTP Code: ${e.code()}, Error Body: ${errorBody}")
+                    _error.value = "Lỗi ${e.code()}: ${errorBody ?: e.message()}"
                 } catch (e: Exception) {
-                    android.util.Log.e("SearchAPIError", "Generic Exception: \\${e.message}", e)
+                    Log.e("SearchAPIError", "Generic Exception: ${e.message}", e)
                     _error.value = e.message ?: "Có lỗi xảy ra khi tìm kiếm"
                 } finally {
                     _isLoading.value = false

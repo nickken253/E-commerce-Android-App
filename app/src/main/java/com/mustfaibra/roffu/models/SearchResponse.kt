@@ -3,10 +3,16 @@ package com.mustfaibra.roffu.models
 import com.google.gson.annotations.SerializedName
 
 data class SearchResponse(
-    @SerializedName("products")
+    @SerializedName("data")
     val products: List<ProductResponse>,
+    @SerializedName("page")
+    val page: Int,
+    @SerializedName("limit")
+    val limit: Int,
     @SerializedName("total")
-    val total: Int
+    val total: Int,
+    @SerializedName("pages")
+    val pages: Int
 )
 
 data class ProductResponse(
