@@ -42,7 +42,10 @@ import com.skydoves.whatif.whatIfNotNull
 import com.mustfaibra.roffu.R
 
 
-private const val USD_TO_VND = 25_000
+// Hàm định dạng số thành chuỗi tiền tệ Việt Nam
+private fun formatVietnamCurrency(amount: Long): String {
+    return amount.toString().reversed().chunked(3).joinToString(".").reversed() + " ₫"
+}
 
 @Composable
 fun CartScreen(
@@ -162,21 +165,21 @@ fun CartScreen(
                             cartId = cartId,
                             productName = item.productName,
                             productImage = if (item.productImage.isNotEmpty()) item.productImage else R.drawable.ic_shopping_bag,
-                            productPrice = item.unitPrice.toDouble() / 1000, // Chuyển đổi từ VND sang USD để hiển thị
+                            productPrice = item.unitPrice.toDouble(), // Đã là tiền Việt
                             productColor = "Brand: ${item.productBrand}", // Hiển thị thương hiệu thay vì màu sắc
                             currentQty = item.quantity,
                             isChecked = checkedStates[cartId] == true,
                             onCheckedChange = { c -> checkedStates[cartId] = c },
                             onQuantityChanged = { q -> 
-                                // Tạm thời sử dụng phương thức cũ vì chưa cập nhật API
+                                // Cập nhật số lượng sản phẩm thông qua API
                                 if (cartId.toString().isNotEmpty()) {
-                                    cartViewModel.updateQuantity(cartId, q)
+                                    cartViewModel.updateQuantity(cartId, q, context)
                                 }
                             },
                             onProductRemoved = { 
-                                // Tạm thời sử dụng phương thức cũ vì chưa cập nhật API
+                                // Xóa sản phẩm khỏi giỏ hàng thông qua API
                                 if (cartId.toString().isNotEmpty()) {
-                                    cartViewModel.removeCartItem(cartId)
+                                    cartViewModel.removeCartItem(cartId, context)
                                 }
                             }
                         )
@@ -203,10 +206,10 @@ fun CartScreen(
                                     item.cartId?.let { id -> checkedStates[id] = c }
                                 },
                                 onQuantityChanged = { q -> 
-                                    item.cartId?.let { id -> cartViewModel.updateQuantity(id, q) }
+                                    item.cartId?.let { id -> cartViewModel.updateQuantity(id, q, context) }
                                 },
-                                onProductRemoved = { 
-                                    item.cartId?.let { id -> cartViewModel.removeCartItem(id) }
+                                onProductRemoved = {
+                                    item.cartId?.let { id -> cartViewModel.removeCartItem(id, context) }
                                 }
                             )
                         }
@@ -239,16 +242,13 @@ fun CartScreen(
                                 .sumOf { item -> item.unitPrice * item.quantity }
                         } else {
                             // Sử dụng tổng tiền từ các mục hiện tại
-                            (totalPrice * USD_TO_VND).toLong()
+                            totalPrice.toLong()
                         }
                         
                         Text(
-                            text = "$displayTotal VND",
-                            style = MaterialTheme.typography.h5.copy(
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            ),
-                            color = Color(0xFF0052CC)
+                            text = formatVietnamCurrency(displayTotal),
+                            style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colors.primary
                         )
                     }
                     CustomButton(
@@ -384,7 +384,7 @@ fun CartItemModern(
             }
             Spacer(Modifier.height(8.dp))
             Text(
-                text = String.format("%,.0fđ", productPrice * USD_TO_VND),
+                text = formatVietnamCurrency((productPrice * currentQty).toLong()),
                 style = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Bold),
                 color = Color(0xFF222222)
             )

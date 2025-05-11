@@ -18,6 +18,7 @@ import kotlinx.coroutines.awaitAll
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import retrofit2.Response
 import javax.inject.Inject
 
 /**
@@ -55,18 +56,93 @@ class CartViewModel @Inject constructor(
         }
     }
 
-    // XÓA hoặc SỬA HÀM removeCartItem để không dùng alreadyOnCart nữa
-    fun removeCartItem(cartId: Int) {
+    /**
+     * Cập nhật số lượng sản phẩm trong giỏ hàng thông qua API
+     * @param cartItemId ID của item trong giỏ hàng
+     * @param quantity Số lượng mới
+     * @param context Context để lấy token xác thực
+     */
+    fun updateQuantity(cartItemId: Int, quantity: Int, context: android.content.Context) {
         viewModelScope.launch {
-            // Viết hàm xóa cart item theo cartId hoặc productId tuỳ logic bạn muốn
-            // productRepository.deleteCartItem(cartId)
-            productRepository.deleteCartItemById(cartId)
+            isSyncingCart.value = true
+            _error.value = null
+            
+            try {
+                // Lấy token xác thực từ UserPref
+                val token = UserPref.getToken(context)
+                
+                if (token == null) {
+                    _error.value = "Bạn chưa đăng nhập"
+                    Log.e("CartViewModel", "Token is null, user not authenticated")
+                    return@launch
+                }
+                
+                // Gọi API với token xác thực
+                val authToken = "Bearer $token"
+                
+                if (quantity <= 0) {
+                    // Nếu số lượng <= 0, gọi API xóa sản phẩm
+                    val response = RetrofitClient.cartApiService.deleteCartItem(cartItemId, authToken)
+                    handleCartResponse(response, context, "Xóa sản phẩm thành công")
+                } else {
+                    // Gọi API cập nhật số lượng với dữ liệu trong body
+                    val quantityData = mapOf("quantity" to quantity)
+                    val response = RetrofitClient.cartApiService.updateCartItemQuantity(cartItemId, quantityData, authToken)
+                    handleCartResponse(response, context, "Cập nhật số lượng thành công")
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Unknown error"
+                Log.e("CartViewModel", "Exception when updating cart: ${e.message}")
+            } finally {
+                isSyncingCart.value = false
+            }
         }
     }
 
-    fun updateQuantity(cartId: Int, quantity: Int) {
+    /**
+     * Xóa sản phẩm khỏi giỏ hàng thông qua API
+     * @param cartItemId ID của item trong giỏ hàng
+     * @param context Context để lấy token xác thực
+     */
+    fun removeCartItem(cartItemId: Int, context: android.content.Context) {
         viewModelScope.launch {
-            productRepository.updateCartItemQuantity(cartId = cartId, quantity = quantity)
+            isSyncingCart.value = true
+            _error.value = null
+            
+            try {
+                // Lấy token xác thực từ UserPref
+                val token = UserPref.getToken(context)
+                
+                if (token == null) {
+                    _error.value = "Bạn chưa đăng nhập"
+                    Log.e("CartViewModel", "Token is null, user not authenticated")
+                    return@launch
+                }
+                
+                // Gọi API với token xác thực
+                val authToken = "Bearer $token"
+                val response = RetrofitClient.cartApiService.deleteCartItem(cartItemId, authToken)
+                handleCartResponse(response, context, "Xóa sản phẩm thành công")
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Unknown error"
+                Log.e("CartViewModel", "Exception when removing cart item: ${e.message}")
+            } finally {
+                isSyncingCart.value = false
+            }
+        }
+    }
+    
+    /**
+     * Xử lý kết quả trả về từ API giỏ hàng
+     */
+    private suspend fun handleCartResponse(response: Response<CartResponse>, context: android.content.Context, successMessage: String) {
+        if (response.isSuccessful) {
+            // Lấy lại dữ liệu giỏ hàng sau khi cập nhật thành công
+            fetchCart(context)
+            Log.d("CartViewModel", successMessage)
+        } else {
+            _error.value = "Error ${response.code()}: ${response.message()}"
+            Log.e("CartViewModel", "Error ${response.code()}: ${response.message()}")
         }
     }
 
