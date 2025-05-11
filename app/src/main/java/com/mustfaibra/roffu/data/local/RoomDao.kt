@@ -38,6 +38,8 @@ interface RoomDao {
 
     @Delete
     suspend fun deleteUser(user: User)
+    @Query("SELECT * FROM cart")
+    suspend fun getCartItemsNow(): List<CartItem>
 
     @Query("SELECT * FROM user WHERE userId = :userId LIMIT 1")
     suspend fun getLoggedUser(userId: Int): User?
@@ -104,24 +106,14 @@ interface RoomDao {
     @Update
     suspend fun updateCartItem(cartItem: CartItem)
 
-    @Query("UPDATE cart SET quantity = :quantity WHERE cartId = :cartId")
-    suspend fun updateCartItemQuantity(cartId: Int, quantity: Int)
+    @Query("UPDATE cart SET quantity = :quantity WHERE productId = :productId ")
+    suspend fun updateCartItemQuantity(productId: Int, quantity: Int)
 
     @Query("DELETE FROM cart WHERE productId = :productId ")
     suspend fun deleteCartItem(productId: Int)
 
-<<<<<<< HEAD
     @Query("DELETE FROM cart")
-=======
-    @Query("DELETE FROM cart WHERE cartId = :cartId")
-    suspend fun deleteCartItemById(cartId: Int)
-
-    @Query("Delete FROM cart")
->>>>>>> hieuluu2
     suspend fun clearCart()
-
-    @Query("SELECT * FROM cart")
-    suspend fun getCartItemsNow(): List<CartItem>
 
     /** Payment providers operations */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -147,10 +139,6 @@ interface RoomDao {
     @Transaction
     @Query("SELECT * FROM orders")
     suspend fun getLocalOrders(): List<OrderDetails>
-
-    @Transaction
-    @Query("SELECT * FROM orders")
-    suspend fun getOrdersWithItemsAndProducts(): List<OrderWithItemsAndProducts>
 
     /** Bookmarks operations */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -186,10 +174,6 @@ interface RoomDao {
     /** Manufacturer operations */
     @Query("SELECT * FROM Manufacturer")
     fun getAllManufacturers(): Flow<List<Manufacturer>>
-<<<<<<< HEAD
-=======
-
-    // Virtual Card operations
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVirtualCard(card: VirtualCard)
 
@@ -198,5 +182,4 @@ interface RoomDao {
 
     @Delete
     suspend fun deleteVirtualCard(card: VirtualCard)
->>>>>>> hieuluu2
 }

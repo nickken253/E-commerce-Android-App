@@ -39,6 +39,7 @@ object NetworkModule {
         }
     }
 
+
     @Provides
     @Singleton
     fun provideRetrofit(): Retrofit {

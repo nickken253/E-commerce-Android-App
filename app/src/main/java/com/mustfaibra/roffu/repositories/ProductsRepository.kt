@@ -30,24 +30,22 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-<<<<<<< HEAD
+
 import kotlinx.serialization.json.Json
-=======
 import java.io.IOException
->>>>>>> hieuluu2
+
 import java.util.*
 import javax.inject.Inject
 
 class ProductsRepository @Inject constructor(
     private val dao: RoomDao,
-<<<<<<< HEAD
+
     private val client: HttpClient,
     private val json: Json,
-=======
-    private val context: Context
->>>>>>> hieuluu2
-) {
 
+    private val context: Context
+
+) {
     suspend fun updateCartState(productId: Int, size: String, color: String) {
         // Lấy tất cả item trong cart hiện tại
         val cartItems = dao.getCartItemsNow()
@@ -69,7 +67,8 @@ class ProductsRepository @Inject constructor(
         }
     }
 
-<<<<<<< HEAD
+
+
     suspend fun getProductByBarcode(barcode: String): com.mustfaibra.roffu.models.dto.Product? {
         return try {
             val response: HttpResponse = client.get("http://103.90.226.131:8000/api/v1/products/barcode/$barcode") {
@@ -97,27 +96,16 @@ class ProductsRepository @Inject constructor(
             }
         } catch (e: Exception) {
             DataResponse.Error(com.mustfaibra.roffu.sealed.Error.Network)
-=======
+        }
+    }
+
     suspend fun toggleBookmark(productId: Int) {
         val alreadyOnBookmark = dao.isProductBookmarked(productId)
         updateBookmarkState(productId, alreadyOnBookmark)
     }
 
-    suspend fun getProductByBarcode(barcode: String): Product? {
-        return withContext(Dispatchers.IO) {
-            dao.getProductByBarcode(barcode)
->>>>>>> hieuluu2
-        }
-    }
 
-    suspend fun updateCartItemQuantity(cartId: Int, quantity: Int) {
-        /** Update local cart item quantity */
-        dao.updateCartItemQuantity(cartId = cartId, quantity = quantity)
-    }
 
-    suspend fun deleteCartItemById(cartId: Int) {
-        dao.deleteCartItemById(cartId)
-    }
 
     suspend fun saveOrders(
         items: List<CartItem>,

@@ -49,7 +49,6 @@ fun LoginScreen(
     var showPassword by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-<<<<<<< HEAD
     // Launcher for Google Sign-In
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -70,8 +69,6 @@ fun LoginScreen(
             onToastRequested("Đăng nhập Google thất bại", Color.Red)
         }
     }
-=======
->>>>>>> hieuluu2
 
     Column(
         modifier = Modifier
@@ -257,11 +254,7 @@ fun LoginScreen(
                             loginViewModel.startGoogleSignIn(
                                 context = context,
                                 onIntentReady = { intent ->
-<<<<<<< HEAD
                                     googleSignInLauncher.launch(intent)
-=======
-
->>>>>>> hieuluu2
                                 }
                             )
                         } else {

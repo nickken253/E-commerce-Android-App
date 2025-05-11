@@ -13,15 +13,14 @@ import com.mustfaibra.roffu.utils.UserPref
 import com.mustfaibra.roffu.utils.UserSessionManager
 import com.mustfaibra.roffu.utils.dataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
-<<<<<<< HEAD
-import kotlinx.coroutines.flow.first
-=======
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
->>>>>>> hieuluu2
+
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 

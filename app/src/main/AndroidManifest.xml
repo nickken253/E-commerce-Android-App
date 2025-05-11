@@ -12,11 +12,10 @@
     <application
         android:name="com.mustfaibra.roffu.MyApplication"
         android:allowBackup="true"
-<<<<<<< HEAD
+
         android:enableOnBackInvokedCallback="true"
-=======
-        android:usesCleartextTraffic="true"
->>>>>>> hieuluu2
+
+
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
