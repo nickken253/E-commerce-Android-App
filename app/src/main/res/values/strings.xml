@@ -57,4 +57,6 @@
     <string name="forbidden_err_title">Truy cập bị từ chối</string>
     <string name="forbidden_err_body">Bạn không có quyền truy cập</string>
 
+    <string name="product_comparison">So sánh sản phẩm</string>
+    <string name="product_selection">Chọn sản phẩm để so sánh</string>
 </resources>

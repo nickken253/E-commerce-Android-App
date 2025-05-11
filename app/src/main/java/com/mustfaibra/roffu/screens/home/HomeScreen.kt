@@ -78,6 +78,7 @@ fun HomeScreen(
     onProductClicked: (productId: Int) -> Unit,
     onCartStateChanged: (productId: Int) -> Unit,
     onBookmarkStateChanged: (productId: Int) -> Unit,
+    onNavigateToSearch: () -> Unit,
 ) {
     LaunchedEffect(key1 = Unit) {
         homeViewModel.getHomeAdvertisements()
@@ -115,16 +116,19 @@ fun HomeScreen(
     val autoPagerScrollCallback = remember {
         object : Runnable {
             override fun run() {
+                /** Handle where to scroll */
                 val currentPage = pagerState.currentPage
                 val pagesCount = pagerState.pageCount
                 Timber.d("Current pager page is $currentPage and count is $pagesCount")
                 when {
                     currentPage < (pagesCount - 1) -> {
+                        /** go to next page */
                         scope.launch {
                             pagerState.animateScrollToPage(currentPage.inc())
                         }
                     }
                     else -> {
+                        /** Start from beginning */
                         scope.launch {
                             pagerState.animateScrollToPage(0)
                         }
@@ -135,6 +139,7 @@ fun HomeScreen(
         }
     }
 
+    /** Staring our handler only once when the app is launched */
     LaunchedEffect(key1 = Unit) {
         mainHandler.post(autoPagerScrollCallback)
     }
@@ -186,10 +191,15 @@ fun HomeScreen(
                     SearchField(
                         value = searchQuery,
                         onValueChange = { homeViewModel.updateSearchInputValue(it) },
-                        onFocusChange = {},
+                        onFocusChange = {
+                            if (it) {
+                                onNavigateToSearch()
+                            }
+                        },
                         onImeActionClicked = {}
                     )
                 }
+                /** Advertisements section */
                 item(
                     span = { GridItemSpan(2) }
                 ) {
@@ -203,9 +213,11 @@ fun HomeScreen(
             is UiState.Error -> {}
         }
 
+        /** Handling what to show depending on brands ui state */
         when (brandsUiState) {
             is UiState.Loading -> {}
             is UiState.Success -> {
+                /** Loading finished successfully, Shoes brands row first! */
                 item(
                     span = { GridItemSpan(2) }
                 ) {
@@ -342,6 +354,7 @@ fun AdvertisementsPager(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Dimension.pagePadding.div(2)),
     ) {
+        /** Horizontal pager section */
         HorizontalPager(
             modifier = Modifier
                 .fillMaxWidth(),
@@ -365,6 +378,7 @@ fun AdvertisementsPager(
                 contentScale = ContentScale.Crop,
             )
         }
+        /** Horizontal pager indicators */
         LazyRow(
             contentPadding = PaddingValues(horizontal = Dimension.pagePadding.times(2)),
             horizontalArrangement = Arrangement.spacedBy(Dimension.sm),
@@ -400,6 +414,7 @@ fun ManufacturersSection(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding.div(2)),
     ) {
+        // Thêm mục "Tất cả"
         item {
             val backgroundColor = if (activeBrandIndex == -1) MaterialTheme.colors.primary
             else MaterialTheme.colors.background
@@ -434,6 +449,7 @@ fun ManufacturersSection(
                 }
             }
         }
+        // Các thương hiệu khác
         itemsIndexed(brands) { index, (_, name, icon) ->
             val backgroundColor = if (activeBrandIndex == index) MaterialTheme.colors.primary
             else MaterialTheme.colors.background

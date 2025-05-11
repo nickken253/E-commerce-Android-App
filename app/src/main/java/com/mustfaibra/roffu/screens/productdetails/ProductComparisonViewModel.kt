@@ -22,8 +22,8 @@ class ProductComparisonViewModel @Inject constructor(
 
     fun loadProducts(productId1: Int, productId2: Int) {
         viewModelScope.launch {
-//            _product1.value = productsRepository.getProductById(productId1)
-//            _product2.value = productsRepository.getProductById(productId2)
+            _product1.value = productsRepository.getProductById(productId1)
+            _product2.value = productsRepository.getProductById(productId2)
         }
     }
 } 

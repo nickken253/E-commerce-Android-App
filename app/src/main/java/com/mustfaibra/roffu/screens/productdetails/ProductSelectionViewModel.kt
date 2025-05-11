@@ -20,8 +20,8 @@ class ProductSelectionViewModel @Inject constructor(
     fun loadProducts(currentProductId: Int) {
         viewModelScope.launch {
             // Lấy danh sách tất cả sản phẩm từ repository
-//            val allProducts = productsRepository.getAllProducts()
-//            _products.value = allProducts
+            val allProducts = productsRepository.getAllProducts()
+            _products.value = allProducts
         }
     }
 } 

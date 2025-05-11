@@ -36,11 +36,14 @@ import androidx.navigation.navArgument
 import com.mustfaibra.roffu.components.AppBottomNav
 import com.mustfaibra.roffu.components.CustomSnackBar
 import com.mustfaibra.roffu.models.CartItem
+import com.mustfaibra.roffu.models.ProductResponse
 import com.mustfaibra.roffu.models.User
 import com.mustfaibra.roffu.providers.LocalNavHost
+import com.mustfaibra.roffu.repositories.ProductsRepository
 import com.mustfaibra.roffu.screens.admin.AddProductScreen
 import com.mustfaibra.roffu.screens.admin.AddUserScreen
 import com.mustfaibra.roffu.screens.admin.AdminScreen
+import com.mustfaibra.roffu.screens.admin.AdminViewModel
 import com.mustfaibra.roffu.screens.admin.EditProductScreen
 import com.mustfaibra.roffu.screens.admin.EditUserScreen
 import com.mustfaibra.roffu.screens.barcode.BarcodeScannerScreen
@@ -59,7 +62,9 @@ import com.mustfaibra.roffu.screens.notifications.NotificationScreen
 import com.mustfaibra.roffu.screens.onboard.OnboardScreen
 import com.mustfaibra.roffu.screens.order.OrderScreen
 import com.mustfaibra.roffu.screens.orderhistory.OrdersHistoryScreen
+import com.mustfaibra.roffu.screens.productdetails.ProductComparisonScreen
 import com.mustfaibra.roffu.screens.productdetails.ProductDetailsScreen
+import com.mustfaibra.roffu.screens.productdetails.ProductSelectionScreen
 import com.mustfaibra.roffu.screens.profile.ProfileScreen
 import com.mustfaibra.roffu.screens.search.SearchScreen
 import com.mustfaibra.roffu.screens.signup.SignupScreen
@@ -76,10 +81,9 @@ fun HolderScreen(
     holderViewModel: HolderViewModel = hiltViewModel(),
 ) {
     val destinations = remember {
-
-        listOf(Screen.Home, Screen.OrderHistory, Screen.Cart, Screen.Profile)
-
+        listOf(Screen.Home, Screen.Bookmark, Screen.OrderHistory, Screen.Cart, Screen.Profile)
     }
+
 
     /** Our navigation controller that the MainActivity provides */
     val controller = LocalNavHost.current
@@ -151,6 +155,7 @@ fun HolderScreen(
             productsOnCartIds = productsOnCartIds,
             productsOnBookmarksIds = productsOnBookmarksIds,
             onStatusBarColorChange = onStatusBarColorChange,
+            holderViewModel = holderViewModel,
             bottomNavigationContent = {
                 if (
                     currentRouteAsState in destinations.map { it.route }
@@ -204,8 +209,7 @@ fun HolderScreen(
             },
             onShowProductRequest = { productId ->
                 controller.navigate(
-                    Screen.ProductDetails.route
-                        .replace("{productId}", "$productId")
+                    Screen.ProductDetails.route.replace("{productId}", productId.toString())
                 )
             },
             onUpdateCartRequest = { productId ->
@@ -261,6 +265,7 @@ fun ScaffoldSection(
     productsOnCartIds: List<Int>,
     productsOnBookmarksIds: List<Int>,
     onStatusBarColorChange: (color: Color) -> Unit,
+    holderViewModel: HolderViewModel,
     onSplashFinished: (nextDestination: Screen) -> Unit,
     onBoardFinished: () -> Unit,
     onNavigationRequested: (route: String, removePreviousRoute: Boolean) -> Unit,
@@ -410,6 +415,7 @@ fun ScaffoldSection(
                         )
                     } else {
                         LaunchedEffect(Unit) {
+                            //onToastRequested("Bạn không có quyền truy cập!", Color.Red)
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.Admin.route) { inclusive = true }
                             }
@@ -426,6 +432,7 @@ fun ScaffoldSection(
                         )
                     } else {
                         LaunchedEffect(Unit) {
+                            //onToastRequested("Bạn không có quyền truy cập!", Color.Red)
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.AddUser.route) { inclusive = true }
                             }
@@ -463,6 +470,7 @@ fun ScaffoldSection(
                         )
                     } else {
                         LaunchedEffect(Unit) {
+                            onToastRequested("Bạn không có quyền truy cập!", Color.Red)
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.AddProduct.route) { inclusive = true }
                             }
@@ -486,12 +494,14 @@ fun ScaffoldSection(
                         )
                     } else {
                         LaunchedEffect(Unit) {
+                            onToastRequested("Bạn không có quyền truy cập!", Color.Red)
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.EditProduct.route) { inclusive = true }
                             }
                         }
                     }
                 }
+
                 composable(Screen.Home.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     // Chỉ cho phép user bình thường hoặc khi chưa đăng nhập
@@ -502,7 +512,24 @@ fun ScaffoldSection(
                             bookmarkProductsIds = productsOnBookmarksIds,
                             onProductClicked = onShowProductRequest,
                             onCartStateChanged = onUpdateCartRequest,
-                            onBookmarkStateChanged = onUpdateBookmarkRequest
+                            onBookmarkStateChanged = onUpdateBookmarkRequest,
+//                            onProductClicked = { productId ->
+//                                controller.navigate(
+//                                    Screen.ProductDetails.route.replace("{productId}", productId.toString())
+//                                )
+//                            },
+//                            onCartStateChanged = { productId ->
+//                                holderViewModel.updateCart(productId)
+//                            },
+//                            onBookmarkStateChanged = { productId ->
+//                                holderViewModel.updateBookmarks(
+//                                    productId = productId,
+//                                    currentlyOnBookmarks = productId in productsOnBookmarksIds
+//                                )
+//                            },
+                            onNavigateToSearch = {
+                                controller.navigate(Screen.Search.route)
+                            }
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -518,7 +545,12 @@ fun ScaffoldSection(
                 }
                 composable(Screen.Search.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
-                    SearchScreen()
+                    SearchScreen(
+                        onNavigateBack = {
+                            controller.popBackStack()
+                        },
+                        onProductClick = onShowProductRequest
+                    )
                 }
                 composable(Screen.Bookmark.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
@@ -541,7 +573,8 @@ fun ScaffoldSection(
                 composable(Screen.BarcodeScanner.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     BarcodeScannerScreen(
-                        navController = controller
+                        navController = controller,
+                        viewModel = hiltViewModel()
                     )
                 }
                 composable(Screen.Cart.route) {
@@ -549,6 +582,7 @@ fun ScaffoldSection(
                     if (user?.isAdmin() != true) {
                         CartScreen(
                             user = user,
+                            // XÓA cartItems, CartScreen tự lấy từ HolderViewModel
                             onProductClicked = onShowProductRequest,
                             onUserNotAuthorized = { onUserNotAuthorized(false) },
                             onCheckoutRequest = {
@@ -601,7 +635,6 @@ fun ScaffoldSection(
                         onLocationPicked = {}
                     )
                 }
-
                 composable(Screen.Profile.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     val context = LocalContext.current
@@ -665,28 +698,61 @@ fun ScaffoldSection(
                     OrderScreen(
                         onBack = { controller.popBackStack() }
                     )
-
                 }
                 composable(
                     route = Screen.ProductDetails.route,
                     arguments = listOf(
-                        navArgument(name = "productId") { type = NavType.IntType }
+                        navArgument(name =  "productId") {
+                            type = NavType.IntType
+                        }
                     )
-                ) {
+                ) { backStackEntry ->
+                    val productId = backStackEntry.arguments?.getInt("productId") ?: 0
                     onStatusBarColorChange(MaterialTheme.colors.background)
-                    val productId = it.arguments?.getInt("productId")
+//                    val productId = it.arguments?.getInt("productId")
                         ?: throw IllegalArgumentException("Product id is required")
                     ProductDetailsScreen(
                         productId = productId,
                         cartItemsCount = cartItems.size,
                         isOnBookmarksStateProvider = { productId in productsOnBookmarksIds },
                         onUpdateBookmarksState = onUpdateBookmarkRequest,
-                        onBackRequested = onBackRequested
+                        onBackRequested = onBackRequested,
+//                        navController = controller
                     )
                 }
                 composable(Screen.OrderHistory.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     OrderScreen()
+                }
+                composable(
+                    route = Screen.ProductComparison.route,
+                    arguments = listOf(
+                        navArgument("productId1") { type = NavType.IntType },
+                        navArgument("productId2") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val productId1 = backStackEntry.arguments?.getInt("productId1") ?: 0
+                    val productId2 = backStackEntry.arguments?.getInt("productId2") ?: 0
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    ProductComparisonScreen(
+                        productId1 = productId1,
+                        productId2 = productId2,
+                        onNavigateBack = onBackRequested
+                    )
+                }
+                composable(
+                    route = Screen.ProductSelection.route,
+                    arguments = listOf(
+                        navArgument("productId") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val productId = backStackEntry.arguments?.getInt("productId") ?: 0
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    ProductSelectionScreen(
+                        currentProductId = productId,
+                        onNavigateBack = onBackRequested,
+                        navController = controller
+                    )
                 }
             }
             // Chỉ hiển thị bottom navigation cho user bình thường
@@ -701,4 +767,25 @@ fun ScaffoldSection(
 fun getActiveRoute(navController: NavHostController): String {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     return navBackStackEntry?.destination?.route ?: "splash"
+}
+
+@Composable
+fun ProductItem(
+    product: ProductResponse,
+    onProductClick: (Int) -> Unit,
+    onBookmarkClick: (Int) -> Unit,
+    isBookmarked: Boolean
+) {
+    // ... existing code ...
+}
+
+@Composable
+fun HolderScreen(
+    navController: NavController,
+    viewModel: HolderViewModel = hiltViewModel()
+) {
+    // ... existing code ...
+    
+    // Thay thế ProductComparisonScreen và ProductSelectionScreen bằng các màn hình tương ứng
+    // hoặc xóa nếu không cần thiết
 }

@@ -36,7 +36,9 @@ import java.io.IOException
 
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class ProductsRepository @Inject constructor(
     private val dao: RoomDao,
 
@@ -224,5 +226,23 @@ class ProductsRepository @Inject constructor(
 
     suspend fun addManufacturer(manufacturer: Manufacturer) {
         dao.insertManufacturer(manufacturer)
+    }
+
+    // TODO: Thay thế bằng API call thực tế
+    suspend fun getProductById(productId: Int): Product? {
+        return withContext(Dispatchers.IO) {
+            dao.getProductDetails(productId)?.getStructuredProducts()
+        }
+    }
+
+    suspend fun getAllProducts(): List<Product> {
+        return withContext(Dispatchers.IO) {
+            val products = dao.getAllProducts()
+            if (products is Iterable<*>) {
+                products.mapNotNull { it as? Product }
+            } else {
+                emptyList()
+            }
+        }
     }
 }

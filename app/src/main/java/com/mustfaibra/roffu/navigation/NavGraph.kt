@@ -27,19 +27,28 @@ fun NavGraph(
                 cartOffset = IntOffset(0, 0),
                 cartProductsIds = emptyList(),
                 bookmarkProductsIds = emptyList(),
-                onProductClicked = { /* TODO */ },
+                onProductClicked = { productId ->
+                    navController.navigate(
+                        "product_details/$productId"
+                    )
+                },
                 onCartStateChanged = { /* TODO */ },
                 onBookmarkStateChanged = { /* TODO */ },
-//                onNavigateToSearch = {
-//                    navController.navigate(Screen.Search.route)
-//                }
+                onNavigateToSearch = {
+                    navController.navigate(Screen.Search.route)
+                }
             )
         }
         composable(Screen.Search.route) {
             SearchScreen(
-//                onNavigateBack = {
-//                    navController.popBackStack()
-//                }
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onProductClick = { productId ->
+                    navController.navigate(
+                        "product_details/$productId"
+                    )
+                }
             )
         }
     }

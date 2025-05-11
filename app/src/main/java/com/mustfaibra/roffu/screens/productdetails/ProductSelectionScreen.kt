@@ -66,11 +66,11 @@ fun ProductSelectionScreen(
                     ProductItem(
                         product = product,
                         onClick = {
-//                            navController.navigate(
-//                                Screen.ProductComparison.route
-//                                    .replace("{productId1}", currentProductId.toString())
-//                                    .replace("{productId2}", product.id.toString())
-//                            )
+                            navController.navigate(
+                                Screen.ProductComparison.route
+                                    .replace("{productId1}", currentProductId.toString())
+                                    .replace("{productId2}", product.id.toString())
+                            )
                         }
                     )
                 }

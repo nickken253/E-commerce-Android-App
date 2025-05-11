@@ -34,11 +34,13 @@ sealed class Screen(
         title = R.string.bookmarks,
         icon = R.drawable.ic_bookmark,
     )
+
     object Profile : Screen(
         route = "profile",
         title = R.string.profile,
         icon = R.drawable.ic_profile_empty,
     )
+
     object Notifications : Screen(
         route = "notifications",
         title = R.string.notifications,
@@ -50,6 +52,7 @@ sealed class Screen(
     object EditUser : Screen("edit_user/{userId}")
     object AddProduct : Screen("add_product")
     object EditProduct : Screen("edit_product/{productId}")
+
     object Search : Screen(
         route = "search",
         title = R.string.search,
@@ -65,6 +68,8 @@ sealed class Screen(
         title = R.string.barcode_scanner,
         icon = R.drawable.ic_barcode
     )
+
+
     object Checkout : Screen(
         route = "checkout",
         title = R.string.checkout,
@@ -73,15 +78,23 @@ sealed class Screen(
         route = "product-details/{productId}",
         title = R.string.product_details,
     )
+
+    object ProductComparison : Screen(
+        route = "product-comparison/{productId1}/{productId2}",
+        title = R.string.product_comparison,
+    )
+
     object LocationPicker : Screen(
         route = "location-picker",
         title = R.string.delivery_address,
     )
+
     object Settings : Screen(
         route = "settings",
         title = R.string.settings,
         icon = R.drawable.ic_settings,
     )
+
     object OrderHistory : Screen(
         route = "orders",
         title = R.string.orders_history,
@@ -99,6 +112,7 @@ sealed class Screen(
         title = R.string.privacy_and_policies,
         icon = R.drawable.ic_lock,
     )
+
     object TermsConditions : Screen(
         route = "terms-conditions",
         title = R.string.terms_and_conditions,
@@ -107,5 +121,10 @@ sealed class Screen(
     object ResetPassword : Screen(
         route = "reset-password/{email}",
         title = R.string.reset_password
+    )
+
+    object ProductSelection : Screen(
+        route = "product-selection/{productId}",
+        title = R.string.product_selection
     )
 }
