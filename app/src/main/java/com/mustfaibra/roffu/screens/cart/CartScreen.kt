@@ -36,7 +36,11 @@ import coil.compose.rememberAsyncImagePainter
 import com.mustfaibra.roffu.components.CustomButton
 import com.mustfaibra.roffu.components.IconButton as CustomIconButton
 import com.mustfaibra.roffu.models.User
+import com.mustfaibra.roffu.models.dto.CartItemWithProductDetails
+import com.mustfaibra.roffu.models.dto.CartResponse
 import com.skydoves.whatif.whatIfNotNull
+import com.mustfaibra.roffu.R
+
 
 private const val USD_TO_VND = 25_000
 
@@ -48,6 +52,18 @@ fun CartScreen(
     onCheckoutRequest: () -> Unit,
     onUserNotAuthorized: () -> Unit,
 ) {
+    // Lấy context để truyền cho fetchCart
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
+    // Gọi API để lấy danh sách sản phẩm trong giỏ hàng khi màn hình được hiển thị
+    LaunchedEffect(Unit) {
+        cartViewModel.fetchCart(context)
+    }
+    
+    // Lấy các trạng thái từ CartViewModel
+    val isLoading = cartViewModel.isLoading.value
+    val error = cartViewModel.error.value
+    val cartItemsWithDetails = cartViewModel.cartItemsWithDetails.value
     val holderViewModel: com.mustfaibra.roffu.screens.holder.HolderViewModel = hiltViewModel()
     val cartItems = holderViewModel.cartItems
 
@@ -79,26 +95,29 @@ fun CartScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 CustomIconButton(
-                    icon = Icons.Filled.ArrowBack,
-                    onButtonClicked = { /* TODO */ },
-                    backgroundColor = Color.Transparent,
+                    icon = Icons.Default.ArrowBack,
+                    backgroundColor = Color.White,
                     iconTint = Color.Black,
-                    iconSize = 22.dp,
-                    shape = CircleShape,
-                    paddingValue = PaddingValues(0.dp)
+                    onButtonClicked = { /*TODO*/ },
+                    elevation = 1.dp,
                 )
                 Text(
                     text = "Giỏ hàng",
-                    style = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFF222222),
-                    modifier = Modifier.padding(start = 8.dp)
+                    style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+                )
+                CustomIconButton(
+                    icon = Icons.Default.Delete,
+                    backgroundColor = Color.White,
+                    iconTint = Color.Black,
+                    onButtonClicked = { /*TODO*/ },
+                    elevation = 1.dp,
                 )
             }
-
             // Items
             LazyColumn(
                 modifier = Modifier
@@ -107,26 +126,90 @@ fun CartScreen(
                     .padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                items(cartItems, key = { it.cartId ?: 0 }) { item ->
-                    item.product?.let { product ->
+                // Hiển thị loading indicator nếu đang tải dữ liệu
+                if (isLoading) {
+                    item {
+                        androidx.compose.material.CircularProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .wrapContentSize(Alignment.Center),
+                            color = MaterialTheme.colors.primary
+                        )
+                    }
+                }
+                // Hiển thị thông báo lỗi nếu có
+                else if (error != null) {
+                    item {
+                        Text(
+                            text = "Lỗi: $error",
+                            color = Color.Red,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+                // Hiển thị dữ liệu từ API nếu có
+                else if (cartItemsWithDetails.isNotEmpty()) {
+                    items(cartItemsWithDetails, key = { it.id }) { item ->
+                        // Mặc định mọi item đều được chọn
+                        val cartId = item.id
+                        if (cartId !in checkedStates) checkedStates[cartId] = true
+                        
                         CartItemModern(
-                            cartId = item.cartId!!,
-                            productName = product.name,
-                            productImage = product.image,
-                            productPrice = product.price,
-                            productColor = buildString {
-                                if (item.size.isNotBlank()) append("Size ${item.size}")
-                                if (item.color.isNotBlank()) {
-                                    if (isNotEmpty()) append(", ")
-                                    append(item.color)
+                            cartId = cartId,
+                            productName = item.productName,
+                            productImage = if (item.productImage.isNotEmpty()) item.productImage else R.drawable.ic_shopping_bag,
+                            productPrice = item.unitPrice.toDouble() / 1000, // Chuyển đổi từ VND sang USD để hiển thị
+                            productColor = "Brand: ${item.productBrand}", // Hiển thị thương hiệu thay vì màu sắc
+                            currentQty = item.quantity,
+                            isChecked = checkedStates[cartId] == true,
+                            onCheckedChange = { c -> checkedStates[cartId] = c },
+                            onQuantityChanged = { q -> 
+                                // Tạm thời sử dụng phương thức cũ vì chưa cập nhật API
+                                if (cartId.toString().isNotEmpty()) {
+                                    cartViewModel.updateQuantity(cartId, q)
                                 }
                             },
-                            currentQty = item.quantity,
-                            isChecked = checkedStates[item.cartId] == true,
-                            onCheckedChange = { c -> checkedStates[item.cartId!!] = c },
-                            onQuantityChanged = { q -> cartViewModel.updateQuantity(item.cartId!!, q) },
-                            onProductRemoved = { cartViewModel.removeCartItem(item.cartId!!) }
+                            onProductRemoved = { 
+                                // Tạm thời sử dụng phương thức cũ vì chưa cập nhật API
+                                if (cartId.toString().isNotEmpty()) {
+                                    cartViewModel.removeCartItem(cartId)
+                                }
+                            }
                         )
+                    }
+                } else if (!isLoading && error == null) {
+                    // Hiển thị dữ liệu từ holderViewModel nếu không có dữ liệu từ API và không có lỗi
+                    items(cartItems, key = { it.cartId ?: 0 }) { item ->
+                        item.product?.let { product ->
+                            CartItemModern(
+                                cartId = item.cartId ?: 0,
+                                productName = product.name,
+                                productImage = product.image ?: R.drawable.ic_shopping_bag,
+                                productPrice = product.price,
+                                productColor = buildString {
+                                    if (item.size.isNotBlank()) append("Size ${item.size}")
+                                    if (item.color.isNotBlank()) {
+                                        if (isNotEmpty()) append(", ")
+                                        append(item.color)
+                                    }
+                                },
+                                currentQty = item.quantity,
+                                isChecked = checkedStates[item.cartId] == true,
+                                onCheckedChange = { c -> 
+                                    item.cartId?.let { id -> checkedStates[id] = c }
+                                },
+                                onQuantityChanged = { q -> 
+                                    item.cartId?.let { id -> cartViewModel.updateQuantity(id, q) }
+                                },
+                                onProductRemoved = { 
+                                    item.cartId?.let { id -> cartViewModel.removeCartItem(id) }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -148,8 +231,19 @@ fun CartScreen(
                             text = "Total:",
                             style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
                         )
+                                // Tính tổng tiền dựa trên dữ liệu từ API hoặc dữ liệu giả lập
+                        val displayTotal = if (cartItemsWithDetails.isNotEmpty()) {
+                            // Tính tổng tiền dựa trên các mục được chọn từ API
+                            cartItemsWithDetails
+                                .filter { item -> checkedStates[item.id] == true }
+                                .sumOf { item -> item.unitPrice * item.quantity }
+                        } else {
+                            // Sử dụng tổng tiền từ các mục hiện tại
+                            (totalPrice * USD_TO_VND).toLong()
+                        }
+                        
                         Text(
-                            text = String.format("%,.0fđ", totalPrice * 25000),
+                            text = "$displayTotal VND",
                             style = MaterialTheme.typography.h5.copy(
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.ExtraBold
@@ -207,8 +301,21 @@ fun CartItemModern(
             modifier = Modifier.padding(top = 14.dp)
         )
         Spacer(Modifier.width(12.dp))
+        // Xử lý hiển thị hình ảnh dựa trên loại dữ liệu
+        val imagePainter = when (productImage) {
+            is String -> {
+                if (productImage.isNotEmpty()) {
+                    rememberAsyncImagePainter(productImage)
+                } else {
+                    rememberAsyncImagePainter(R.drawable.ic_shopping_bag)
+                }
+            }
+            is Int -> rememberAsyncImagePainter(productImage)
+            else -> rememberAsyncImagePainter(R.drawable.ic_shopping_bag)
+        }
+        
         Image(
-            painter = rememberAsyncImagePainter(productImage),
+            painter = imagePainter,
             contentDescription = null,
             modifier = Modifier
                 .size(90.dp)

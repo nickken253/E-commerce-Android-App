@@ -1,6 +1,7 @@
 package com.mustfaibra.roffu
 
 import com.google.gson.GsonBuilder
+import com.mustfaibra.roffu.screens.cart.CartApiService
 import com.mustfaibra.roffu.screens.order.OrderApiService
 import com.mustfaibra.roffu.screens.product.ProductApiService
 import retrofit2.Retrofit
@@ -22,5 +23,9 @@ object RetrofitClient {
     
     val productApiService: ProductApiService by lazy {
         retrofit.create(ProductApiService::class.java)
+    }
+    
+    val cartApiService: CartApiService by lazy {
+        retrofit.create(CartApiService::class.java)
     }
 }
