@@ -1,5 +1,11 @@
 package com.mustfaibra.roffu.repositories
 
+import android.content.Context
+import retrofit2.HttpException
+
+import android.os.Build
+import androidx.annotation.RequiresExtension
+import com.mustfaibra.roffu.RetrofitClient
 import com.mustfaibra.roffu.data.local.RoomDao
 import com.mustfaibra.roffu.models.BookmarkItem
 import com.mustfaibra.roffu.models.CartItem
@@ -8,6 +14,7 @@ import com.mustfaibra.roffu.models.Order
 import com.mustfaibra.roffu.models.OrderDetails
 import com.mustfaibra.roffu.models.OrderItem
 import com.mustfaibra.roffu.models.OrderPayment
+import com.mustfaibra.roffu.models.OrderWithItemsAndProducts
 import com.mustfaibra.roffu.models.Product
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
@@ -23,41 +30,46 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+<<<<<<< HEAD
 import kotlinx.serialization.json.Json
+=======
+import java.io.IOException
+>>>>>>> hieuluu2
 import java.util.*
 import javax.inject.Inject
 
 class ProductsRepository @Inject constructor(
     private val dao: RoomDao,
+<<<<<<< HEAD
     private val client: HttpClient,
     private val json: Json,
+=======
+    private val context: Context
+>>>>>>> hieuluu2
 ) {
 
-    suspend fun updateCartState(productId: Int, alreadyOnCart: Boolean) {
-        /** Handle the local storing process */
-        handleLocalCart(productId = productId, alreadyOnCart = alreadyOnCart)
-        /** Handle the remote process */
-    }
-    suspend fun toggleBookmark(productId: Int) {
-        val alreadyOnBookmark = dao.isProductBookmarked(productId)
-        updateBookmarkState(productId, alreadyOnBookmark)
-    }
-
-
-    private suspend fun handleLocalCart(productId: Int, alreadyOnCart: Boolean) {
-        if (alreadyOnCart) {
-            /** Already on local , delete it */
-            dao.deleteCartItem(productId = productId)
+    suspend fun updateCartState(productId: Int, size: String, color: String) {
+        // Lấy tất cả item trong cart hiện tại
+        val cartItems = dao.getCartItemsNow()
+        val existing = cartItems.find {
+            it.productId == productId && it.size == size && it.color == color
+        }
+        if (existing != null) {
+            // Nếu đã có biến thể này, tăng số lượng
+            dao.updateCartItemQuantity(existing.cartId!!, existing.quantity + 1)
         } else {
-            /** not on local , add it */
+            // Nếu chưa có, thêm mới
             val cartItem = CartItem(
                 productId = productId,
                 quantity = 1,
+                size = size,
+                color = color
             )
-            addToLocalCart(cartItem = cartItem)
+            dao.insertCartItem(cartItem)
         }
     }
 
+<<<<<<< HEAD
     suspend fun getProductByBarcode(barcode: String): com.mustfaibra.roffu.models.dto.Product? {
         return try {
             val response: HttpResponse = client.get("http://103.90.226.131:8000/api/v1/products/barcode/$barcode") {
@@ -85,16 +97,26 @@ class ProductsRepository @Inject constructor(
             }
         } catch (e: Exception) {
             DataResponse.Error(com.mustfaibra.roffu.sealed.Error.Network)
-        }
-    }
-    private suspend fun addToLocalCart(cartItem: CartItem) {
-        /** Add it to cart items */
-        dao.insertCartItem(cartItem = cartItem)
+=======
+    suspend fun toggleBookmark(productId: Int) {
+        val alreadyOnBookmark = dao.isProductBookmarked(productId)
+        updateBookmarkState(productId, alreadyOnBookmark)
     }
 
-    suspend fun updateCartItemQuantity(id: Int, quantity: Int) {
+    suspend fun getProductByBarcode(barcode: String): Product? {
+        return withContext(Dispatchers.IO) {
+            dao.getProductByBarcode(barcode)
+>>>>>>> hieuluu2
+        }
+    }
+
+    suspend fun updateCartItemQuantity(cartId: Int, quantity: Int) {
         /** Update local cart item quantity */
-        dao.updateCartItemQuantity(productId = id, quantity = quantity)
+        dao.updateCartItemQuantity(cartId = cartId, quantity = quantity)
+    }
+
+    suspend fun deleteCartItemById(cartId: Int) {
+        dao.deleteCartItemById(cartId)
     }
 
     suspend fun saveOrders(
@@ -176,9 +198,42 @@ class ProductsRepository @Inject constructor(
         /** Doesn't exist on the local, check remote */
         return DataResponse.Error(error = Error.Empty)
     }
+
+    suspend fun getOrdersWithProducts(): DataResponse<List<com.mustfaibra.roffu.models.dto.OrderWithItemsAndProducts>> {
+        return try {
+            val token = UserPref.getToken(context)
+            if (token == null) {
+                return DataResponse.Error(error = Error.Unknown)
+            }
+
+            val response = RetrofitClient.orderApiService.getOrders(
+                authToken = "Bearer $token",
+                page = 1,
+                limit = 10
+            )
+
+            if (response.isNotEmpty()) {
+                DataResponse.Success(data = response)
+            } else {
+                DataResponse.Error(error = Error.Empty)
+            }
+        } catch (e: HttpException) {
+            when (e.code()) {
+                401 -> DataResponse.Error(error = Error.Unauthorized)
+                403 -> DataResponse.Error(error = Error.Forbidden)
+                else -> DataResponse.Error(error = Error.Network)
+            }
+        } catch (e: IOException) {
+            DataResponse.Error(error = Error.Network)
+        } catch (e: Exception) {
+            DataResponse.Error(error = Error.Unknown)
+        }
+    }
+
     fun getManufacturers(): Flow<List<Manufacturer>> {
         return dao.getAllManufacturers()
     }
+
     suspend fun addManufacturer(manufacturer: Manufacturer) {
         dao.insertManufacturer(manufacturer)
     }

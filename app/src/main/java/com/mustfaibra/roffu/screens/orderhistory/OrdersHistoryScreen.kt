@@ -1,3 +1,5 @@
+// Đã migrate chức năng sang OrderScreen. File này không còn sử dụng.
+
 package com.mustfaibra.roffu.screens.orderhistory
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -67,7 +69,7 @@ fun OrdersHistoryScreen(
                 items(orders) { order ->
                     OrderItemLayout(
                         orderedAt = order.order.createdAt,
-                        total = "$${order.order.total}",
+                        total = "₫" + String.format("%,.0f", order.order.total * 25000), // đổi sang VNĐ
                         isDelivered = order.order.isDelivered,
                         location = order.location,
                         payment = order.orderPayment.userPaymentProviderDetails.paymentProvider,

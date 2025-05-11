@@ -62,6 +62,7 @@ class CartViewModel @Inject constructor(
         }
     }
 
+<<<<<<< HEAD
     fun fetchCartItems() {
         _cartUiState.value = UiState.Loading
         viewModelScope.launch {
@@ -130,11 +131,20 @@ class CartViewModel @Inject constructor(
         _totalPrice.value = items.sumOf { cartItem ->
             val price = cartItem.product?.price?.toDouble() ?: 0.0
             price * cartItem.quantity
+=======
+    // XÓA hoặc SỬA HÀM removeCartItem để không dùng alreadyOnCart nữa
+    fun removeCartItem(cartId: Int) {
+        viewModelScope.launch {
+            // Viết hàm xóa cart item theo cartId hoặc productId tuỳ logic bạn muốn
+            // productRepository.deleteCartItem(cartId)
+            productRepository.deleteCartItemById(cartId)
+>>>>>>> hieuluu2
         }
     }
 
-    fun updateQuantity(productId: Int, quantity: Int) {
+    fun updateQuantity(cartId: Int, quantity: Int) {
         viewModelScope.launch {
+<<<<<<< HEAD
             try {
                 val token = UserPref.getToken(context)
                 if (token.isNullOrBlank()) {
@@ -240,6 +250,9 @@ class CartViewModel @Inject constructor(
                 Log.e("CartViewModel", "Remove cart item error: ${e.message}", e)
                 fetchCartItems()
             }
+=======
+            productRepository.updateCartItemQuantity(cartId = cartId, quantity = quantity)
+>>>>>>> hieuluu2
         }
     }
 

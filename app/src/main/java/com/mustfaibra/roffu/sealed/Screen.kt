@@ -87,6 +87,13 @@ sealed class Screen(
         title = R.string.orders_history,
         icon = R.drawable.ic_history,
     )
+
+    object OrderManager : Screen(
+        route = "order-manager",
+        title = R.string.order_manager,
+        icon = R.drawable.ic_assignment,
+    )
+
     object PrivacyPolicies : Screen(
         route = "privacy-policies",
         title = R.string.privacy_and_policies,

@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,8 +17,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+
 import coil.compose.AsyncImage
+
 import com.mustfaibra.roffu.R
+import com.mustfaibra.roffu.components.AddedToCartDialog
 import com.mustfaibra.roffu.components.CustomButton
 import com.mustfaibra.roffu.components.DrawableButton
 import com.mustfaibra.roffu.components.ReactiveBookmarkIcon
@@ -37,6 +42,7 @@ fun ProductDetailsScreen(
     isOnBookmarksStateProvider: () -> Boolean,
     onUpdateBookmarksState: (productId: Int) -> Unit,
     onBackRequested: () -> Unit,
+    navController: NavHostController,
     productDetailsViewModel: ProductDetailsViewModel = hiltViewModel(),
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -66,10 +72,12 @@ fun ProductDetailsScreen(
         }
     }
 
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
+
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colors.background)
@@ -200,7 +208,29 @@ fun ProductContent(
                     text = "Số lượng còn: ${product.quantity}",
                     style = MaterialTheme.typography.body1,
                     modifier = Modifier.fillMaxWidth()
+
                 )
+
+                // Popup xác nhận đã thêm vào giỏ hàng
+                if (showAddedDialog) {
+                    val product = productDetailsViewModel.product.value
+                    AddedToCartDialog(
+                        productName = product?.name ?: "",
+                        productImage = product?.image ?: 0,
+                        productPrice = product?.price ?: 0.0,
+                        onContinue = {
+                            showAddedDialog = false
+                            navController.popBackStack()
+                        },
+                        onViewCart = {
+                            showAddedDialog = false
+                            navController.navigate("cart") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onDismiss = { showAddedDialog = false }
+                    )
+                }
             }
         }
 

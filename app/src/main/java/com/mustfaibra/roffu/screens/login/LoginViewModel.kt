@@ -19,9 +19,12 @@ import com.mustfaibra.roffu.BuildConfig
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.models.User
 import com.mustfaibra.roffu.models.dto.LoginRequest
+<<<<<<< HEAD
 import com.mustfaibra.roffu.models.dto.RegisterRequest
 import com.mustfaibra.roffu.models.dto.ResetPasswordRequest
 import com.mustfaibra.roffu.models.dto.ResetPasswordResponse
+=======
+>>>>>>> hieuluu2
 import com.mustfaibra.roffu.repositories.UserRepository
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
@@ -86,6 +89,7 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
+<<<<<<< HEAD
     fun handleGoogleSignIn(
         task: Task<GoogleSignInAccount>,
         onAutoLoginSuccess: () -> Unit,
@@ -233,6 +237,8 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
+=======
+>>>>>>> hieuluu2
 
 
     fun authenticateUser(
@@ -244,6 +250,7 @@ class LoginViewModel @Inject constructor(
     ) {
         if (!isGoogleLogin && (username.isBlank() || password.isBlank())) {
             onAuthenticationFailed("Vui lòng nhập đầy đủ thông tin")
+<<<<<<< HEAD
             return
         }
 
@@ -311,10 +318,15 @@ class LoginViewModel @Inject constructor(
             onRegistrationFailed("Mật khẩu xác nhận không khớp!")
             return
         }
+=======
+            return
+        }
+>>>>>>> hieuluu2
 
         uiState.value = UiState.Loading
         viewModelScope.launch {
             try {
+<<<<<<< HEAD
                 val request = RegisterRequest(
                     username = username,
                     email = email,
@@ -334,6 +346,46 @@ class LoginViewModel @Inject constructor(
             } catch (e: Exception) {
                 uiState.value = UiState.Error(error = Error.Network)
                 onRegistrationFailed("Đăng ký thất bại: ${e.message}")
+=======
+                // Call login API
+                val request = LoginRequest(username = username, password = password)
+                val loginResponse = RetrofitClient.authApi.login(request)
+
+                // Save access_token
+                UserPref.updateUserToken(context, loginResponse.access_token)
+
+                // Get user profile
+                val userResponse = RetrofitClient.authApi.getUserProfile("Bearer ${loginResponse.access_token}")
+
+                val user = User(
+                    userId = userResponse.id,
+                    name = userResponse.full_name,
+                    email = userResponse.email,
+                    phone = userResponse.phone_number,
+                    password = password,
+                    gender = 1,
+                    role = "user",
+                    profile = R.drawable.adidas_48,
+                    address = userResponse.address ?: ""
+                )
+
+                uiState.value = UiState.Success
+                UserPref.updateUser(user)
+                UserPref.updateUserId(context, user.userId)
+                onAuthenticated()
+            } catch (e: retrofit2.HttpException) {
+                uiState.value = UiState.Error(error = Error.Network)
+                val errorBody = e.response()?.errorBody()?.string() ?: "Không nhận được chi tiết lỗi"
+                val errorMessage = when (e.code()) {
+                    401 -> if (isGoogleLogin) "Tài khoản chưa được đăng ký" else "Tên đăng nhập hoặc mật khẩu không đúng"
+                    422 -> "Thông tin không hợp lệ: $errorBody"
+                    else -> "Đăng nhập thất bại: HTTP ${e.code()} - $errorBody"
+                }
+                onAuthenticationFailed(errorMessage)
+            } catch (e: Exception) {
+                uiState.value = UiState.Error(error = Error.Network)
+                onAuthenticationFailed("Lỗi hệ thống: ${e.message}")
+>>>>>>> hieuluu2
             }
         }
     }
@@ -478,6 +530,27 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
+    private fun isValidOtpFormat(otp: String): Boolean {
+        return otp.length == 6 && otp.all { it.isDigit() }
+    }
+
+
+    fun logout() {
+        viewModelScope.launch {
+            context.dataStore.edit {
+                it.remove(LOGGED_USER_ID)
+            }
+            context.dataStore.data.first().let {
+                Log.d("DataStore", "LOGGED_USER_ID after logout: ${it[LOGGED_USER_ID]}")
+            }
+            UserPref.logout(context)
+            username.value = null
+            emailOrPhone.value = ""
+            password.value = ""
+            uiState.value = UiState.Idle
+        }
+    }
+
     private fun isValidOtpFormat(otp: String): Boolean {
         return otp.length == 6 && otp.all { it.isDigit() }
     }

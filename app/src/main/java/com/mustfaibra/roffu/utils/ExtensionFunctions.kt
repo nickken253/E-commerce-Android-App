@@ -35,9 +35,9 @@ import java.util.*
 
 /** An extension function that is used to convert the API response to a JSONObject & return the field message from it */
 suspend fun HttpResponse.getMessage(): String {
-    /** The json string */
-    val responseAsString = this.bodyAsText()
-    /** convert the json string to a JSONObject that we can extract the message from it */
+
+    val responseAsString = this.body<String>()
+
     return try {
         val jsonObj = JSONObject(responseAsString)
         jsonObj.getString("message") ?: "No message provided !"
@@ -46,7 +46,6 @@ suspend fun HttpResponse.getMessage(): String {
     }
 }
 
-/** An extension function that is used to handle exceptions from Ktor (Ktor 2.x compatible) */
 fun <T> Throwable.handleResponseException(): DataResponse<T> {
     return when (this) {
         is RedirectResponseException -> DataResponse.Error(error = Error.Empty)
@@ -97,6 +96,7 @@ fun Context.showToast(message: Int) {
 fun <T> MutableList<T>.appendOrRemove(element: T): T? {
     remove(element).also { removed ->
         return if (removed) null else this.add(element).let { element }
+
     }
 }
 

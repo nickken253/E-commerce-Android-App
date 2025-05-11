@@ -647,6 +647,7 @@ fun ManHinhDangKy(
                     errorMatKhau.value = null
                 }
 
+
                 // Kiểm tra xác nhận mật khẩu
                 if (matKhauXacNhan.value.isBlank()) {
                     errorMatKhauXacNhan.value = "Trường này là bắt buộc"

@@ -85,7 +85,11 @@ fun BookmarksScreen(
 //                        onChangeBookmarkState = { onBookmarkStateChanged(product.id) },
 //                        image = product.image,
 //                    )
+<<<<<<< HEAD
  //               }
+=======
+                //               }
+>>>>>>> hieuluu2
             }
             is UiState.Error -> {
                 /** An error occur */

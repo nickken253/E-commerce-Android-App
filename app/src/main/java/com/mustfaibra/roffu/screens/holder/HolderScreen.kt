@@ -30,8 +30,8 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.mustfaibra.roffu.components.AppBottomNav
 import com.mustfaibra.roffu.components.CustomSnackBar
@@ -57,7 +57,7 @@ import com.mustfaibra.roffu.screens.login.OtpVerificationScreen
 import com.mustfaibra.roffu.screens.login.ResetPasswordScreen
 import com.mustfaibra.roffu.screens.notifications.NotificationScreen
 import com.mustfaibra.roffu.screens.onboard.OnboardScreen
-import com.mustfaibra.roffu.screens.orderhistory.OrdersHistoryScreen
+import com.mustfaibra.roffu.screens.order.OrderScreen
 import com.mustfaibra.roffu.screens.productdetails.ProductDetailsScreen
 import com.mustfaibra.roffu.screens.profile.ProfileScreen
 import com.mustfaibra.roffu.screens.search.SearchScreen
@@ -75,7 +75,11 @@ fun HolderScreen(
     holderViewModel: HolderViewModel = hiltViewModel(),
 ) {
     val destinations = remember {
+<<<<<<< HEAD
         listOf(Screen.Home, Screen.Bookmark, Screen.Cart, Screen.Profile)
+=======
+        listOf(Screen.Home, Screen.OrderHistory, Screen.Cart, Screen.Profile)
+>>>>>>> hieuluu2
     }
 
     /** Our navigation controller that the MainActivity provides */
@@ -152,23 +156,24 @@ fun HolderScreen(
                 if (
                     currentRouteAsState in destinations.map { it.route }
                     || currentRouteAsState == Screen.BarcodeScanner.route
+                    || currentRouteAsState == Screen.OrderManager.route
+                    || currentRouteAsState == Screen.Bookmark.route
                 ) {
                     AppBottomNav(
                         activeRoute = currentRouteAsState,
-                        backgroundColor = MaterialTheme.colors.surface,
                         bottomNavDestinations = destinations,
+                        backgroundColor = MaterialTheme.colors.background,
                         onCartOffsetMeasured = { offset ->
                             setCartOffset(offset)
                         },
-                        onActiveRouteChange = {
-                            if (it != currentRouteAsState) {
-                                /** We should navigate to that new route */
-                                controller.navigate(it) {
-                                    popUpTo(Screen.Home.route) {
-                                        saveState = true
-                                    }
+                        onActiveRouteChange = { route ->
+                            if (route != currentRouteAsState) {
+                                controller.navigate(route) {
                                     launchSingleTop = true
                                     restoreState = true
+                                    popUpTo(controller.graph.startDestinationId) {
+                                        saveState = true
+                                    }
                                 }
                             }
                         }
@@ -206,8 +211,7 @@ fun HolderScreen(
             },
             onUpdateCartRequest = { productId ->
                 holderViewModel.updateCart(
-                    productId = productId,
-                    currentlyOnCart = productId in productsOnCartIds,
+                    productId = productId
                 )
             },
             onUpdateBookmarkRequest = { productId ->
@@ -431,20 +435,22 @@ fun ScaffoldSection(
                 }
                 composable(
                     route = Screen.EditUser.route,
-                    arguments = listOf(navArgument(name = "userId") { type = NavType.IntType })
+                    arguments = listOf()
                 ) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     // Chỉ cho phép admin truy cập
                     if (user?.isAdmin() == true) {
-                        val userId = it.arguments?.getInt("userId")
-                            ?: throw IllegalArgumentException("User ID is required")
                         EditUserScreen(
-                            userId = userId,
+                            userId = 1, // TODO: Truyền userId động qua route/navArgument, hiện tại tạm truyền cứng để tránh lỗi build
                             onBackRequested = onBackRequested,
                             onToastRequested = onToastRequested
                         )
                     } else {
                         LaunchedEffect(Unit) {
+<<<<<<< HEAD
+=======
+                            // onToastRequested("Bạn không có quyền truy cập!", Color.Red)
+>>>>>>> hieuluu2
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.EditUser.route) { inclusive = true }
                             }
@@ -469,14 +475,17 @@ fun ScaffoldSection(
                 }
                 composable(
                     route = Screen.EditProduct.route,
-                    arguments = listOf(navArgument(name = "productId") { type = NavType.IntType })
+                    arguments = listOf()
                 ) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     if (user?.isAdmin() == true) {
+<<<<<<< HEAD
                         val productId = it.arguments?.getInt("productId")
                             ?: throw IllegalArgumentException("Product ID is required")
+=======
+>>>>>>> hieuluu2
                         EditProductScreen(
-                            productId = productId,
+                            productId = 1, // TODO: Truyền productId động qua route/navArgument, hiện tại tạm truyền cứng để tránh lỗi build
                             onBack = onBackRequested,
                             onDone = { onBackRequested() },
                             onToastRequested = onToastRequested
@@ -546,6 +555,10 @@ fun ScaffoldSection(
                     if (user?.isAdmin() != true) {
                         CartScreen(
                             user = user,
+<<<<<<< HEAD
+=======
+                            // XÓA cartItems, CartScreen tự lấy từ HolderViewModel
+>>>>>>> hieuluu2
                             onProductClicked = onShowProductRequest,
                             onUserNotAuthorized = { onUserNotAuthorized(false) },
                             onCheckoutRequest = {
@@ -636,8 +649,9 @@ fun ScaffoldSection(
                         }
                     }
                 }
-                composable(Screen.OrderHistory.route) {
+                composable(Screen.OrderManager.route) {
                     onStatusBarColorChange(MaterialTheme.colors.background)
+<<<<<<< HEAD
                     if (user?.isAdmin() != true) {
                         user.whatIfNotNull(
                             whatIf = {
@@ -658,23 +672,50 @@ fun ScaffoldSection(
                             }
                         }
                     }
+=======
+                    OrderScreen(
+                        onBack = { controller.popBackStack() }
+                    )
+>>>>>>> hieuluu2
                 }
                 composable(
                     route = Screen.ProductDetails.route,
                     arguments = listOf(
+<<<<<<< HEAD
                         navArgument(name = "productId") { type = NavType.IntType }
                     )
                 ) {
+=======
+                        navArgument("productId") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val productId = backStackEntry.arguments?.getInt("productId") ?: 0
+>>>>>>> hieuluu2
                     onStatusBarColorChange(MaterialTheme.colors.background)
-                    val productId = it.arguments?.getInt("productId")
-                        ?: throw IllegalArgumentException("Product id is required")
                     ProductDetailsScreen(
                         productId = productId,
                         cartItemsCount = cartItems.size,
+<<<<<<< HEAD
                         isOnBookmarksStateProvider = { productId in productsOnBookmarksIds },
                         onUpdateBookmarksState = onUpdateBookmarkRequest,
                         onBackRequested = onBackRequested
+=======
+                        isOnCartStateProvider = { productsOnCartIds.contains(productId) },
+                        isOnBookmarksStateProvider = { productsOnBookmarksIds.contains(productId) },
+                        onUpdateCartState = { productId ->
+                            onUpdateCartRequest(productId)
+                        },
+                        onUpdateBookmarksState = { productId ->
+                            onUpdateBookmarkRequest(productId)
+                        },
+                        onBackRequested = onBackRequested,
+                        navController = controller
+>>>>>>> hieuluu2
                     )
+                }
+                composable(Screen.OrderHistory.route) {
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    OrderScreen()
                 }
             }
             // Chỉ hiển thị bottom navigation cho user bình thường

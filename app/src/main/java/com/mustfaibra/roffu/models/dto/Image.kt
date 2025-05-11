@@ -1,5 +1,9 @@
 package com.mustfaibra.roffu.models.dto
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> hieuluu2
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 

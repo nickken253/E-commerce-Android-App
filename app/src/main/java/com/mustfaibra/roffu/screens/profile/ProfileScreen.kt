@@ -18,7 +18,12 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowRight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +36,12 @@ import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.components.DrawableButton
 import com.mustfaibra.roffu.components.IconButton
 import com.mustfaibra.roffu.models.User
+import com.mustfaibra.roffu.models.VirtualCard
+import com.mustfaibra.roffu.screens.profile.AddVirtualCardScreen
+import com.mustfaibra.roffu.screens.profile.VisaCardDisplay
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.ui.unit.dp
 import com.mustfaibra.roffu.sealed.Screen
 import com.mustfaibra.roffu.ui.theme.Dimension
 
@@ -40,13 +51,33 @@ fun ProfileScreen(
     onNavigationRequested: (route: String, removePreviousRoute: Boolean) -> Unit,
     onLogoutRequested: () -> Unit,
     profileViewModel: ProfileViewModel = hiltViewModel(),
+    selectedTab: String? = null,
 ) {
     val generalOptions = remember {
-        listOf(Screen.Settings, Screen.OrderHistory)
+        listOf(Screen.Settings, Screen.Bookmark)
     }
     val personalOptions = remember {
         listOf(Screen.PrivacyPolicies, Screen.TermsConditions)
     }
+    var showOrderHistory by remember { mutableStateOf(false) }
+    val virtualCard by profileViewModel.virtualCard.collectAsState()
+    var showAddCardScreen by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == Screen.Profile.route) {
+            showOrderHistory = false
+        }
+    }
+
+    LaunchedEffect(user.userId) {
+        profileViewModel.loadVirtualCard(user.userId)
+    }
+
+    if (showOrderHistory) {
+        onNavigationRequested(Screen.OrderManager.route, false)
+        showOrderHistory = false
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -71,38 +102,83 @@ fun ProfileScreen(
         }
         /** Add virtual card section */
         item {
-            Card(
-                modifier = Modifier.clickable { },
-                shape = MaterialTheme.shapes.medium,
-                backgroundColor = MaterialTheme.colors.secondary,
-                contentColor = MaterialTheme.colors.onSecondary,
-            ) {
-                Column(
-                    modifier = Modifier.padding(Dimension.pagePadding),
-                    verticalArrangement = Arrangement.spacedBy(Dimension.md),
+            if (virtualCard == null && !showAddCardScreen) {
+                Card(
+                    modifier = Modifier.clickable { showAddCardScreen = true },
+                    shape = MaterialTheme.shapes.medium,
+                    backgroundColor = MaterialTheme.colors.secondary,
+                    contentColor = MaterialTheme.colors.onSecondary,
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                    Column(
+                        modifier = Modifier.padding(Dimension.pagePadding),
+                        verticalArrangement = Arrangement.spacedBy(Dimension.md),
                     ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                modifier = Modifier.weight(1f),
+                                text = "Add virtual card",
+                                style = MaterialTheme.typography.button,
+                            )
+                            IconButton(
+                                icon = Icons.Rounded.KeyboardArrowRight,
+                                backgroundColor = MaterialTheme.colors.background,
+                                iconTint = MaterialTheme.colors.onBackground,
+                                onButtonClicked = { showAddCardScreen = true },
+                                iconSize = Dimension.smIcon,
+                                paddingValue = PaddingValues(Dimension.xs),
+                                shape = MaterialTheme.shapes.medium,
+                            )
+                        }
                         Text(
-                            modifier = Modifier.weight(1f),
-                            text = "Add virtual card",
-                            style = MaterialTheme.typography.button,
-                        )
-                        IconButton(
-                            icon = Icons.Rounded.KeyboardArrowRight,
-                            backgroundColor = MaterialTheme.colors.background,
-                            iconTint = MaterialTheme.colors.onBackground,
-                            onButtonClicked = {},
-                            iconSize = Dimension.smIcon,
-                            paddingValue = PaddingValues(Dimension.xs),
-                            shape = MaterialTheme.shapes.medium,
+                            text = "Virtual cards allow you to purchase products on the store.",
+                            style = MaterialTheme.typography.body2,
                         )
                     }
-                    Text(
-                        text = "Virtual cards allow you to purchase products on the store.",
-                        style = MaterialTheme.typography.body2,
+                }
+            } else if (showAddCardScreen) {
+                AddVirtualCardScreen(
+                    onCardAdded = { cardNumber, month, year, cvv, cardHolder ->
+                        profileViewModel.addVirtualCard(
+                            VirtualCard(
+                                userId = user.userId,
+                                cardNumber = cardNumber,
+                                expiryMonth = month,
+                                expiryYear = year,
+                                cvv = cvv,
+                                cardHolder = cardHolder
+                            )
+                        )
+                        showAddCardScreen = false
+                    },
+                    onCancel = { showAddCardScreen = false }
+                )
+            } else if (virtualCard != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(Dimension.md),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    VisaCardDisplay(
+                        cardNumber = virtualCard!!.cardNumber,
+                        cardHolder = virtualCard!!.cardHolder,
+                        expiryMonth = virtualCard!!.expiryMonth,
+                        expiryYear = virtualCard!!.expiryYear
                     )
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(12.dp))
+                    androidx.compose.material.IconButton(
+                        onClick = { profileViewModel.deleteVirtualCard(virtualCard!!) },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        androidx.compose.material.Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.Delete,
+                            contentDescription = "Delete card",
+                            tint = MaterialTheme.colors.error
+                        )
+                    }
                 }
             }
         }
@@ -118,8 +194,8 @@ fun ProfileScreen(
                 icon = option.icon,
                 title = option.title,
                 onOptionClicked = {
-                    if (option is Screen.OrderHistory) {
-                        onNavigationRequested(option.route, false)
+                    if (option is Screen.Bookmark) {
+                        onNavigationRequested(Screen.Bookmark.route, false)
                     }
                 },
             )

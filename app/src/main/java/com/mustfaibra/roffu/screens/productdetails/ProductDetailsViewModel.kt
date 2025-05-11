@@ -208,4 +208,10 @@ class ProductDetailsViewModel @Inject constructor(
             Pair(false, null)
         }
     }
+
+    fun addToCart(productId: Int, size: String, color: String) {
+        viewModelScope.launch {
+            productsRepository.updateCartState(productId, size, color)
+        }
+    }
 }

@@ -29,8 +29,9 @@ import javax.inject.Provider
         Notification::class,
         ProductColor::class,
         ProductSize::class,
+        VirtualCard::class
     ],
-    version = 3, exportSchema = false)
+    version = 7, exportSchema = false)
 abstract class RoomDb : RoomDatabase() {
 
     /** A function that used to retrieve Room's related dao instance */
@@ -283,6 +284,75 @@ abstract class RoomDb : RoomDatabase() {
             scope.launch {
                 dao.saveLocation(location = userLocation)
             }
+            /** Insert test orders with various statuses */
+            scope.launch {
+                val now = System.currentTimeMillis()
+                val orderList = listOf(
+                    Order(
+                        orderId = "test1",
+                        userId = 1,
+                        total = 174.0,
+                        createdAt = "2025-05-03 20:11",
+                        modifiedAt = "2025-05-03 20:11",
+                        status = "Chờ xác nhận",
+                        locationId = 1,
+                    ),
+                    Order(
+                        orderId = "test2",
+                        userId = 1,
+                        total = 443.0,
+                        createdAt = "2025-05-03 20:12",
+                        modifiedAt = "2025-05-03 20:12",
+                        status = "Chờ lấy hàng",
+                        locationId = 1,
+                    ),
+                    Order(
+                        orderId = "test3",
+                        userId = 1,
+                        total = 255.0,
+                        createdAt = "2025-05-03 20:16",
+                        modifiedAt = "2025-05-03 20:16",
+                        status = "Đang giao",
+                        locationId = 1,
+                    ),
+                    Order(
+                        orderId = "test4",
+                        userId = 1,
+                        total = 399.0,
+                        createdAt = "2025-05-03 20:20",
+                        modifiedAt = "2025-05-03 20:20",
+                        status = "Đã giao",
+                        locationId = 1,
+                    ),
+                    Order(
+                        orderId = "test5",
+                        userId = 1,
+                        total = 123.0,
+                        createdAt = "2025-05-03 20:25",
+                        modifiedAt = "2025-05-03 20:25",
+                        status = "Đã hủy",
+                        locationId = 1,
+                    )
+                )
+                orderList.forEach { dao.insertOrder(it) }
+                val orderItems = listOf(
+                    OrderItem(orderId = "test1", quantity = 2, productId = 1, userId = 1),
+                    OrderItem(orderId = "test1", quantity = 1, productId = 3, userId = 1),
+                    OrderItem(orderId = "test2", quantity = 3, productId = 7, userId = 1),
+                    OrderItem(orderId = "test3", quantity = 1, productId = 10, userId = 1),
+                    OrderItem(orderId = "test4", quantity = 2, productId = 12, userId = 1),
+                    OrderItem(orderId = "test5", quantity = 1, productId = 1, userId = 1)
+                )
+                dao.insertOrderItems(orderItems)
+                val payments = listOf(
+                    OrderPayment(orderId = "test1", providerId = "apple"),
+                    OrderPayment(orderId = "test2", providerId = "master"),
+                    OrderPayment(orderId = "test3", providerId = "visa"),
+                    OrderPayment(orderId = "test4", providerId = "apple"),
+                    OrderPayment(orderId = "test5", providerId = "master")
+                )
+                payments.forEach { dao.insertOrderPayment(it) }
+            }
         }
     }
 
@@ -294,5 +364,7 @@ val MIGRATION_1_2 = object : Migration(2, 3) {
 //        database.execSQL("ALTER TABLE User ADD COLUMN district TEXT")
 //        database.execSQL("ALTER TABLE User ADD COLUMN address TEXT")
         database.execSQL("ALTER TABLE Product ADD COLUMN imagePath TEXT")
+        // Thêm trường status vào migration nếu cần
+        database.execSQL("ALTER TABLE orders ADD COLUMN status TEXT NOT NULL DEFAULT 'Chờ xác nhận'")
     }
 }
