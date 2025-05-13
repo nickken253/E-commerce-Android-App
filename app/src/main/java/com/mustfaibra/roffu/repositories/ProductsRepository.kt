@@ -37,7 +37,7 @@ class ProductsRepository @Inject constructor(
         // Lấy tất cả item trong cart hiện tại
         val cartItems = dao.getCartItemsNow()
         val existing = cartItems.find {
-            it.productId == productId && it.size == size && it.color == color
+            it.productId == productId
         }
         if (existing != null) {
             // Nếu đã có biến thể này, tăng số lượng
@@ -46,9 +46,7 @@ class ProductsRepository @Inject constructor(
             // Nếu chưa có, thêm mới
             val cartItem = CartItem(
                 productId = productId,
-                quantity = 1,
-                size = size,
-                color = color
+                quantity = 1
             )
             dao.insertCartItem(cartItem)
         }

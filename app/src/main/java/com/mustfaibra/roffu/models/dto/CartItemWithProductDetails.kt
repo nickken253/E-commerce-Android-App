@@ -1,8 +1,11 @@
 package com.mustfaibra.roffu.models.dto
 
+import kotlinx.serialization.Serializable
+
 /**
  * Model kết hợp thông tin của CartItemResponse và Product
  */
+@Serializable
 data class CartItemWithProductDetails(
     val id: Int,                // ID của item trong giỏ hàng
     val productId: Int,         // ID của sản phẩm

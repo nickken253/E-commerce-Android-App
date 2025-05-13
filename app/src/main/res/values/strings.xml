@@ -54,4 +54,5 @@
     <string name="unauthorized_err_body">Vui lòng đăng nhập lại</string>
     <string name="forbidden_err_title">Truy cập bị từ chối</string>
     <string name="forbidden_err_body">Bạn không có quyền truy cập</string>
+    <string name="error_saving_order">Lỗi khi lưu</string>
 </resources>

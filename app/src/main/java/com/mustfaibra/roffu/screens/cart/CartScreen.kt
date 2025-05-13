@@ -1,5 +1,6 @@
 package com.mustfaibra.roffu.screens.cart
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -23,26 +24,24 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.mustfaibra.roffu.components.CustomButton
 import com.mustfaibra.roffu.components.IconButton as CustomIconButton
 import com.mustfaibra.roffu.models.User
 import com.mustfaibra.roffu.models.dto.CartItemWithProductDetails
-import com.mustfaibra.roffu.models.dto.CartResponse
-import com.skydoves.whatif.whatIf
-import com.skydoves.whatif.whatIfNotNull
-import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.sealed.Screen
 import com.mustfaibra.roffu.screens.holder.HolderViewModel
+import com.skydoves.whatif.whatIfNotNull
 
 // Hàm định dạng số thành chuỗi tiền tệ Việt Nam
 private fun formatVietnamCurrency(amount: Long): String {
@@ -51,6 +50,7 @@ private fun formatVietnamCurrency(amount: Long): String {
 
 @Composable
 fun CartScreen(
+    navController: NavHostController,
     user: User?,
     cartViewModel: CartViewModel = hiltViewModel(),
     holderViewModel: HolderViewModel = hiltViewModel(),
@@ -60,36 +60,35 @@ fun CartScreen(
     onUserNotAuthorized: () -> Unit,
     onToastRequested: (message: String, color: Color) -> Unit,
 ) {
-    // Lấy context để truyền cho fetchCart
     val context = androidx.compose.ui.platform.LocalContext.current
-    
-    // Gọi API để lấy danh sách sản phẩm trong giỏ hàng khi màn hình được hiển thị
+
+    // Gọi API để lấy giỏ hàng
     LaunchedEffect(Unit) {
         cartViewModel.fetchCart(context)
     }
-    
-    // Lấy các trạng thái từ CartViewModel
-    val isLoading = cartViewModel.isLoading.value
-    val error = cartViewModel.error.value
-    val cartItemsWithDetails = cartViewModel.cartItemsWithDetails.value
-    val cartItems = holderViewModel.cartItems
 
+    // Lấy trạng thái từ CartViewModel
+    val isLoading by cartViewModel.isLoading
+    val error by cartViewModel.error
+    val cartItemsWithDetails by cartViewModel.cartItemsWithDetails
+
+    // Quản lý trạng thái checkbox
     val checkedStates = remember { mutableStateMapOf<Int, Boolean>() }
-    cartItems.forEach { item ->
-        val id = item.cartId ?: return@forEach
-        if (id !in checkedStates) checkedStates[id] = true
+    LaunchedEffect(cartItemsWithDetails) {
+        cartItemsWithDetails.forEach { item ->
+            if (item.id !in checkedStates) {
+                checkedStates[item.id] = true // Mặc định chọn tất cả
+            }
+        }
     }
 
-    val selectedItems by remember {
-        derivedStateOf { cartItems.filter { it.cartId?.let { id -> checkedStates[id] } == true } }
-    }
-
-    val totalPrice by remember(selectedItems) {
-        derivedStateOf { selectedItems.sumOf { it.quantity * (it.product?.price ?: 0.0) } }
-    }
-
-    LaunchedEffect(selectedItems) {
-        cartViewModel.updateCart(items = selectedItems)
+    // Tính tổng giá từ API
+    val totalPrice by remember(cartItemsWithDetails, checkedStates) {
+        derivedStateOf {
+            cartItemsWithDetails
+                .filter { checkedStates[it.id] == true }
+                .sumOf { it.unitPrice.toDouble() * it.quantity }
+        }
     }
 
     Box(
@@ -110,7 +109,7 @@ fun CartScreen(
                     icon = Icons.Default.ArrowBack,
                     backgroundColor = Color.White,
                     iconTint = Color.Black,
-                    onButtonClicked = { /*TODO*/ },
+                    onButtonClicked = { onNavigationRequested(Screen.Home.route, false) },
                     elevation = 1.dp,
                 )
                 Text(
@@ -121,7 +120,11 @@ fun CartScreen(
                     icon = Icons.Default.Delete,
                     backgroundColor = Color.White,
                     iconTint = Color.Black,
-                    onButtonClicked = { /*TODO*/ },
+                    onButtonClicked = {
+                        cartItemsWithDetails.forEach { item ->
+                            cartViewModel.removeCartItem(item.id, context)
+                        }
+                    },
                     elevation = 1.dp,
                 )
             }
@@ -133,7 +136,7 @@ fun CartScreen(
                     .padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Hiển thị loading indicator nếu đang tải dữ liệu
+                // Hiển thị loading
                 if (isLoading) {
                     item {
                         androidx.compose.material.CircularProgressIndicator(
@@ -145,7 +148,7 @@ fun CartScreen(
                         )
                     }
                 }
-                // Hiển thị thông báo lỗi nếu có
+                // Hiển thị lỗi
                 else if (error != null) {
                     item {
                         Text(
@@ -158,71 +161,45 @@ fun CartScreen(
                         )
                     }
                 }
-                // Hiển thị dữ liệu từ API nếu có
+                // Hiển thị dữ liệu từ API
                 else if (cartItemsWithDetails.isNotEmpty()) {
                     items(cartItemsWithDetails, key = { it.id }) { item ->
-                        // Mặc định mọi item đều được chọn
-                        val cartId = item.id
-                        if (cartId !in checkedStates) checkedStates[cartId] = true
-                        
                         CartItemModern(
-                            cartId = cartId,
+                            cartId = item.id,
                             productName = item.productName,
-                            productImage = if (item.productImage.isNotEmpty()) item.productImage else R.drawable.ic_shopping_bag,
-                            productPrice = item.unitPrice.toDouble(), // Đã là tiền Việt
-                            productColor = "Brand: ${item.productBrand}", // Hiển thị thương hiệu thay vì màu sắc
+                            productImage = item.productImage,
+                            productPrice = item.unitPrice.toDouble(),
+                            productColor = "Brand: ${item.productBrand}",
                             currentQty = item.quantity,
-                            isChecked = checkedStates[cartId] == true,
-                            onCheckedChange = { c -> checkedStates[cartId] = c },
-                            onQuantityChanged = { q -> 
-                                // Cập nhật số lượng sản phẩm thông qua API
-                                if (cartId.toString().isNotEmpty()) {
-                                    cartViewModel.updateQuantity(cartId, q, context)
-                                }
+                            isChecked = checkedStates[item.id] == true,
+                            onCheckedChange = { checked -> checkedStates[item.id] = checked },
+                            onQuantityChanged = { qty ->
+                                cartViewModel.updateQuantity(item.id, qty, context)
                             },
-                            onProductRemoved = { 
-                                // Xóa sản phẩm khỏi giỏ hàng thông qua API
-                                if (cartId.toString().isNotEmpty()) {
-                                    cartViewModel.removeCartItem(cartId, context)
-                                }
+                            onProductRemoved = {
+                                cartViewModel.removeCartItem(item.id, context)
                             }
                         )
                     }
-                } else if (!isLoading && error == null) {
-                    // Hiển thị dữ liệu từ holderViewModel nếu không có dữ liệu từ API và không có lỗi
-                    items(cartItems, key = { it.cartId ?: 0 }) { item ->
-                        item.product?.let { product ->
-                            CartItemModern(
-                                cartId = item.cartId ?: 0,
-                                productName = product.name,
-                                productImage = product.image ?: R.drawable.ic_shopping_bag,
-                                productPrice = product.price,
-                                productColor = buildString {
-                                    if (item.size.isNotBlank()) append("Size ${item.size}")
-                                    if (item.color.isNotBlank()) {
-                                        if (isNotEmpty()) append(", ")
-                                        append(item.color)
-                                    }
-                                },
-                                currentQty = item.quantity,
-                                isChecked = checkedStates[item.cartId] == true,
-                                onCheckedChange = { c -> 
-                                    item.cartId?.let { id -> checkedStates[id] = c }
-                                },
-                                onQuantityChanged = { q -> 
-                                    item.cartId?.let { id -> cartViewModel.updateQuantity(id, q, context) }
-                                },
-                                onProductRemoved = {
-                                    item.cartId?.let { id -> cartViewModel.removeCartItem(id, context) }
-                                }
-                            )
-                        }
+                }
+                // Hiển thị giỏ hàng trống
+                else {
+                    item {
+                        Text(
+                            text = "Giỏ hàng trống",
+                            style = MaterialTheme.typography.body1,
+                            color = Color.Red,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
                     }
                 }
             }
 
             // Total & Checkout
-            if (cartItems.isNotEmpty()) {
+            if (cartItemsWithDetails.isNotEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -238,19 +215,8 @@ fun CartScreen(
                             text = "Total:",
                             style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
                         )
-                                // Tính tổng tiền dựa trên dữ liệu từ API hoặc dữ liệu giả lập
-                        val displayTotal = if (cartItemsWithDetails.isNotEmpty()) {
-                            // Tính tổng tiền dựa trên các mục được chọn từ API
-                            cartItemsWithDetails
-                                .filter { item -> checkedStates[item.id] == true }
-                                .sumOf { item -> item.unitPrice * item.quantity }
-                        } else {
-                            // Sử dụng tổng tiền từ các mục hiện tại
-                            totalPrice.toLong()
-                        }
-                        
                         Text(
-                            text = formatVietnamCurrency(displayTotal),
+                            text = formatVietnamCurrency(totalPrice.toLong()),
                             style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colors.primary
                         )
@@ -267,33 +233,57 @@ fun CartScreen(
                         onButtonClicked = {
                             user.whatIfNotNull(
                                 whatIf = {
-                                    // Lấy danh sách sản phẩm được chọn
-                                    val selectedItems = cartItems.filter { item -> 
-                                        item.cartId?.let { id -> checkedStates[id] == true } ?: false 
+                                    val selectedItems = cartItemsWithDetails.filter { item ->
+                                        checkedStates[item.id] == true
                                     }
-                                    
-                                    // Kiểm tra nếu không có sản phẩm nào được chọn
+                                    Log.d("CartScreen", "Selected items count: ${selectedItems.size}, items: $selectedItems")
+                                    Log.d("CartScreen", "Checkbox states: $checkedStates")
                                     if (selectedItems.isEmpty()) {
-                                        // Hiển thị thông báo
                                         onToastRequested("Vui lòng chọn ít nhất một sản phẩm", Color.Red)
                                         return@whatIfNotNull
                                     }
-                                    
-                                    // Log để debug
-                                    android.util.Log.d("CartScreen", "Đã chọn ${selectedItems.size} sản phẩm để thanh toán")
-                                    
-                                    // Lưu các sản phẩm được chọn vào HolderViewModel
                                     holderViewModel.selectedCartItems.clear()
-                                    holderViewModel.selectedCartItems.addAll(selectedItems)
-                                    
-                                    // Đồng bộ giỏ hàng và chuyển đến màn hình thanh toán
+                                    holderViewModel.selectedCartItems.addAll(
+                                        selectedItems.map { item ->
+                                            com.mustfaibra.roffu.models.CartItem(
+                                                cartId = item.id,
+                                                productId = item.productId,
+                                                quantity = item.quantity
+                                            ).apply {
+                                                product = com.mustfaibra.roffu.models.dto.Product(
+                                                    id = item.productId,
+                                                    barcode = "",
+                                                    product_name = item.productName,
+                                                    description = item.productDescription,
+                                                    price = item.unitPrice,
+                                                    category_id = 0,
+                                                    brand_id = 0,
+                                                    created_at = "",
+                                                    updated_at = "",
+                                                    quantity = item.quantity,
+                                                    variants = emptyList(),
+                                                    images = listOf(
+                                                        com.mustfaibra.roffu.models.dto.Image(
+                                                            id = 0,
+                                                            product_id = item.productId,
+                                                            image_url = item.productImage,
+                                                            is_primary = true,
+                                                            upload_date = ""
+                                                        )
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    )
+                                    Log.d("CartScreen", "HolderViewModel selectedCartItems: ${holderViewModel.selectedCartItems}")
                                     cartViewModel.syncCartItems(
+                                        navController = navController,
+                                        selectedItems = selectedItems,
                                         onSyncFailed = {
                                             onToastRequested("Không thể đồng bộ giỏ hàng", Color.Red)
                                         },
                                         onSyncSuccess = {
-                                            // Chuyển đến màn hình thanh toán
-                                            onCheckoutRequest()
+                                            // Không cần gọi onNavigationRequested vì điều hướng được xử lý trong syncCartItems
                                         }
                                     )
                                 },
@@ -335,21 +325,21 @@ fun CartItemModern(
             modifier = Modifier.padding(top = 14.dp)
         )
         Spacer(Modifier.width(12.dp))
-        // Xử lý hiển thị hình ảnh dựa trên loại dữ liệu
+        // Xử lý hiển thị hình ảnh
         val imagePainter = when (productImage) {
             is String -> {
                 if (productImage.isNotEmpty()) {
                     rememberAsyncImagePainter(productImage)
                 } else {
-                    rememberAsyncImagePainter(R.drawable.ic_shopping_bag)
+
                 }
             }
             is Int -> rememberAsyncImagePainter(productImage)
-            else -> rememberAsyncImagePainter(R.drawable.ic_shopping_bag)
+            else -> {}
         }
-        
+
         Image(
-            painter = imagePainter,
+            painter = imagePainter as Painter,
             contentDescription = null,
             modifier = Modifier
                 .size(90.dp)
@@ -372,9 +362,8 @@ fun CartItemModern(
                 maxLines = 1
             )
             Spacer(Modifier.height(8.dp))
-            // Quantity and delete separated with consistent sizing
+            // Quantity and delete controls
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Quantity controls (slightly shrunk)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -401,7 +390,6 @@ fun CartItemModern(
                     }
                 }
                 Spacer(Modifier.width(16.dp))
-                // Delete button matching quantity box height
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier

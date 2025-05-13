@@ -3,6 +3,10 @@ package com.mustfaibra.roffu.sealed
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.mustfaibra.roffu.R
+import com.mustfaibra.roffu.models.dto.CartItemWithProductDetails
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import java.net.URLEncoder
 
 sealed class Screen(
     val                              route: String,
@@ -97,12 +101,14 @@ sealed class Screen(
         icon = R.drawable.ic_history,
     )
 
-    object CheckoutWithProducts : Screen(
-        route = "checkout-with-products/{productIds}/{quantities}/{totalAmount}",
-        title = R.string.checkout,
-    ) {
-        fun createRoute(productIds: String, quantities: String, totalAmount: Double): String {
-            return "checkout-with-products/$productIds/$quantities/$totalAmount"
+    object CheckoutWithProducts : Screen("checkout/{items}/{totalAmount}") {
+        fun createRoute(
+            items: List<CartItemWithProductDetails>,
+            totalAmount: Double
+        ): String {
+            val itemsJson = Json.encodeToString(items)
+            val encodedItems = URLEncoder.encode(itemsJson, "UTF-8")
+            return "checkout/$encodedItems/$totalAmount"
         }
     }
 

@@ -1,27 +1,26 @@
 package com.mustfaibra.roffu.screens.checkout
 
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.rounded.KeyboardArrowRight
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,49 +30,35 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.LottieConstants
-import com.airbnb.lottie.compose.animateLottieCompositionAsState
-import com.airbnb.lottie.compose.rememberLottieComposition
-import android.os.Handler
-import android.os.Looper
+import com.airbnb.lottie.compose.*
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.components.CustomButton
 import com.mustfaibra.roffu.components.DrawableButton
 import com.mustfaibra.roffu.components.IconButton
 import com.mustfaibra.roffu.components.SecondaryTopBar
 import com.mustfaibra.roffu.components.SummaryRow
-import com.mustfaibra.roffu.models.CartItem
-import com.mustfaibra.roffu.models.UserPaymentProviderDetails
-import com.mustfaibra.roffu.models.VirtualCard
 import com.mustfaibra.roffu.models.dto.BankCardListResponse
-import com.mustfaibra.roffu.models.dto.Image
-import com.mustfaibra.roffu.models.dto.Product as ApiProduct
+import com.mustfaibra.roffu.models.dto.CartItemWithProductDetails
 import com.mustfaibra.roffu.screens.profile.AddVirtualCardScreen
 import com.mustfaibra.roffu.screens.profile.ProfileViewModel
 import com.mustfaibra.roffu.screens.profile.VisaCardDisplay
 import com.mustfaibra.roffu.sealed.UiState
 import com.mustfaibra.roffu.ui.theme.Dimension
 import com.mustfaibra.roffu.utils.encryptCardNumber
-import androidx.compose.foundation.border
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.sp
-import com.skydoves.whatif.whatIf
 import com.skydoves.whatif.whatIfNotNull
+import kotlinx.serialization.json.Json
+import java.net.URLDecoder
 
 // Hàm định dạng số thành chuỗi tiền tệ Việt Nam
 private fun formatVietnamCurrency(amount: Long): String {
@@ -82,47 +67,44 @@ private fun formatVietnamCurrency(amount: Long): String {
 
 @Composable
 fun CheckoutScreen(
-    cartItems: List<CartItem>,
+    navController: NavHostController,
+    itemsJson: String,
+    totalAmount: Double,
     onChangeLocationRequested: () -> Unit,
-    onBackRequested: () -> Unit,
-    onCheckoutSuccess: () -> Unit,
+    onNavigationRequested: (route: String, popBackStack: Boolean) -> Unit,
     onToastRequested: (message: String, color: Color) -> Unit,
     checkoutViewModel: CheckoutViewModel = hiltViewModel(),
     profileViewModel: ProfileViewModel = hiltViewModel(),
-    selectedItems: List<CartItem> = emptyList() // Danh sách sản phẩm được chọn để thanh toán
 ) {
     val appContext = LocalContext.current
-    
-    // Sử dụng một LaunchedEffect duy nhất để xử lý tất cả các tác vụ khởi tạo
-    LaunchedEffect(key1 = Unit) {
-        // Lấy danh sách thẻ ngân hàng khi màn hình được hiển thị
-        checkoutViewModel.getBankCards(appContext)
-        
-        // Cập nhật danh sách sản phẩm đã chọn để thanh toán
-        checkoutViewModel.updateSelectedCartItems(selectedItems)
-        
-        // Sử dụng danh sách sản phẩm được chọn hoặc toàn bộ giỏ hàng
-        val itemsToCheckout = if (selectedItems.isNotEmpty()) selectedItems else cartItems
-        checkoutViewModel.setUserCart(itemsToCheckout)
-        
-        android.util.Log.d("CheckoutScreen", "Khởi tạo với ${selectedItems.size} sản phẩm được chọn, ${cartItems.size} sản phẩm trong giỏ hàng")
+    var selectedItems by remember { mutableStateOf<List<CartItemWithProductDetails>>(emptyList()) }
+    var decodeError by remember { mutableStateOf<String?>(null) }
+
+    // Giải mã itemsJson
+    LaunchedEffect(itemsJson) {
+        try {
+            val decodedItemsJson = URLDecoder.decode(itemsJson, "UTF-8")
+            val items = Json.decodeFromString<List<CartItemWithProductDetails>>(decodedItemsJson)
+            selectedItems = items
+            checkoutViewModel.updateSelectedCartItems(items)
+            checkoutViewModel.setUserCart(items)
+            checkoutViewModel.getBankCards(appContext)
+            Log.d("CheckoutScreen", "Successfully decoded ${items.size} items")
+        } catch (e: Exception) {
+            decodeError = "Lỗi tải dữ liệu giỏ hàng: ${e.message}"
+            Log.e("CheckoutScreen", "Error decoding itemsJson: ${e.message}")
+        }
     }
 
-    val checkoutUiState by remember { checkoutViewModel.checkoutState }
+    val checkoutUiState by checkoutViewModel.checkoutState
     val isVirtualCardAdded by profileViewModel.isVirtualCardAdded.collectAsState()
-    
-    // Danh sách thẻ ngân hàng
-    val bankCards by remember { checkoutViewModel.bankCards }
-    val selectedCardId by remember { checkoutViewModel.selectedCardId }
-    val isLoadingCards by remember { checkoutViewModel.isLoadingCards }
-    val error by remember { checkoutViewModel.error }
-    
-    // Biến state để kiểm soát hiển thị dialog thêm thẻ
+    val bankCards by checkoutViewModel.bankCards
+    val selectedCardId by checkoutViewModel.selectedCardId
+    val isLoadingCards by checkoutViewModel.isLoadingCards
+    val error by checkoutViewModel.error
     var showAddCardDialog by remember { mutableStateOf(false) }
-    
-    // Không cần biến CVV ở cấp độ này
+    val isLoadingSelectedCartItems by checkoutViewModel.isLoadingSelectedCartItems
 
-    // Dialog thêm thẻ mới
     if (showAddCardDialog) {
         AlertDialog(
             onDismissRequest = { showAddCardDialog = false },
@@ -131,7 +113,6 @@ fun CheckoutScreen(
                 AddVirtualCardScreen(
                     onCardAdded = { cardNumber, month, year, cvvValue, cardHolder ->
                         showAddCardDialog = false
-                        // Lấy lại danh sách thẻ sau khi thêm
                         checkoutViewModel.getBankCards(appContext)
                     },
                     onCancel = { showAddCardDialog = false }
@@ -140,7 +121,7 @@ fun CheckoutScreen(
             buttons = {}
         )
     }
-    
+
     if (checkoutUiState is UiState.Loading) {
         Dialog(
             onDismissRequest = {},
@@ -159,15 +140,12 @@ fun CheckoutScreen(
                 val composition by rememberLottieComposition(
                     spec = LottieCompositionSpec.RawRes(R.raw.world_rounding),
                 )
-
-                /** to control the animation speed */
                 val progress by animateLottieCompositionAsState(
                     composition,
                     iterations = LottieConstants.IterateForever,
                     speed = 1f,
                     restartOnPlay = true,
                 )
-
                 LottieAnimation(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -185,225 +163,170 @@ fun CheckoutScreen(
             .fillMaxSize()
             .background(MaterialTheme.colors.background)
     ) {
-        /** Secondary top bar */
         SecondaryTopBar(
             title = stringResource(id = R.string.checkout),
-            onBackClicked = onBackRequested,
+            onBackClicked = { onNavigationRequested(com.mustfaibra.roffu.sealed.Screen.Cart.route, true) },
         )
         Column(
             modifier = Modifier
                 .weight(weight = 1f)
                 .verticalScroll(state = rememberScrollState()),
         ) {
-            val selectedPaymentMethodId by remember {
-                checkoutViewModel.selectedPaymentMethodId
-            }
-            val subTotal by remember { checkoutViewModel.subTotalPrice }
-            /** Delivery Location */
-            val location by remember {
-                checkoutViewModel.deliveryAddress
-            }
+            val selectedPaymentMethodId by checkoutViewModel.selectedPaymentMethodId
+            val subTotal by checkoutViewModel.subTotalPrice
+            val location by checkoutViewModel.deliveryAddress
             location?.whatIfNotNull(
                 whatIf = {
                     DeliveryLocationSection(
                         address = it.address,
                         city = "${it.city}, ${it.country}",
-                        onChangeLocationRequested = {
-//                          onChangeLocationRequested()
-                        },
+                        onChangeLocationRequested = onChangeLocationRequested,
                     )
                 }
             )
-            /** Payment methods */
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(Dimension.pagePadding)
-            ) {
-                Text(
-                    text = "Phương thức thanh toán",
-                    style = MaterialTheme.typography.h6,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                
-                // Lấy danh sách thẻ từ ViewModel
-                val bankCards by remember { checkoutViewModel.bankCards }
-                val isLoadingCards by remember { checkoutViewModel.isLoadingCards }
-                
-                // Hiển thị loading khi đang tải thông tin thẻ
-                if (isLoadingCards) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Đang tải thông tin thẻ...")
-                    }
-                } else {
-                    // Luôn hiển thị phương thức thanh toán Visa, nhưng mờ đi nếu không có thẻ
-                    val hasVisaCard = bankCards.isNotEmpty()
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .alpha(if (hasVisaCard) 1f else 0.5f),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = checkoutViewModel.selectedPaymentMethodId.value == "visa",
-                            onClick = { 
-                                if (hasVisaCard) {
-                                    val card = bankCards.find { it.isDefault } ?: bankCards.first()
-                                    checkoutViewModel.updateSelectedPaymentMethod("visa")
-                                    checkoutViewModel.updateSelectedCard(card.id)
-                                }
-                            },
-                            enabled = hasVisaCard
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.Default.CreditCard,
-                            contentDescription = null,
-                            tint = if (hasVisaCard) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface.copy(alpha = 0.5f)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        if (hasVisaCard) {
-                            val card = bankCards.find { it.isDefault } ?: bankCards.first()
-                            val lastFourDigits = card.cardNumber.takeLast(4)
-                            Text(text = "Visa (****$lastFourDigits)")
-                        } else {
-                            Text(
-                                text = "Visa (Không có thẻ)",
-                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.5f)
-                            )
-                        }
-                    }
-                }
-                
-                // Luôn hiển thị phương thức thanh toán bằng tiền mặt
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = checkoutViewModel.selectedPaymentMethodId.value == "cash",
-                        onClick = { checkoutViewModel.updateSelectedPaymentMethod("cash") }
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Default.AttachMoney,
-                        contentDescription = null,
-                        tint = MaterialTheme.colors.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Tiền mặt (thanh toán khi nhận hàng)")
-                }
-            }
-            /** Sản phẩm trong giỏ hàng */
+            PaymentMethodsSection(
+                bankCards = bankCards,
+                selectedCardId = selectedCardId,
+                isLoadingCards = isLoadingCards,
+                error = error,
+                selectedPayment = selectedPaymentMethodId,
+                onPaymentSelected = { checkoutViewModel.updateSelectedPaymentMethod(it) },
+                onCardSelected = { checkoutViewModel.updateSelectedCard(it) },
+                onAddCardRequested = { showAddCardDialog = true },
+                viewModel = checkoutViewModel
+            )
             Text(
                 text = "Sản phẩm đã chọn",
                 style = MaterialTheme.typography.h6,
                 modifier = Modifier.padding(horizontal = Dimension.pagePadding, vertical = 8.dp)
             )
-            
-            // Hiển thị trạng thái loading khi đang tải thông tin sản phẩm
-            val isLoadingProductDetails = checkoutViewModel.isLoadingProductDetails.value
-            if (isLoadingProductDetails) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                // Lấy danh sách sản phẩm đã chọn và chi tiết sản phẩm
-                val selectedCartItems = checkoutViewModel.selectedCartItems
-                val productDetails = checkoutViewModel.productDetails.value
-                
-                LazyRow(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
-                    contentPadding = PaddingValues(Dimension.pagePadding),
-                ) {
-                    items(selectedCartItems) { item ->
-                        val productId = item.productId
-                        val product = if (productId != null) productDetails[productId] else null
-                        
-                        Column(
-                            modifier = Modifier
-                                .width(150.dp)
-                                .clip(MaterialTheme.shapes.medium)
-                                .background(MaterialTheme.colors.surface)
-                                .padding(8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            // Hiển thị hình ảnh sản phẩm từ API nếu có
-                            val imageUrl = if (product is ApiProduct) {
-                                product.images.find { it.is_primary }?.image_url
-                            } else null
-                                ?: item.product?.image
-                                ?: R.drawable.ic_shopping_bag
-                            
-                            Image(
-                                painter = if (imageUrl is Int) {
-                                    painterResource(id = imageUrl)
-                                } else {
-                                    rememberAsyncImagePainter(model = imageUrl)
-                                },
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(MaterialTheme.shapes.medium),
-                                contentScale = ContentScale.Crop
+
+            when {
+                decodeError != null -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = decodeError ?: "Lỗi không xác định",
+                                style = MaterialTheme.typography.body1,
+                                color = MaterialTheme.colors.error
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // Hiển thị tên sản phẩm từ API nếu có
-                            Text(
-                                text = if (product is ApiProduct) product.product_name 
-                                    else item.product?.name 
-                                    ?: "Sản phẩm",
-                                style = MaterialTheme.typography.subtitle1,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            
-                            // Hiển thị giá và số lượng
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                            Button(
+                                onClick = { onNavigationRequested(com.mustfaibra.roffu.sealed.Screen.Cart.route, true) },
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = MaterialTheme.colors.primary,
+                                    contentColor = MaterialTheme.colors.onPrimary
+                                )
                             ) {
-                                Text(
-                                    text = formatVietnamCurrency(
-                                        (if (product is ApiProduct) product.price
-                                            else item.product?.price?.toLong() 
-                                            ?: 0) * item.quantity
+                                Text("Quay lại giỏ hàng")
+                            }
+                        }
+                    }
+                }
+                isLoadingSelectedCartItems -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                selectedItems.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Không có sản phẩm nào được chọn",
+                                style = MaterialTheme.typography.body1,
+                                color = MaterialTheme.colors.error
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = { onNavigationRequested(com.mustfaibra.roffu.sealed.Screen.Cart.route, true) },
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = MaterialTheme.colors.primary,
+                                    contentColor = MaterialTheme.colors.onPrimary
+                                )
+                            ) {
+                                Text("Quay lại giỏ hàng")
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    LazyRow(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
+                        contentPadding = PaddingValues(Dimension.pagePadding),
+                    ) {
+                        items(selectedItems) { item ->
+                            Column(
+                                modifier = Modifier
+                                    .width(150.dp)
+                                    .clip(MaterialTheme.shapes.medium)
+                                    .background(MaterialTheme.colors.surface)
+                                    .padding(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(
+                                        model = item.productImage.takeIf { it.isNotEmpty() }
+                                            ?: R.drawable.ic_shopping_bag
                                     ),
-                                    style = MaterialTheme.typography.body2,
-                                    color = MaterialTheme.colors.primary
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(80.dp)
+                                        .clip(MaterialTheme.shapes.medium),
+                                    contentScale = ContentScale.Crop
                                 )
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "x${item.quantity}",
-                                    style = MaterialTheme.typography.body2
+                                    text = item.productName,
+                                    style = MaterialTheme.typography.subtitle1,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = formatVietnamCurrency((item.unitPrice.toLong() * item.quantity)),
+                                        style = MaterialTheme.typography.body2,
+                                        color = MaterialTheme.colors.primary
+                                    )
+                                    Text(
+                                        text = "x${item.quantity}",
+                                        style = MaterialTheme.typography.body2
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-            /** Checkout summary */
+
+            error?.let { errorMessage ->
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.body1,
+                    color = MaterialTheme.colors.error,
+                    modifier = Modifier.padding(Dimension.pagePadding)
+                )
+            }
             Column(
                 modifier = Modifier
                     .shadow(
@@ -419,20 +342,17 @@ fun CheckoutScreen(
                     .padding(all = Dimension.pagePadding),
                 verticalArrangement = Arrangement.spacedBy(Dimension.sm)
             ) {
-                /** sub total cost row */
                 SummaryRow(
                     title = stringResource(id = R.string.sub_total),
                     value = formatVietnamCurrency(checkoutViewModel.subTotalPrice.value.toLong()),
                     valueColor = Color(0xFF0052CC)
                 )
-                /** shipping cost row */
                 SummaryRow(
                     title = stringResource(id = R.string.shipping),
                     value = formatVietnamCurrency(checkoutViewModel.shippingFee.value.toLong()),
                     valueColor = Color(0xFF0052CC)
                 )
                 Divider()
-                /** total cost row */
                 SummaryRow(
                     title = stringResource(id = R.string.total),
                     value = formatVietnamCurrency(checkoutViewModel.totalOrderAmount.value.toLong()),
@@ -445,23 +365,22 @@ fun CheckoutScreen(
                     text = "Thanh toán",
                     onButtonClicked = {
                         val selectedPaymentMethod = checkoutViewModel.selectedPaymentMethodId.value
-                        
                         if (selectedPaymentMethod == "visa") {
-                            // Thanh toán bằng thẻ Visa - không yêu cầu CVV
                             onToastRequested("Đang xử lý thanh toán qua thẻ Visa...", Color.Blue)
-                            
-                            // Giả lập API call thành công
-                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                                onCheckoutSuccess()
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                checkoutViewModel.clearCart()
                                 onToastRequested("Thanh toán thành công!", Color(0xFF4CAF50))
+                                onNavigationRequested(com.mustfaibra.roffu.sealed.Screen.Home.route, true)
                             }, 2000)
-                        }
-                        else {
-                            // Sử dụng phương thức thanh toán cũ
+                        } else {
                             checkoutViewModel.makeTransactionPayment(
-                                items = cartItems,
+                                items = checkoutViewModel.selectedCartItems,
                                 total = checkoutViewModel.subTotalPrice.value,
-                                onCheckoutSuccess = onCheckoutSuccess,
+                                onCheckoutSuccess = {
+                                    checkoutViewModel.clearCart()
+                                    onToastRequested("Thanh toán thành công!", Color(0xFF4CAF50))
+                                    onNavigationRequested(com.mustfaibra.roffu.sealed.Screen.Home.route, true)
+                                },
                                 onCheckoutFailed = { message ->
                                     onToastRequested(
                                         appContext.getString(message),
@@ -477,9 +396,8 @@ fun CheckoutScreen(
     }
 }
 
-
 @Composable
-fun DeliveryLocationSection(
+private fun DeliveryLocationSection(
     address: String,
     city: String,
     onChangeLocationRequested: () -> Unit,
@@ -530,7 +448,7 @@ fun DeliveryLocationSection(
 }
 
 @Composable
-fun PaymentMethodsSection(
+private fun PaymentMethodsSection(
     bankCards: List<BankCardListResponse>,
     selectedCardId: Int?,
     isLoadingCards: Boolean,
@@ -549,7 +467,7 @@ fun PaymentMethodsSection(
             text = "Phương thức thanh toán",
             style = MaterialTheme.typography.button,
         )
-        
+
         // Visa option
         Row(
             modifier = Modifier
@@ -574,7 +492,7 @@ fun PaymentMethodsSection(
                     style = MaterialTheme.typography.body1,
                     color = if (bankCards.isNotEmpty()) MaterialTheme.colors.onSurface else Color.Gray
                 )
-                
+
                 if (isLoadingCards) {
                     LinearProgressIndicator(
                         modifier = Modifier
@@ -627,7 +545,7 @@ fun PaymentMethodsSection(
                 )
             )
         }
-        
+
         // Hiển thị danh sách thẻ nếu đã chọn phương thức Visa
         if (selectedPayment == "visa" && bankCards.isNotEmpty()) {
             LazyRow(
@@ -652,7 +570,7 @@ fun PaymentMethodsSection(
                             expiryMonth = card.expiryMonth,
                             expiryYear = card.expiryYear
                         )
-                        
+
                         // Badge cho thẻ mặc định
                         if (card.isDefault) {
                             Box(
@@ -671,7 +589,7 @@ fun PaymentMethodsSection(
                         }
                     }
                 }
-                
+
                 // Nút thêm thẻ mới
                 item {
                     Box(
@@ -703,12 +621,10 @@ fun PaymentMethodsSection(
                     }
                 }
             }
-            
+
             // Trường nhập CVV
             if (selectedCardId != null) {
-                // Sử dụng biến cục bộ cho CVV
                 val (cvvText, setCvvText) = remember { mutableStateOf("") }
-                
                 OutlinedTextField(
                     value = cvvText,
                     onValueChange = { if (it.length <= 4) setCvvText(it) },
@@ -720,8 +636,6 @@ fun PaymentMethodsSection(
                         .padding(top = 8.dp),
                     singleLine = true
                 )
-                
-                // Lưu cvvText vào ViewModel khi giá trị thay đổi
                 LaunchedEffect(cvvText) {
                     viewModel.setCvvText(cvvText)
                 }

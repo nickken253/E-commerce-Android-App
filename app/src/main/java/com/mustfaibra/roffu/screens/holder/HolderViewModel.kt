@@ -32,8 +32,8 @@ class HolderViewModel @Inject constructor() : ViewModel() {
     private fun initializeMockData() {
         // Giả lập một số sản phẩm trong giỏ hàng
         val mockCartItems = listOf(
-            CartItem(cartId = 1, productId = 1, quantity = 2, size = "L", color = "Red"),
-            CartItem(cartId = 2, productId = 3, quantity = 1, size = "M", color = "Blue")
+            CartItem(cartId = 1, productId = 1, quantity = 2),
+            CartItem(cartId = 2, productId = 3, quantity = 1)
         )
         cartItems.addAll(mockCartItems)
         
@@ -73,9 +73,7 @@ class HolderViewModel @Inject constructor() : ViewModel() {
                 cartItems.add(CartItem(
                     cartId = newCartId,
                     productId = productId,
-                    quantity = 1,
-                    size = "Default",
-                    color = "Default"
+                    quantity = 1
                 ))
                 productsOnCartIds.add(productId)
             }

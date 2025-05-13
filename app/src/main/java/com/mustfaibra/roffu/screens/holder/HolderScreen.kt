@@ -1,5 +1,6 @@
 package com.mustfaibra.roffu.screens.holder
 
+import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateDp
@@ -26,16 +27,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.mustfaibra.roffu.components.AppBottomNav
 import com.mustfaibra.roffu.components.CustomSnackBar
 import com.mustfaibra.roffu.models.CartItem
 import com.mustfaibra.roffu.models.User
+import com.mustfaibra.roffu.models.dto.CartResponse
+import com.mustfaibra.roffu.models.dto.Image
+import com.mustfaibra.roffu.models.dto.Product
 import com.mustfaibra.roffu.providers.LocalNavHost
 import com.mustfaibra.roffu.repositories.ProductsRepository
 import com.mustfaibra.roffu.screens.admin.AddProductScreen
@@ -47,6 +53,7 @@ import com.mustfaibra.roffu.screens.admin.EditUserScreen
 import com.mustfaibra.roffu.screens.barcode.BarcodeScannerScreen
 import com.mustfaibra.roffu.screens.bookmarks.BookmarksScreen
 import com.mustfaibra.roffu.screens.cart.CartScreen
+import com.mustfaibra.roffu.screens.cart.CartViewModel
 import com.mustfaibra.roffu.screens.checkout.CheckoutScreen
 import com.mustfaibra.roffu.screens.home.HomeScreen
 import com.mustfaibra.roffu.screens.locationpicker.LocationPickerScreen
@@ -78,6 +85,7 @@ fun HolderScreen(
 
 
 
+    val cartViewModel: CartViewModel = hiltViewModel()
 
 
     /** Our navigation controller that the MainActivity provides */
@@ -507,6 +515,7 @@ fun ScaffoldSection(
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     if (user?.isAdmin() != true) {
                         CartScreen(
+                            navController = controller,
                             user = user,
                             onProductClicked = onShowProductRequest,
                             onUserNotAuthorized = { onUserNotAuthorized(false) },
@@ -525,93 +534,37 @@ fun ScaffoldSection(
                     }
                 }
                 composable(Screen.Checkout.route) {
-                    onStatusBarColorChange(MaterialTheme.colors.background)
-                    if (user?.isAdmin() != true) {
-                        user.whatIfNotNull(
-                            whatIf = {
-                                CheckoutScreen(
-                                    cartItems = cartItems,
-                                    onBackRequested = onBackRequested,
-                                    onCheckoutSuccess = {
-                                        onNavigationRequested(Screen.OrderHistory.route, true)
-                                    },
-                                    onToastRequested = onToastRequested,
-                                    onChangeLocationRequested = {
-                                        onNavigationRequested(Screen.LocationPicker.route, false)
-                                    },
-                                    selectedItems = holderViewModel.selectedCartItems
-                                )
-                            },
-                            whatIfNot = {
-                                LaunchedEffect(Unit) {
-                                    onUserNotAuthorized(true)
-                                }
-                            }
-                        )
-                    } else {
-                        LaunchedEffect(Unit) {
-                            controller.navigate(Screen.Admin.route) {
-                                popUpTo(Screen.Checkout.route) { inclusive = true }
-                            }
-                        }
-                    }
+                    // Handle legacy checkout route if needed
+                    onNavigationRequested(Screen.Cart.route, true)
                 }
-                
                 composable(
                     route = Screen.CheckoutWithProducts.route,
                     arguments = listOf(
-                        navArgument("productIds") { type = NavType.StringType },
-                        navArgument("quantities") { type = NavType.StringType },
+                        navArgument("items") { type = NavType.StringType },
                         navArgument("totalAmount") { type = NavType.FloatType }
                     )
                 ) { backStackEntry ->
-                    onStatusBarColorChange(MaterialTheme.colors.background)
-                    if (user?.isAdmin() != true) {
-                        user.whatIfNotNull(
-                            whatIf = {
-                                val productIds = backStackEntry.arguments?.getString("productIds")?.split(",")?.mapNotNull { it.toIntOrNull() } ?: listOf()
-                                val quantities = backStackEntry.arguments?.getString("quantities")?.split(",")?.mapNotNull { it.toIntOrNull() } ?: listOf()
-                                val totalAmount = backStackEntry.arguments?.getFloat("totalAmount")?.toDouble() ?: 0.0
-                                
-                                // Tạo danh sách CartItem từ productIds và quantities
-                                val selectedItems = mutableListOf<CartItem>()
-                                for (i in productIds.indices) {
-                                    if (i < quantities.size) {
-                                        // Tìm sản phẩm trong danh sách cartItems
-                                        val cartItem = cartItems.find { it.product?.id == productIds[i] }
-                                        if (cartItem != null) {
-                                            // Tạo bản sao của CartItem với số lượng mới
-                                            val newCartItem = cartItem.copy(quantity = quantities[i])
-                                            selectedItems.add(newCartItem)
-                                        }
-                                    }
-                                }
-                                
-                                CheckoutScreen(
-                                    cartItems = cartItems,
-                                    onBackRequested = onBackRequested,
-                                    onCheckoutSuccess = {
-                                        onNavigationRequested(Screen.OrderHistory.route, true)
-                                    },
-                                    onToastRequested = onToastRequested,
-                                    onChangeLocationRequested = {
-                                        onNavigationRequested(Screen.LocationPicker.route, false)
-                                    },
-                                    selectedItems = selectedItems
-                                )
-                            },
-                            whatIfNot = {
-                                LaunchedEffect(Unit) {
-                                    onUserNotAuthorized(true)
-                                }
-                            },
-                        )
+                    val itemsJson = backStackEntry.arguments?.getString("items") ?: ""
+                    val totalAmount = backStackEntry.arguments?.getFloat("totalAmount")?.toDouble() ?: 0.0
+                    if (itemsJson.isEmpty()) {
+                        Log.w("NavGraph", "Empty itemsJson, redirecting to Cart")
+                        onToastRequested("Không có sản phẩm được chọn", Color.Red)
+                        onNavigationRequested(Screen.Cart.route, true)
                     } else {
-                        LaunchedEffect(Unit) {
-                            controller.navigate(Screen.Admin.route) {
-                                popUpTo(Screen.CheckoutWithProducts.route) { inclusive = true }
-                            }
-                        }
+                        CheckoutScreen(
+                            navController = controller,
+                            itemsJson = itemsJson,
+                            totalAmount = totalAmount,
+                            onChangeLocationRequested = {
+                                // Giả định route cho màn hình chọn địa chỉ
+                                onNavigationRequested("location_picker", false)
+                                onToastRequested("Đang mở màn hình chọn địa chỉ", Color.Blue)
+                            },
+                            onNavigationRequested = onNavigationRequested,
+                            onToastRequested = onToastRequested,
+                            checkoutViewModel = hiltViewModel(),
+                            profileViewModel = hiltViewModel()
+                        )
                     }
                 }
                 composable(Screen.LocationPicker.route) {
