@@ -80,17 +80,12 @@ fun HomeScreen(
     onBookmarkStateChanged: (productId: Int) -> Unit,
 ) {
     LaunchedEffect(key1 = Unit) {
-        homeViewModel.getHomeAdvertisements()
         homeViewModel.getBrandsWithProducts()
         homeViewModel.getAllProducts()
     }
 
-    val pagerState = rememberPagerState()
     val scope = rememberCoroutineScope()
     val searchQuery by remember { homeViewModel.searchQuery }
-
-    val advertisementsUiState by remember { homeViewModel.homeAdvertisementsUiState }
-    val advertisements = homeViewModel.advertisements
 
     val brandsUiState by remember { homeViewModel.brandsUiState }
     val brands = homeViewModel.brands
@@ -109,34 +104,6 @@ fun HomeScreen(
         if (shouldLoadMore) {
             homeViewModel.loadMoreProducts()
         }
-    }
-
-    val mainHandler = Handler(Looper.getMainLooper())
-    val autoPagerScrollCallback = remember {
-        object : Runnable {
-            override fun run() {
-                val currentPage = pagerState.currentPage
-                val pagesCount = pagerState.pageCount
-                Timber.d("Current pager page is $currentPage and count is $pagesCount")
-                when {
-                    currentPage < (pagesCount - 1) -> {
-                        scope.launch {
-                            pagerState.animateScrollToPage(currentPage.inc())
-                        }
-                    }
-                    else -> {
-                        scope.launch {
-                            pagerState.animateScrollToPage(0)
-                        }
-                    }
-                }
-                mainHandler.postDelayed(this, 2000)
-            }
-        }
-    }
-
-    LaunchedEffect(key1 = Unit) {
-        mainHandler.post(autoPagerScrollCallback)
     }
 
     LazyVerticalGrid(
@@ -176,31 +143,15 @@ fun HomeScreen(
             }
         }
 
-        when (advertisementsUiState) {
-            is UiState.Idle -> {}
-            is UiState.Loading -> {}
-            is UiState.Success -> {
-                item(
-                    span = { GridItemSpan(2) }
-                ) {
-                    SearchField(
-                        value = searchQuery,
-                        onValueChange = { homeViewModel.updateSearchInputValue(it) },
-                        onFocusChange = {},
-                        onImeActionClicked = {}
-                    )
-                }
-                item(
-                    span = { GridItemSpan(2) }
-                ) {
-                    AdvertisementsPager(
-                        pagerState = pagerState,
-                        advertisements = advertisements,
-                        onAdvertiseClicked = {}
-                    )
-                }
-            }
-            is UiState.Error -> {}
+        item(
+            span = { GridItemSpan(2) }
+        ) {
+            SearchField(
+                value = searchQuery,
+                onValueChange = { homeViewModel.updateSearchInputValue(it) },
+                onFocusChange = {},
+                onImeActionClicked = {}
+            )
         }
 
         when (brandsUiState) {
@@ -328,65 +279,6 @@ fun SearchField(
         onFocusChange = onFocusChange,
         onKeyboardActionClicked = onImeActionClicked,
     )
-}
-
-@OptIn(ExperimentalPagerApi::class)
-@Composable
-fun AdvertisementsPager(
-    pagerState: PagerState,
-    advertisements: List<Advertisement>,
-    onAdvertiseClicked: (advertisement: Advertisement) -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Dimension.pagePadding.div(2)),
-    ) {
-        HorizontalPager(
-            modifier = Modifier
-                .fillMaxWidth(),
-            count = advertisements.size,
-            state = pagerState,
-            itemSpacing = Dimension.pagePadding.times(2),
-        ) {
-            val advertisement = advertisements[this.currentPage]
-            AsyncImage(
-                model = advertisement.image,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(2f)
-                    .clip(MaterialTheme.shapes.medium)
-                    .clickable(
-                        indication = null,
-                        interactionSource = MutableInteractionSource(),
-                        onClick = { onAdvertiseClicked(advertisement) }
-                    ),
-                contentScale = ContentScale.Crop,
-            )
-        }
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = Dimension.pagePadding.times(2)),
-            horizontalArrangement = Arrangement.spacedBy(Dimension.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            items(pagerState.pageCount) { index ->
-                Box(
-                    modifier = Modifier
-                        .width(
-                            if (pagerState.currentPage == index) Dimension.sm.times(3)
-                            else Dimension.sm
-                        )
-                        .height(Dimension.sm)
-                        .clip(CircleShape)
-                        .background(
-                            if (pagerState.currentPage == index) MaterialTheme.colors.primary
-                            else MaterialTheme.colors.primary.copy(alpha = 0.4f)
-                        )
-                )
-            }
-        }
-    }
 }
 
 @Composable

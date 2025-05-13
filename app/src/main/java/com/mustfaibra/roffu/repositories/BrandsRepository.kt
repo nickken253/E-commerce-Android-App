@@ -1,6 +1,5 @@
 package com.mustfaibra.roffu.repositories
 
-import com.mustfaibra.roffu.models.Advertisement
 import com.mustfaibra.roffu.models.Manufacturer
 import com.mustfaibra.roffu.screens.home.ApiResponse
 import com.mustfaibra.roffu.sealed.DataResponse
@@ -19,11 +18,6 @@ class BrandsRepository @Inject constructor(
     private val client: HttpClient,
     private val json: Json,
 ) {
-    suspend fun getBrandsAdvertisements(): DataResponse<List<Advertisement>> {
-        // Giả định triển khai, không liên quan đến lỗi hiện tại
-        return DataResponse.Success(emptyList())
-    }
-
     suspend fun getBrandsWithProducts(): DataResponse<List<Manufacturer>> {
         // Giả định triển khai
         return DataResponse.Success(emptyList())
