@@ -46,11 +46,4 @@ class ProfileViewModel @Inject constructor(
             _virtualCard.value = card
         }
     }
-
-    fun deleteVirtualCard(card: VirtualCard) {
-        viewModelScope.launch {
-            userRepository.deleteVirtualCard(card)
-            _virtualCard.value = null
-        }
-    }
 }

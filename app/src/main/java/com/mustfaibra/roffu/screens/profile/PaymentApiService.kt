@@ -27,7 +27,7 @@ interface PaymentApiService {
      * Lấy danh sách thẻ ngân hàng của người dùng
      * @param token JWT token để xác thực
      */
-    @GET("api/v1/payments/cards")
+    @GET("api/v1/payments/cards/")
     suspend fun getBankCards(
         @Header("Authorization") token: String
     ): Response<List<BankCardListResponse>>

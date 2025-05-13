@@ -184,7 +184,4 @@ interface RoomDao {
 
     @Query("SELECT * FROM virtual_cards WHERE userId = :userId LIMIT 1")
     suspend fun getVirtualCardByUser(userId: Int): VirtualCard?
-
-    @Delete
-    suspend fun deleteVirtualCard(card: VirtualCard)
 }

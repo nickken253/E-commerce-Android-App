@@ -20,6 +20,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,8 +65,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.skydoves.whatif.whatIf
 import com.skydoves.whatif.whatIfNotNull
 
@@ -103,10 +107,10 @@ fun CheckoutScreen(
     val isVirtualCardAdded by profileViewModel.isVirtualCardAdded.collectAsState()
     
     // Danh sách thẻ ngân hàng
-    val bankCards = checkoutViewModel.bankCards.value
-    val selectedCardId = checkoutViewModel.selectedCardId.value
-    val isLoadingCards = checkoutViewModel.isLoadingCards.value
-    val error = checkoutViewModel.error.value
+    val bankCards by remember { checkoutViewModel.bankCards }
+    val selectedCardId by remember { checkoutViewModel.selectedCardId }
+    val isLoadingCards by remember { checkoutViewModel.isLoadingCards }
+    val error by remember { checkoutViewModel.error }
     
     // Biến state để kiểm soát hiển thị dialog thêm thẻ
     var showAddCardDialog by remember { mutableStateOf(false) }
@@ -217,26 +221,67 @@ fun CheckoutScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = checkoutViewModel.selectedPaymentMethodId.value == "visa",
-                        onClick = { checkoutViewModel.updateSelectedPaymentMethod("visa") }
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Default.CreditCard,
-                        contentDescription = null,
-                        tint = MaterialTheme.colors.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Thẻ Visa")
+                // Lấy danh sách thẻ từ ViewModel
+                val bankCards by remember { checkoutViewModel.bankCards }
+                val isLoadingCards by remember { checkoutViewModel.isLoadingCards }
+                
+                // Hiển thị loading khi đang tải thông tin thẻ
+                if (isLoadingCards) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Đang tải thông tin thẻ...")
+                    }
+                } else {
+                    // Luôn hiển thị phương thức thanh toán Visa, nhưng mờ đi nếu không có thẻ
+                    val hasVisaCard = bankCards.isNotEmpty()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .alpha(if (hasVisaCard) 1f else 0.5f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = checkoutViewModel.selectedPaymentMethodId.value == "visa",
+                            onClick = { 
+                                if (hasVisaCard) {
+                                    val card = bankCards.find { it.isDefault } ?: bankCards.first()
+                                    checkoutViewModel.updateSelectedPaymentMethod("visa")
+                                    checkoutViewModel.updateSelectedCard(card.id)
+                                }
+                            },
+                            enabled = hasVisaCard
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Default.CreditCard,
+                            contentDescription = null,
+                            tint = if (hasVisaCard) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface.copy(alpha = 0.5f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        if (hasVisaCard) {
+                            val card = bankCards.find { it.isDefault } ?: bankCards.first()
+                            val lastFourDigits = card.cardNumber.takeLast(4)
+                            Text(text = "Visa (****$lastFourDigits)")
+                        } else {
+                            Text(
+                                text = "Visa (Không có thẻ)",
+                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
                 }
                 
+                // Luôn hiển thị phương thức thanh toán bằng tiền mặt
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -364,7 +409,7 @@ fun CheckoutScreen(
                         val selectedPaymentMethod = checkoutViewModel.selectedPaymentMethodId.value
                         
                         if (selectedPaymentMethod == "visa") {
-                            // Thanh toán bằng thẻ Visa - giả lập thành công
+                            // Thanh toán bằng thẻ Visa - không yêu cầu CVV
                             onToastRequested("Đang xử lý thanh toán qua thẻ Visa...", Color.Blue)
                             
                             // Giả lập API call thành công
