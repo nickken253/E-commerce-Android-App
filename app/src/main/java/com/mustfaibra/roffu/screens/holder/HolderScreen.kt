@@ -537,14 +537,15 @@ fun ScaffoldSection(
                                     onToastRequested = onToastRequested,
                                     onChangeLocationRequested = {
                                         onNavigationRequested(Screen.LocationPicker.route, false)
-                                    }
+                                    },
+                                    selectedItems = holderViewModel.selectedCartItems
                                 )
                             },
                             whatIfNot = {
                                 LaunchedEffect(Unit) {
                                     onUserNotAuthorized(true)
                                 }
-                            },
+                            }
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -571,6 +572,20 @@ fun ScaffoldSection(
                                 val quantities = backStackEntry.arguments?.getString("quantities")?.split(",")?.mapNotNull { it.toIntOrNull() } ?: listOf()
                                 val totalAmount = backStackEntry.arguments?.getFloat("totalAmount")?.toDouble() ?: 0.0
                                 
+                                // Tạo danh sách CartItem từ productIds và quantities
+                                val selectedItems = mutableListOf<CartItem>()
+                                for (i in productIds.indices) {
+                                    if (i < quantities.size) {
+                                        // Tìm sản phẩm trong danh sách cartItems
+                                        val cartItem = cartItems.find { it.product?.id == productIds[i] }
+                                        if (cartItem != null) {
+                                            // Tạo bản sao của CartItem với số lượng mới
+                                            val newCartItem = cartItem.copy(quantity = quantities[i])
+                                            selectedItems.add(newCartItem)
+                                        }
+                                    }
+                                }
+                                
                                 CheckoutScreen(
                                     cartItems = cartItems,
                                     onBackRequested = onBackRequested,
@@ -581,9 +596,7 @@ fun ScaffoldSection(
                                     onChangeLocationRequested = {
                                         onNavigationRequested(Screen.LocationPicker.route, false)
                                     },
-                                    productIds = productIds,
-                                    quantities = quantities,
-                                    totalAmount = totalAmount
+                                    selectedItems = selectedItems
                                 )
                             },
                             whatIfNot = {

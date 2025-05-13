@@ -82,9 +82,7 @@ fun CheckoutScreen(
     onToastRequested: (message: String, color: Color) -> Unit,
     checkoutViewModel: CheckoutViewModel = hiltViewModel(),
     profileViewModel: ProfileViewModel = hiltViewModel(),
-    productIds: List<Int> = emptyList(),
-    quantities: List<Int> = emptyList(),
-    totalAmount: Double = 0.0
+    selectedItems: List<CartItem> = emptyList() // Danh sách sản phẩm được chọn để thanh toán
 ) {
     val appContext = LocalContext.current
     LaunchedEffect(key1 = Unit) {
@@ -92,18 +90,13 @@ fun CheckoutScreen(
         checkoutViewModel.getBankCards(appContext)
     }
     
-    // Sử dụng productIds và quantities để lấy thông tin sản phẩm
+    // Sử dụng danh sách sản phẩm được chọn hoặc toàn bộ giỏ hàng
     val context = LocalContext.current
-    val productDetails = remember { mutableStateOf<List<com.mustfaibra.roffu.models.Product>>(emptyList()) }
     
-    LaunchedEffect(key1 = productIds) {
-        if (productIds.isNotEmpty()) {
-            // Đặt tổng tiền
-            checkoutViewModel.setTotalAmount(totalAmount)
-        } else {
-            // Nếu không có productIds, sử dụng cartItems
-            checkoutViewModel.setUserCart(cartItems)
-        }
+    LaunchedEffect(key1 = Unit) {
+        // Sử dụng danh sách sản phẩm được chọn hoặc toàn bộ giỏ hàng
+        val itemsToCheckout = if (selectedItems.isNotEmpty()) selectedItems else cartItems
+        checkoutViewModel.setUserCart(itemsToCheckout)
     }
 
     val checkoutUiState by remember { checkoutViewModel.checkoutState }
@@ -275,116 +268,54 @@ fun CheckoutScreen(
                 horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
                 contentPadding = PaddingValues(Dimension.pagePadding),
             ) {
-                if (productIds.isNotEmpty() && quantities.isNotEmpty() && productIds.size == quantities.size) {
-                    // Hiển thị sản phẩm từ productIds và quantities
-                    items(productIds.size) { index ->
-                        // Sử dụng dữ liệu giả lập cho demo
-                        val dummyProduct = com.mustfaibra.roffu.models.Product(
-                            id = productIds[index],
-                            name = "Sản phẩm ${productIds[index]}",
-                            image = R.drawable.ic_shopping_bag,
-                            price = 150000.0,
-                            description = "Mô tả sản phẩm",
-                            imagePath = "https://picsum.photos/200",
-                            manufacturerId = 1,
-                            basicColorName = "Blue",
-                            barcode = "123456789",
-                            type = "Quần áo",
-                            size = "L"
+                // Sử dụng danh sách sản phẩm được chọn hoặc toàn bộ giỏ hàng
+                val itemsToShow = if (selectedItems.isNotEmpty()) selectedItems else cartItems
+                items(itemsToShow) { item ->
+                    Column(
+                        modifier = Modifier
+                            .width(150.dp)
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colors.surface)
+                            .padding(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Hiển thị hình ảnh sản phẩm
+                        val imageResource = item.product?.image ?: R.drawable.ic_shopping_bag
+                        Image(
+                            painter = if (imageResource is Int) {
+                                painterResource(id = imageResource)
+                            } else {
+                                rememberAsyncImagePainter(model = imageResource)
+                            },
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(MaterialTheme.shapes.medium),
+                            contentScale = ContentScale.Crop
                         )
-                        val quantity = quantities[index]
-                        
-                        Column(
-                            modifier = Modifier
-                                .width(150.dp)
-                                .clip(MaterialTheme.shapes.medium)
-                                .background(MaterialTheme.colors.surface)
-                                .padding(8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Spacer(modifier = Modifier.height(8.dp))
+                        // Hiển thị tên sản phẩm
+                        Text(
+                            text = item.product?.name ?: "Sản phẩm",
+                            style = MaterialTheme.typography.subtitle1,
+                            maxLines = 2,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        // Hiển thị giá và số lượng
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            // Hiển thị hình ảnh sản phẩm
-                            Image(
-                                painter = if (dummyProduct.imagePath != null) {
-                                    rememberAsyncImagePainter(model = dummyProduct.imagePath)
-                                } else {
-                                    painterResource(id = dummyProduct.image)
-                                },
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(MaterialTheme.shapes.medium),
-                                contentScale = ContentScale.Crop
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            // Hiển thị tên sản phẩm
                             Text(
-                                text = dummyProduct.name,
-                                style = MaterialTheme.typography.subtitle1,
-                                maxLines = 2,
-                                modifier = Modifier.fillMaxWidth()
+                                text = formatVietnamCurrency((item.product?.price?.toLong() ?: 0) * item.quantity),
+                                style = MaterialTheme.typography.body2,
+                                color = MaterialTheme.colors.primary
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            // Hiển thị giá và số lượng
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = formatVietnamCurrency(dummyProduct.price.toLong() * quantity),
-                                    style = MaterialTheme.typography.body2,
-                                    color = MaterialTheme.colors.primary
-                                )
-                                Text(
-                                    text = "x${quantity}",
-                                    style = MaterialTheme.typography.body2
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    // Hiển thị sản phẩm từ cartItems
-                    items(cartItems) { item ->
-                        Column(
-                            modifier = Modifier
-                                .width(150.dp)
-                                .clip(MaterialTheme.shapes.medium)
-                                .background(MaterialTheme.colors.surface)
-                                .padding(8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            // Hiển thị hình ảnh sản phẩm
-                            Image(
-                                painter = rememberAsyncImagePainter(model = item.product?.image),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(MaterialTheme.shapes.medium),
-                                contentScale = ContentScale.Crop
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            // Hiển thị tên sản phẩm
                             Text(
-                                text = item.product?.name ?: "Sản phẩm",
-                                style = MaterialTheme.typography.subtitle1,
-                                maxLines = 2,
-                                modifier = Modifier.fillMaxWidth()
+                                text = "x${item.quantity}",
+                                style = MaterialTheme.typography.body2
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            // Hiển thị giá và số lượng
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = formatVietnamCurrency((item.product?.price?.toLong() ?: 0) * item.quantity),
-                                    style = MaterialTheme.typography.body2,
-                                    color = MaterialTheme.colors.primary
-                                )
-                                Text(
-                                    text = "x${item.quantity}",
-                                    style = MaterialTheme.typography.body2
-                                )
-                            }
                         }
                     }
                 }
