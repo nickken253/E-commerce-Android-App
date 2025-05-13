@@ -10,6 +10,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.RetrofitClient
+import com.mustfaibra.roffu.models.Location
+import com.mustfaibra.roffu.models.dto.*
+import com.mustfaibra.roffu.models.dto.AddressRequest
+import com.mustfaibra.roffu.models.dto.AddressResponse
 import com.mustfaibra.roffu.models.dto.BankCardListResponse
 import com.mustfaibra.roffu.models.dto.CartItemWithProductDetails
 import com.mustfaibra.roffu.models.dto.PaymentItem
@@ -31,8 +35,22 @@ class CheckoutViewModel @Inject constructor(
     private val userRepository: UserRepository,
 ) : ViewModel() {
 
-    private val _deliveryAddress = mutableStateOf<com.mustfaibra.roffu.models.Location?>(null)
-    val deliveryAddress: State<com.mustfaibra.roffu.models.Location?> = _deliveryAddress
+    // Biến lưu giá trị CVV
+    private val _cvv = mutableStateOf(0)
+    val cvv: State<Int> = _cvv
+
+    // Địa chỉ giao hàng
+    private val _deliveryAddresses = mutableStateListOf<Location>()
+    val deliveryAddresses: List<Location> = _deliveryAddresses
+    
+    private val _selectedDeliveryAddress = mutableStateOf<Location?>(null)
+    val selectedDeliveryAddress: State<Location?> = _selectedDeliveryAddress
+    
+    private val _isLoadingAddresses = mutableStateOf(false)
+    val isLoadingAddresses: State<Boolean> = _isLoadingAddresses
+    
+    private val _addressError = mutableStateOf<String?>(null)
+    val addressError: State<String?> = _addressError
 
     private val _paymentProviders: MutableList<com.mustfaibra.roffu.models.UserPaymentProviderDetails> = mutableStateListOf()
     val paymentProviders: List<com.mustfaibra.roffu.models.UserPaymentProviderDetails> = _paymentProviders
@@ -77,8 +95,8 @@ class CheckoutViewModel @Inject constructor(
     val isLoadingSelectedCartItems: State<Boolean> = _isLoadingSelectedCartItems
 
     init {
+        // Không gọi getUserAddresses ở đây vì cần context
         getUserPaymentProviders()
-        getUserLocations()
     }
 
     fun getBankCards(context: Context) {
@@ -118,6 +136,13 @@ class CheckoutViewModel @Inject constructor(
     fun updateSelectedCard(cardId: Int) {
         _selectedCardId.value = cardId
     }
+    
+    /**
+     * Cập nhật giá trị CVV từ UI
+     */
+    fun setCvv(cvv: Int) {
+        _cvv.value = cvv
+    }
 
     fun updateSelectedPaymentMethod(id: String) {
         _selectedPaymentMethodId.value = id
@@ -139,17 +164,242 @@ class CheckoutViewModel @Inject constructor(
         }
     }
 
-    private fun getUserLocations() {
+    // Lấy danh sách địa chỉ của người dùng qua API
+    fun getUserAddresses(context: Context) {
+        _isLoadingAddresses.value = true
+        _addressError.value = null
+        _error.value = null
+        
         viewModelScope.launch {
             try {
-                val locations = userRepository.getUserLocations()
-                if (locations.isNotEmpty()) {
-                    _deliveryAddress.value = locations.first()
+                // Lấy token từ UserPref
+                val token = UserPref.getToken(context)
+                if (token.isNullOrEmpty()) {
+                    _addressError.value = "Bạn chưa đăng nhập"
+                    return@launch
+                }
+                
+                // Gọi API lấy danh sách địa chỉ
+                val response = RetrofitClient.addressApiService.getUserAddresses("Bearer $token")
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val addressList = response.body()!!
+                    
+                    // Chuyển đổi từ AddressResponse sang Location
+                    val locations = addressList.map { address ->
+                        Location(
+                            id = address.id,
+                            address = address.street,
+                            city = "${address.district}, ${address.city}",
+                            country = address.country ?: "Vietnam",
+                            isDefault = address.isDefault ?: false
+                        )
+                    }
+                    
+                    _deliveryAddresses.clear()
+                    _deliveryAddresses.addAll(locations)
+                    
+                    // Chọn địa chỉ mặc định hoặc địa chỉ đầu tiên
+                    val defaultAddress = locations.find { it.isDefault } ?: locations.firstOrNull()
+                    _selectedDeliveryAddress.value = defaultAddress
+                    
+                    Log.d("CheckoutViewModel", "Selected address: $defaultAddress")
+                    
+                    Log.d("CheckoutViewModel", "Lấy địa chỉ thành công: ${locations.size} địa chỉ")
+                } else {
+                    _addressError.value = "Lỗi lấy địa chỉ: ${response.message()}"
+                    Log.e("CheckoutViewModel", "Lỗi lấy địa chỉ: ${response.code()} - ${response.message()}")
                 }
             } catch (e: Exception) {
-                _error.value = "Lỗi lấy địa chỉ giao hàng: ${e.message}"
+                _addressError.value = "Lỗi lấy địa chỉ giao hàng: ${e.message}"
+                Log.e("CheckoutViewModel", "Lỗi lấy địa chỉ: ${e.message}")
+            } finally {
+                _isLoadingAddresses.value = false
             }
         }
+    }
+    
+    // Tạo địa chỉ mới qua API
+    fun createAddress(
+        context: Context,
+        addressType: String,
+        street: String,
+        city: String,
+        district: String,
+        postalCode: String? = null,
+        country: String = "Vietnam",
+        isDefault: Boolean = false,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        _isLoadingAddresses.value = true
+        
+        viewModelScope.launch {
+            try {
+                // Lấy token từ UserPref
+                val token = UserPref.getToken(context)
+                if (token.isNullOrEmpty()) {
+                    onError("Bạn chưa đăng nhập")
+                    return@launch
+                }
+                
+                // Tạo request body
+                val addressRequest = AddressRequest(
+                    addressType = addressType,
+                    street = street,
+                    city = city,
+                    district = district,
+                    postalCode = postalCode,
+                    country = country,
+                    isDefault = isDefault
+                )
+                
+                // Gọi API tạo địa chỉ
+                val response = RetrofitClient.addressApiService.createAddress(
+                    token = "Bearer $token",
+                    request = addressRequest
+                )
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val newAddress = response.body()!!
+                    
+                    // Chuyển đổi từ AddressResponse sang Location
+                    val location = Location(
+                        id = newAddress.id,
+                        address = newAddress.street,
+                        city = "${newAddress.district}, ${newAddress.city}",
+                        country = newAddress.country ?: "Vietnam",
+                        isDefault = newAddress.isDefault ?: false
+                    )
+                    
+                    // Xử lý địa chỉ mặc định
+                    if (isDefault) {
+                        _deliveryAddresses.forEach { address ->
+                            if (address.id != location.id) {
+                                val index = _deliveryAddresses.indexOf(address)
+                                if (index >= 0) {
+                                    _deliveryAddresses[index] = address.copy()
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Thêm địa chỉ mới vào danh sách
+                    _deliveryAddresses.add(location)
+                    _selectedDeliveryAddress.value = location
+                    
+                    onSuccess()
+                    Log.d("CheckoutViewModel", "Tạo địa chỉ mới thành công: $location")
+                } else {
+                    onError("Lỗi tạo địa chỉ: ${response.message()}")
+                    Log.e("CheckoutViewModel", "Lỗi tạo địa chỉ: ${response.code()} - ${response.message()}")
+                }
+            } catch (e: Exception) {
+                onError("Lỗi tạo địa chỉ: ${e.message}")
+                Log.e("CheckoutViewModel", "Lỗi tạo địa chỉ: ${e.message}")
+            } finally {
+                _isLoadingAddresses.value = false
+            }
+        }
+    }
+    
+    // Cập nhật địa chỉ qua API
+    fun updateAddress(
+        context: Context,
+        addressId: Int,
+        addressType: String,
+        street: String,
+        city: String,
+        district: String,
+        postalCode: String? = null,
+        country: String = "Vietnam",
+        isDefault: Boolean = false,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        _isLoadingAddresses.value = true
+        
+        viewModelScope.launch {
+            try {
+                // Lấy token từ UserPref
+                val token = UserPref.getToken(context)
+                if (token.isNullOrEmpty()) {
+                    onError("Bạn chưa đăng nhập")
+                    return@launch
+                }
+                
+                // Tạo request body
+                val addressRequest = AddressRequest(
+                    addressType = addressType,
+                    street = street,
+                    city = city,
+                    district = district,
+                    postalCode = postalCode,
+                    country = country,
+                    isDefault = isDefault
+                )
+                
+                // Gọi API cập nhật địa chỉ
+                val response = RetrofitClient.addressApiService.updateAddress(
+                    addressId = addressId,
+                    token = "Bearer $token",
+                    request = addressRequest
+                )
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val updatedAddress = response.body()!!
+                    
+                    // Chuyển đổi từ AddressResponse sang Location
+                    val location = Location(
+                        id = updatedAddress.id,
+                        address = updatedAddress.street,
+                        city = "${updatedAddress.district}, ${updatedAddress.city}",
+                        country = updatedAddress.country ?: "Vietnam",
+                        isDefault = updatedAddress.isDefault ?: false
+                    )
+                    
+                    // Tìm và cập nhật địa chỉ trong danh sách
+                    val addressIndex = _deliveryAddresses.indexOfFirst { it.id == addressId }
+                    if (addressIndex != -1) {
+                        _deliveryAddresses[addressIndex] = location
+                    }
+                    
+                    // Xử lý địa chỉ mặc định
+                    if (isDefault) {
+                        _deliveryAddresses.forEach { address ->
+                            if (address.id != addressId) {
+                                val index = _deliveryAddresses.indexOf(address)
+                                if (index >= 0) {
+                                    _deliveryAddresses[index] = address.copy()
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Nếu địa chỉ đang được chọn được cập nhật, cập nhật selectedDeliveryAddress
+                    if (_selectedDeliveryAddress.value?.id == addressId) {
+                        _selectedDeliveryAddress.value = location
+                    }
+                    
+                    onSuccess()
+                    Log.d("CheckoutViewModel", "Cập nhật địa chỉ thành công: $location")
+                } else {
+                    onError("Lỗi cập nhật địa chỉ: ${response.message()}")
+                    Log.e("CheckoutViewModel", "Lỗi cập nhật địa chỉ: ${response.code()} - ${response.message()}")
+                }
+            } catch (e: Exception) {
+                onError("Lỗi cập nhật địa chỉ: ${e.message}")
+                Log.e("CheckoutViewModel", "Lỗi cập nhật địa chỉ: ${e.message}")
+            } finally {
+                _isLoadingAddresses.value = false
+            }
+        }
+    }
+    
+    // Chọn địa chỉ giao hàng
+    fun selectDeliveryAddress(addressId: Int) {
+        val address = _deliveryAddresses.find { it.id == addressId }
+        _selectedDeliveryAddress.value = address
     }
 
     fun updateSelectedCartItems(items: List<CartItemWithProductDetails>) {
@@ -212,31 +462,35 @@ class CheckoutViewModel @Inject constructor(
                 quantity = cartItem.quantity
             )
         }
+        
+        // Lấy userId từ UserPref
+        val currentUserId = UserPref.user.value?.userId ?: 0
+        
         _paymentRequest.value = ProcessPaymentRequest(
-            userId = 0,
+            userId = currentUserId,
             idempotencyKey = idempotencyKey,
             totalAmount = _subTotalPrice.value.toInt(),
             status = "pending",
-            shippingAddressId = _deliveryAddress.value?.id ?: 0,
+            shippingAddressId = _selectedDeliveryAddress.value?.id ?: 0, // Sẽ kiểm tra lại khi thanh toán
             items = paymentItems,
             cvv = 0
         )
-        Log.d("CheckoutViewModel", "Tạo request thanh toán với idempotency_key: $idempotencyKey")
+        Log.d("CheckoutViewModel", "Tạo request thanh toán với idempotency_key: $idempotencyKey, userId: $currentUserId")
     }
 
-    private fun createEmptyPaymentRequest(amount: Double) {
-        val idempotencyKey = generateIdempotencyKey()
-        _paymentRequest.value = ProcessPaymentRequest(
-            userId = 0,
-            idempotencyKey = idempotencyKey,
-            totalAmount = amount.toInt(),
-            status = "pending",
-            shippingAddressId = _deliveryAddress.value?.id ?: 0,
-            items = emptyList(),
-            cvv = 0
-        )
-        Log.d("CheckoutViewModel", "Tạo request thanh toán rỗng với idempotency_key: $idempotencyKey")
-    }
+//    private fun createEmptyPaymentRequest(amount: Double) {
+//        val idempotencyKey = generateIdempotencyKey()
+//        _paymentRequest.value = ProcessPaymentRequest(
+//            userId = 0,
+//            idempotencyKey = idempotencyKey,
+//            totalAmount = amount.toInt(),
+//            status = "pending",
+//            shippingAddressId = _deliveryAddress.value?.id ?: 0,
+//            items = emptyList(),
+//            cvv = 0
+//        )
+//        Log.d("CheckoutViewModel", "Tạo request thanh toán rỗng với idempotency_key: $idempotencyKey")
+//    }
 
     fun makeTransactionPayment(
         items: List<CartItemWithProductDetails>,
@@ -253,7 +507,11 @@ class CheckoutViewModel @Inject constructor(
                         items = items.map { com.mustfaibra.roffu.models.CartItem(cartId = it.id, productId = it.productId, quantity = it.quantity) },
                         providerId = providerId,
                         total = total,
-                        deliveryAddressId = _deliveryAddress.value?.id,
+                        deliveryAddressId = _selectedDeliveryAddress.value?.id ?: run {
+                            _checkoutState.value = UiState.Error(error = Error.Unknown)
+                            onCheckoutFailed(R.string.please_select_delivery_address)
+                            return@launch
+                        },
                         onFinished = {
                             _checkoutState.value = UiState.Success
                             onCheckoutSuccess()
@@ -271,11 +529,12 @@ class CheckoutViewModel @Inject constructor(
     }
 
     fun processCardPayment(
-        cvv: Int,
         context: Context,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
+        // Sử dụng giá trị CVV đã được lưu trước đó
+        val cvv = _cvv.value
         _checkoutState.value = UiState.Loading
         viewModelScope.launch {
             try {
@@ -294,17 +553,74 @@ class CheckoutViewModel @Inject constructor(
                     onError("Bạn cần đăng nhập để thanh toán")
                     return@launch
                 }
-                val updatedRequest = request.copy(cvv = cvv)
+                
+                // Kiểm tra xem đã chọn địa chỉ giao hàng chưa
+                if (_selectedDeliveryAddress.value == null) {
+                    _checkoutState.value = UiState.Error(error = Error.Unknown)
+                    onError("Vui lòng chọn địa chỉ giao hàng")
+                    return@launch
+                }
+                // Kiểm tra CVV có hợp lệ không
+                if (cvv <= 0) {
+                    _checkoutState.value = UiState.Error(error = Error.Unknown)
+                    onError("Vui lòng nhập mã CVV hợp lệ")
+                    return@launch
+                }
+                
+                // Lấy ID của địa chỉ giao hàng đã chọn
+                val shippingAddressId = _selectedDeliveryAddress.value?.id ?: run {
+                    _checkoutState.value = UiState.Error(error = Error.Unknown)
+                    onError("Không tìm thấy ID của địa chỉ giao hàng")
+                    return@launch
+                }
+                
+                // Cập nhật request theo đúng yêu cầu của API
+                val updatedRequest = request.copy(
+                    cvv = cvv,
+                    shippingAddressId = shippingAddressId
+                )
+                
+                // Log thông tin địa chỉ giao hàng để debug
+                Log.d("CheckoutViewModel", "Selected Delivery Address: ${_selectedDeliveryAddress.value?.address}, ID: $shippingAddressId")
+                
+                // Log các trường được gửi đến BE
+                Log.d("CheckoutViewModel", "======= PAYMENT REQUEST DETAILS =======")
+                Log.d("CheckoutViewModel", "Card ID: $cardId")
+                Log.d("CheckoutViewModel", "User ID: ${updatedRequest.userId}")
+                Log.d("CheckoutViewModel", "Idempotency Key: ${updatedRequest.idempotencyKey}")
+                Log.d("CheckoutViewModel", "Total Amount: ${updatedRequest.totalAmount}")
+                Log.d("CheckoutViewModel", "Status: ${updatedRequest.status}")
+                Log.d("CheckoutViewModel", "Shipping Address ID: ${updatedRequest.shippingAddressId}")
+                Log.d("CheckoutViewModel", "CVV: ${updatedRequest.cvv}")
+                Log.d("CheckoutViewModel", "Items Count: ${updatedRequest.items.size}")
+                updatedRequest.items.forEachIndexed { index, item ->
+                    Log.d("CheckoutViewModel", "Item $index - Product ID: ${item.productId}, Quantity: ${item.quantity}")
+                }
+                Log.d("CheckoutViewModel", "Token: Bearer ${token.take(10)}...")
+                Log.d("CheckoutViewModel", "======= END PAYMENT REQUEST =======")
+                
+                // Gọi API processCardPayment
                 val response = RetrofitClient.paymentApiService.processCardPayment(
                     cardId = cardId,
                     request = updatedRequest,
                     token = "Bearer $token"
                 )
+                // Xử lý kết quả trả về từ API
                 if (response.isSuccessful) {
                     response.body()?.let {
                         if (it.success) {
+                            // Lấy danh sách các sản phẩm đã thanh toán từ request
+                            // Chúng ta sẽ sử dụng productId để xóa các sản phẩm này khỏi giỏ hàng
+                            val itemsToRemove = updatedRequest.items
+                            
+                            // Cập nhật trạng thái thành công
                             _checkoutState.value = UiState.Success
-                            onSuccess()
+                            
+                            // Xóa các sản phẩm khỏi giỏ hàng
+                            removeCartItemsAfterPayment(itemsToRemove, context) {
+                                // Gọi callback thành công sau khi đã xử lý xóa giỏ hàng
+                                onSuccess()
+                            }
                         } else {
                             _checkoutState.value = UiState.Error(error = Error.Unknown)
                             onError(it.message)
@@ -330,6 +646,68 @@ class CheckoutViewModel @Inject constructor(
         return uuid.take(length)
     }
 
+    /**
+     * Xóa các sản phẩm đã thanh toán khỏi giỏ hàng
+     * @param items Danh sách các sản phẩm cần xóa
+     * @param context Context để lấy token
+     * @param onComplete Callback khi hoàn thành
+     */
+    fun removeCartItemsAfterPayment(items: List<PaymentItem>, context: android.content.Context, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                val token = UserPref.getToken(context) ?: run {
+                    Log.e("CheckoutViewModel", "Token is null, user not authenticated")
+                    onComplete()
+                    return@launch
+                }
+                
+                val authToken = "Bearer $token"
+                val productIds = items.map { it.productId }
+                
+                Log.d("CheckoutViewModel", "Removing ${productIds.size} items from cart after successful payment")
+                
+                // Xóa từng sản phẩm khỏi giỏ hàng dựa trên productId
+                // Cần gọi API lấy giỏ hàng trước để tìm cartItemId tương ứng với productId
+                try {
+                    val cartResponse = RetrofitClient.cartApiService.getCart(authToken)
+                    if (cartResponse.isSuccessful && cartResponse.body() != null) {
+                        val cartItems = cartResponse.body()!!.items
+                        // Lọc các mục trong giỏ hàng có productId nằm trong danh sách cần xóa
+                        val cartItemsToRemove = cartItems.filter { cartItem -> 
+                            productIds.contains(cartItem.productId) 
+                        }
+                        
+                        Log.d("CheckoutViewModel", "Found ${cartItemsToRemove.size} matching cart items to remove")
+                        
+                        // Xóa từng mục trong giỏ hàng
+                        cartItemsToRemove.forEach { cartItem ->
+                            try {
+                                val response = RetrofitClient.cartApiService.deleteCartItem(cartItem.id, authToken)
+                                if (response.isSuccessful) {
+                                    Log.d("CheckoutViewModel", "Successfully removed cart item: ${cartItem.id} (productId: ${cartItem.productId})")
+                                } else {
+                                    Log.e("CheckoutViewModel", "Failed to remove cart item: ${cartItem.id}, Error: ${response.code()} - ${response.message()}")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("CheckoutViewModel", "Exception when removing cart item: ${cartItem.id}, Error: ${e.message}")
+                            }
+                        }
+                    } else {
+                        Log.e("CheckoutViewModel", "Failed to get cart: ${cartResponse.code()} - ${cartResponse.message()}")
+                    }
+                } catch (e: Exception) {
+                    Log.e("CheckoutViewModel", "Exception when getting cart: ${e.message}")
+                }
+                
+                Log.d("CheckoutViewModel", "Completed cart cleanup after payment")
+            } catch (e: Exception) {
+                Log.e("CheckoutViewModel", "Error cleaning up cart after payment: ${e.message}")
+            } finally {
+                onComplete()
+            }
+        }
+    }
+    
     override fun onCleared() {
         super.onCleared()
         viewModelScope.cancel()

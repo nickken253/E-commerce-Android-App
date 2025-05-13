@@ -5,8 +5,9 @@ import androidx.room.PrimaryKey
 
 @Entity
 data class Location(
-    @PrimaryKey(autoGenerate = true) val id: Int? = null,
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val address: String,
     val city: String,
-    val country: String,
+    val country: String = "Vietnam",
+    val isDefault: Boolean = false
 )
