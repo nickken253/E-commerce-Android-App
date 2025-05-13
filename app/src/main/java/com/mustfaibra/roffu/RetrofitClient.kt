@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder
 import com.mustfaibra.roffu.screens.cart.CartApiService
 import com.mustfaibra.roffu.screens.order.OrderApiService
 import com.mustfaibra.roffu.screens.product.ProductApiService
+import com.mustfaibra.roffu.screens.profile.PaymentApiService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -27,5 +28,9 @@ object RetrofitClient {
     
     val cartApiService: CartApiService by lazy {
         retrofit.create(CartApiService::class.java)
+    }
+    
+    val paymentApiService: PaymentApiService by lazy {
+        retrofit.create(PaymentApiService::class.java)
     }
 }

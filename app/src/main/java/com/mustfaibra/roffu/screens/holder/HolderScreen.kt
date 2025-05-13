@@ -148,6 +148,7 @@ fun HolderScreen(
             cartItems = cartItems,
             productsOnCartIds = productsOnCartIds,
             productsOnBookmarksIds = productsOnBookmarksIds,
+            holderViewModel = holderViewModel,
             onStatusBarColorChange = onStatusBarColorChange,
             bottomNavigationContent = {
                 if (
@@ -257,6 +258,7 @@ fun ScaffoldSection(
     cartItems: List<CartItem>,
     productsOnCartIds: List<Int>,
     productsOnBookmarksIds: List<Int>,
+    holderViewModel: HolderViewModel,
     onStatusBarColorChange: (color: Color) -> Unit,
     onSplashFinished: (nextDestination: Screen) -> Unit,
     onBoardFinished: () -> Unit,
@@ -506,12 +508,12 @@ fun ScaffoldSection(
                     if (user?.isAdmin() != true) {
                         CartScreen(
                             user = user,
-                            // XÓA cartItems, CartScreen tự lấy từ HolderViewModel
                             onProductClicked = onShowProductRequest,
                             onUserNotAuthorized = { onUserNotAuthorized(false) },
                             onCheckoutRequest = {
                                 onNavigationRequested(Screen.Checkout.route, false)
                             },
+                            onNavigationRequested = onNavigationRequested,
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -548,6 +550,52 @@ fun ScaffoldSection(
                         LaunchedEffect(Unit) {
                             controller.navigate(Screen.Admin.route) {
                                 popUpTo(Screen.Checkout.route) { inclusive = true }
+                            }
+                        }
+                    }
+                }
+                
+                composable(
+                    route = Screen.CheckoutWithProducts.route,
+                    arguments = listOf(
+                        navArgument("productIds") { type = NavType.StringType },
+                        navArgument("quantities") { type = NavType.StringType },
+                        navArgument("totalAmount") { type = NavType.FloatType }
+                    )
+                ) { backStackEntry ->
+                    onStatusBarColorChange(MaterialTheme.colors.background)
+                    if (user?.isAdmin() != true) {
+                        user.whatIfNotNull(
+                            whatIf = {
+                                val productIds = backStackEntry.arguments?.getString("productIds")?.split(",")?.mapNotNull { it.toIntOrNull() } ?: listOf()
+                                val quantities = backStackEntry.arguments?.getString("quantities")?.split(",")?.mapNotNull { it.toIntOrNull() } ?: listOf()
+                                val totalAmount = backStackEntry.arguments?.getFloat("totalAmount")?.toDouble() ?: 0.0
+                                
+                                CheckoutScreen(
+                                    cartItems = cartItems,
+                                    onBackRequested = onBackRequested,
+                                    onCheckoutSuccess = {
+                                        onNavigationRequested(Screen.OrderHistory.route, true)
+                                    },
+                                    onToastRequested = onToastRequested,
+                                    onChangeLocationRequested = {
+                                        onNavigationRequested(Screen.LocationPicker.route, false)
+                                    },
+                                    productIds = productIds,
+                                    quantities = quantities,
+                                    totalAmount = totalAmount
+                                )
+                            },
+                            whatIfNot = {
+                                LaunchedEffect(Unit) {
+                                    onUserNotAuthorized(true)
+                                }
+                            },
+                        )
+                    } else {
+                        LaunchedEffect(Unit) {
+                            controller.navigate(Screen.Admin.route) {
+                                popUpTo(Screen.CheckoutWithProducts.route) { inclusive = true }
                             }
                         }
                     }

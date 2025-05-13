@@ -74,6 +74,7 @@ sealed class Screen(
         route = "checkout",
         title = R.string.checkout,
     )
+
     object ProductDetails : Screen(
         route = "product-details/{productId}",
         title = R.string.product_details,
@@ -95,6 +96,15 @@ sealed class Screen(
         title = R.string.orders_history,
         icon = R.drawable.ic_history,
     )
+
+    object CheckoutWithProducts : Screen(
+        route = "checkout-with-products/{productIds}/{quantities}/{totalAmount}",
+        title = R.string.checkout,
+    ) {
+        fun createRoute(productIds: String, quantities: String, totalAmount: Double): String {
+            return "checkout-with-products/$productIds/$quantities/$totalAmount"
+        }
+    }
 
     object OrderManager : Screen(
         route = "order-manager",

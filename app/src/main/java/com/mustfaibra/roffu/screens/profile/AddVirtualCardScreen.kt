@@ -11,17 +11,20 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import java.util.regex.Pattern
 
 @Composable
 fun AddVirtualCardScreen(
     onCardAdded: (cardNumber: String, month: String, year: String, cvv: String, cardHolder: String) -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    paymentViewModel: PaymentViewModel = hiltViewModel()
 ) {
     var cardNumber by remember { mutableStateOf("") }
     var month by remember { mutableStateOf("") }
@@ -237,6 +240,15 @@ fun AddVirtualCardScreen(
                 }
                 Spacer(Modifier.height(16.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    val context = LocalContext.current
+                    val isLoading = paymentViewModel.isLoading.value
+                    val errorMsg = paymentViewModel.error.value
+                    
+                    // Hiển thị lỗi từ API nếu có
+                    errorMsg?.let {
+                        Text(it, color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    }
+                    
                     Button(
                         onClick = {
                             val allValid = validateAllFieldsAndSetErrors()
@@ -247,15 +259,36 @@ fun AddVirtualCardScreen(
                             cardHolderTouched = true
                             if (allValid) {
                                 error = ""
-                                onCardAdded(cardNumber, month, year, cvv, cardHolder)
+                                // Gọi API lưu thông tin thẻ
+                                paymentViewModel.saveBankCard(
+                                    cardNumber = cardNumber,
+                                    cardHolder = cardHolder,
+                                    expiryMonth = month,
+                                    expiryYear = year,
+                                    cvv = cvv,
+                                    context = context,
+                                    onSuccess = {
+                                        // Callback khi lưu thành công
+                                        onCardAdded(cardNumber, month, year, cvv, cardHolder)
+                                    }
+                                )
                             } else {
                                 error = "Please fix all errors above"
                             }
                         },
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF6FCF97)),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
                     ) {
-                        Text("Proceed", color = Color.White)
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Proceed", color = Color.White)
+                        }
                     }
                     Spacer(Modifier.width(12.dp))
                     Button(

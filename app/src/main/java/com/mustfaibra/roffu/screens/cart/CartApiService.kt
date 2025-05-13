@@ -1,5 +1,6 @@
 package com.mustfaibra.roffu.screens.cart
 
+import com.mustfaibra.roffu.models.dto.AddToCartRequest
 import com.mustfaibra.roffu.models.dto.CartResponse
 import retrofit2.Response
 import retrofit2.http.*
@@ -33,6 +34,17 @@ interface CartApiService {
     @DELETE("api/v1/carts/items/{itemId}")
     suspend fun deleteCartItem(
         @Path("itemId") itemId: Int,
+        @Header("Authorization") token: String
+    ): Response<CartResponse>
+    
+    /**
+     * Thêm sản phẩm vào giỏ hàng
+     * @param request Yêu cầu thêm sản phẩm vào giỏ hàng
+     * @param token JWT token để xác thực
+     */
+    @POST("api/v1/carts/items")
+    suspend fun addToCart(
+        @Body request: AddToCartRequest,
         @Header("Authorization") token: String
     ): Response<CartResponse>
 }

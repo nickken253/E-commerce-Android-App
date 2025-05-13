@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mustfaibra.roffu.RetrofitClient
 import com.mustfaibra.roffu.models.CartItem
+import com.mustfaibra.roffu.models.dto.AddToCartItem
+import com.mustfaibra.roffu.models.dto.AddToCartRequest
 import com.mustfaibra.roffu.models.dto.CartItemWithProductDetails
 import com.mustfaibra.roffu.models.dto.CartResponse
 import com.mustfaibra.roffu.models.dto.Product
@@ -143,6 +145,67 @@ class CartViewModel @Inject constructor(
         } else {
             _error.value = "Error ${response.code()}: ${response.message()}"
             Log.e("CartViewModel", "Error ${response.code()}: ${response.message()}")
+        }
+    }
+    
+    /**
+     * Thêm sản phẩm vào giỏ hàng thông qua API
+     * @param productId ID của sản phẩm cần thêm
+     * @param quantity Số lượng sản phẩm cần thêm
+     * @param context Context để lấy token xác thực
+     * @param onSuccess Callback khi thêm sản phẩm thành công
+     * @param onError Callback khi có lỗi
+     */
+    fun addToCart(
+        productId: Int,
+        quantity: Int,
+        context: android.content.Context,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            isSyncingCart.value = true
+            _error.value = null
+            
+            try {
+                // Lấy token xác thực từ UserPref
+                val token = UserPref.getToken(context)
+                
+                if (token == null) {
+                    val errorMsg = "Bạn chưa đăng nhập"
+                    _error.value = errorMsg
+                    onError(errorMsg)
+                    Log.e("CartViewModel", "Token is null, user not authenticated")
+                    return@launch
+                }
+                
+                // Tạo request body
+                val cartItem = AddToCartItem(productId = productId, quantity = quantity)
+                val request = AddToCartRequest(items = listOf(cartItem))
+                
+                // Gọi API với token xác thực
+                val authToken = "Bearer $token"
+                val response = RetrofitClient.cartApiService.addToCart(request, authToken)
+                
+                if (response.isSuccessful) {
+                    // Lấy lại dữ liệu giỏ hàng sau khi thêm sản phẩm thành công
+                    fetchCart(context)
+                    Log.d("CartViewModel", "Thêm sản phẩm vào giỏ hàng thành công")
+                    onSuccess()
+                } else {
+                    val errorMsg = "Error ${response.code()}: ${response.message()}"
+                    _error.value = errorMsg
+                    onError(errorMsg)
+                    Log.e("CartViewModel", errorMsg)
+                }
+            } catch (e: Exception) {
+                val errorMsg = e.message ?: "Unknown error"
+                _error.value = errorMsg
+                onError(errorMsg)
+                Log.e("CartViewModel", "Exception when adding to cart: ${e.message}")
+            } finally {
+                isSyncingCart.value = false
+            }
         }
     }
 

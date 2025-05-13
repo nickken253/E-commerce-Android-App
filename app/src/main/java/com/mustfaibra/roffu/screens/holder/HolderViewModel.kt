@@ -20,6 +20,7 @@ import javax.inject.Inject
 class HolderViewModel @Inject constructor() : ViewModel() {
 
     val cartItems: MutableList<CartItem> = mutableStateListOf()
+    val selectedCartItems: MutableList<CartItem> = mutableStateListOf()
     val productsOnCartIds: MutableList<Int> = mutableStateListOf()
     val productsOnBookmarksIds: MutableList<Int> = mutableStateListOf()
 

@@ -104,7 +104,13 @@ fun ProductDetailsScreen(
             cartItemsCount = cartItemsCount,
             onBackRequested = onBackRequested,
             isOnBookmarks = isOnBookmarksStateProvider(),
-            onBookmarkChange = { onUpdateBookmarksState(productId) }
+            onBookmarkChange = { onUpdateBookmarksState(productId) },
+            onNavigateToCartRequested = {
+                // Chuyển đến màn hình giỏ hàng
+                navController.navigate("cart") {
+                    launchSingleTop = true
+                }
+            }
         )
         Column(
             modifier = Modifier.weight(1f),
@@ -300,6 +306,9 @@ fun ProductDetailsScreen(
                     }
                 }
                 /** Add / Remove from cart button */
+                // Lấy context để truyền vào ViewModel
+                val context = androidx.compose.ui.platform.LocalContext.current
+                
                 CustomButton(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -311,11 +320,12 @@ fun ProductDetailsScreen(
                         // Lấy thông tin biến thể đang chọn
                         val selectedSize = productDetailsViewModel.selectedSize.value.toString()
                         val selectedColor = productDetailsViewModel.selectedColor.value
-                        // Gọi logic mới, truyền đủ productId, size, color
+                        // Gọi API để thêm sản phẩm vào giỏ hàng
                         productDetailsViewModel.addToCart(
                             productId = productId,
                             size = selectedSize,
-                            color = selectedColor
+                            color = selectedColor,
+                            context = context
                         )
                         showAddedDialog = true
                     },
@@ -355,6 +365,7 @@ fun DetailsHeader(
     onBackRequested: () -> Unit,
     isOnBookmarks: Boolean = false,
     onBookmarkChange: () -> Unit = {},
+    onNavigateToCartRequested: () -> Unit = {}
 ) {
     Row(
         modifier = modifier
@@ -391,9 +402,7 @@ fun DetailsHeader(
                     painter = painterResource(id = R.drawable.ic_shopping_bag),
                     iconTint = MaterialTheme.colors.onBackground,
                     backgroundColor = MaterialTheme.colors.background,
-                    onButtonClicked = {
-    //                    onNavigateToCartRequested()
-                    },
+                    onButtonClicked = onNavigateToCartRequested,
                     shape = MaterialTheme.shapes.medium,
                     elevation = Dimension.elevation,
                     iconSize = Dimension.smIcon,

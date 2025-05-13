@@ -1,6 +1,8 @@
 package com.mustfaibra.roffu.screens.productdetails
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -8,8 +10,11 @@ import androidx.lifecycle.viewModelScope
 import com.mustfaibra.roffu.RetrofitClient
 import com.mustfaibra.roffu.models.Product
 import com.mustfaibra.roffu.models.ProductSize
+import com.mustfaibra.roffu.models.dto.AddToCartItem
+import com.mustfaibra.roffu.models.dto.AddToCartRequest
 import com.mustfaibra.roffu.sealed.Error
 import com.mustfaibra.roffu.sealed.UiState
+import com.mustfaibra.roffu.utils.UserPref
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -139,15 +144,58 @@ class ProductDetailsViewModel @Inject constructor() : ViewModel() {
     }
     
     /**
-     * Add the current product to cart.
-     * @param productId the product id
-     * @param size the selected size
-     * @param color the selected color
-     * @param quantity the quantity to add
+     * Thêm sản phẩm vào giỏ hàng thông qua API
+     * @param productId ID của sản phẩm cần thêm
+     * @param size Kích thước sản phẩm đã chọn
+     * @param color Màu sắc sản phẩm đã chọn
+     * @param context Context để lấy token xác thực (sẽ được truyền từ UI)
      */
-    fun addToCart(productId: Int, size: String, color: String) {
-        // Không sử dụng Room Database nữa, chỉ log thông tin
-        Log.d("ProductDetailsVM", "Simulating adding product $productId to cart with size: $size, color: $color, quantity: ${_quantity.value}")
-        // UI sẽ hiển thị dialog thành công mà không cần thực sự lưu dữ liệu
+    fun addToCart(productId: Int, size: String, color: String, context: Context? = null) {
+        Log.d("ProductDetailsVM", "Adding product $productId to cart with size: $size, color: $color, quantity: ${_quantity.value}")
+        
+        // Nếu context được cung cấp, gọi API để thêm vào giỏ hàng
+        context?.let {
+            addToCartWithApi(it, productId, _quantity.value)
+        }
+    }
+    
+    /**
+     * Gọi API để thêm sản phẩm vào giỏ hàng
+     * @param context Context để lấy token xác thực
+     * @param productId ID của sản phẩm cần thêm
+     * @param quantity Số lượng sản phẩm cần thêm
+     */
+    private fun addToCartWithApi(context: Context, productId: Int, quantity: Int) {
+        viewModelScope.launch {
+            try {
+                // Lấy token xác thực từ UserPref
+                val token = UserPref.getToken(context)
+                
+                if (token == null) {
+                    Log.e("ProductDetailsVM", "Token is null, user not authenticated")
+                    Toast.makeText(context, "Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                
+                // Tạo request body
+                val cartItem = AddToCartItem(productId = productId, quantity = quantity)
+                val request = AddToCartRequest(items = listOf(cartItem))
+                
+                // Gọi API với token xác thực
+                val authToken = "Bearer $token"
+                val response = RetrofitClient.cartApiService.addToCart(request, authToken)
+                
+                if (response.isSuccessful) {
+                    Log.d("ProductDetailsVM", "Thêm sản phẩm vào giỏ hàng thành công")
+                    // Dialog thành công sẽ được hiển thị bởi UI
+                } else {
+                    Log.e("ProductDetailsVM", "Error ${response.code()}: ${response.message()}")
+                    Toast.makeText(context, "Lỗi khi thêm vào giỏ hàng: ${response.message()}", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e("ProductDetailsVM", "Exception when adding to cart: ${e.message}")
+                Toast.makeText(context, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

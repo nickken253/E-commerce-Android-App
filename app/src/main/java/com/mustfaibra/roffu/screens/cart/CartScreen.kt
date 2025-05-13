@@ -40,6 +40,7 @@ import com.mustfaibra.roffu.models.dto.CartItemWithProductDetails
 import com.mustfaibra.roffu.models.dto.CartResponse
 import com.skydoves.whatif.whatIfNotNull
 import com.mustfaibra.roffu.R
+import com.mustfaibra.roffu.sealed.Screen
 
 
 // Hàm định dạng số thành chuỗi tiền tệ Việt Nam
@@ -53,6 +54,7 @@ fun CartScreen(
     cartViewModel: CartViewModel = hiltViewModel(),
     onProductClicked: (productId: Int) -> Unit,
     onCheckoutRequest: () -> Unit,
+    onNavigationRequested: (route: String, removePreviousRoute: Boolean) -> Unit,
     onUserNotAuthorized: () -> Unit,
 ) {
     // Lấy context để truyền cho fetchCart
@@ -262,7 +264,33 @@ fun CartScreen(
                         padding = PaddingValues(0.dp),
                         onButtonClicked = {
                             user.whatIfNotNull(
-                                whatIf = { cartViewModel.syncCartItems(onSyncFailed = {}, onSyncSuccess = onCheckoutRequest) },
+                                whatIf = {
+                                    // Lấy danh sách sản phẩm được chọn
+                                    val selectedItems = cartItems.filter { item -> 
+                                        item.cartId?.let { id -> checkedStates[id] == true } ?: false 
+                                    }
+                                    
+                                    // Tính tổng tiền của các sản phẩm được chọn
+                                    val totalAmount = selectedItems.sumOf { it.quantity * (it.product?.price ?: 0.0) }
+                                    
+                                    // Tạo danh sách product_id và quantity
+                                    val productIds = selectedItems.mapNotNull { it.product?.id }.joinToString(",")
+                                    val quantities = selectedItems.map { it.quantity }.joinToString(",")
+                                    
+                                    // Đồng bộ giỏ hàng và chuyển đến màn hình thanh toán với các tham số
+                                    cartViewModel.syncCartItems(
+                                        onSyncFailed = {},
+                                        onSyncSuccess = {
+                                            // Đơn giản hóa: chuyển về màn hình Checkout thông thường
+                                            // Lưu các sản phẩm được chọn vào HolderViewModel
+                                            holderViewModel.selectedCartItems.clear()
+                                            holderViewModel.selectedCartItems.addAll(selectedItems)
+                                            
+                                            // Chuyển đến màn hình thanh toán
+                                            onCheckoutRequest()
+                                        }
+                                    )
+                                },
                                 whatIfNot = onUserNotAuthorized
                             )
                         },
