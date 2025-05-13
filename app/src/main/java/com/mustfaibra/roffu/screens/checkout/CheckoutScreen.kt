@@ -53,6 +53,8 @@ import com.mustfaibra.roffu.models.CartItem
 import com.mustfaibra.roffu.models.UserPaymentProviderDetails
 import com.mustfaibra.roffu.models.VirtualCard
 import com.mustfaibra.roffu.models.dto.BankCardListResponse
+import com.mustfaibra.roffu.models.dto.Image
+import com.mustfaibra.roffu.models.dto.Product as ApiProduct
 import com.mustfaibra.roffu.screens.profile.AddVirtualCardScreen
 import com.mustfaibra.roffu.screens.profile.ProfileViewModel
 import com.mustfaibra.roffu.screens.profile.VisaCardDisplay
@@ -68,6 +70,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.skydoves.whatif.whatIf
 import com.skydoves.whatif.whatIfNotNull
@@ -89,18 +92,20 @@ fun CheckoutScreen(
     selectedItems: List<CartItem> = emptyList() // Danh sách sản phẩm được chọn để thanh toán
 ) {
     val appContext = LocalContext.current
+    
+    // Sử dụng một LaunchedEffect duy nhất để xử lý tất cả các tác vụ khởi tạo
     LaunchedEffect(key1 = Unit) {
         // Lấy danh sách thẻ ngân hàng khi màn hình được hiển thị
         checkoutViewModel.getBankCards(appContext)
-    }
-    
-    // Sử dụng danh sách sản phẩm được chọn hoặc toàn bộ giỏ hàng
-    val context = LocalContext.current
-    
-    LaunchedEffect(key1 = Unit) {
+        
+        // Cập nhật danh sách sản phẩm đã chọn để thanh toán
+        checkoutViewModel.updateSelectedCartItems(selectedItems)
+        
         // Sử dụng danh sách sản phẩm được chọn hoặc toàn bộ giỏ hàng
         val itemsToCheckout = if (selectedItems.isNotEmpty()) selectedItems else cartItems
         checkoutViewModel.setUserCart(itemsToCheckout)
+        
+        android.util.Log.d("CheckoutScreen", "Khởi tạo với ${selectedItems.size} sản phẩm được chọn, ${cartItems.size} sản phẩm trong giỏ hàng")
     }
 
     val checkoutUiState by remember { checkoutViewModel.checkoutState }
@@ -308,59 +313,92 @@ fun CheckoutScreen(
                 style = MaterialTheme.typography.h6,
                 modifier = Modifier.padding(horizontal = Dimension.pagePadding, vertical = 8.dp)
             )
-            LazyRow(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
-                contentPadding = PaddingValues(Dimension.pagePadding),
-            ) {
-                // Sử dụng danh sách sản phẩm được chọn hoặc toàn bộ giỏ hàng
-                val itemsToShow = if (selectedItems.isNotEmpty()) selectedItems else cartItems
-                items(itemsToShow) { item ->
-                    Column(
-                        modifier = Modifier
-                            .width(150.dp)
-                            .clip(MaterialTheme.shapes.medium)
-                            .background(MaterialTheme.colors.surface)
-                            .padding(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // Hiển thị hình ảnh sản phẩm
-                        val imageResource = item.product?.image ?: R.drawable.ic_shopping_bag
-                        Image(
-                            painter = if (imageResource is Int) {
-                                painterResource(id = imageResource)
-                            } else {
-                                rememberAsyncImagePainter(model = imageResource)
-                            },
-                            contentDescription = null,
+            
+            // Hiển thị trạng thái loading khi đang tải thông tin sản phẩm
+            val isLoadingProductDetails = checkoutViewModel.isLoadingProductDetails.value
+            if (isLoadingProductDetails) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                // Lấy danh sách sản phẩm đã chọn và chi tiết sản phẩm
+                val selectedCartItems = checkoutViewModel.selectedCartItems
+                val productDetails = checkoutViewModel.productDetails.value
+                
+                LazyRow(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
+                    contentPadding = PaddingValues(Dimension.pagePadding),
+                ) {
+                    items(selectedCartItems) { item ->
+                        val productId = item.productId
+                        val product = if (productId != null) productDetails[productId] else null
+                        
+                        Column(
                             modifier = Modifier
-                                .size(80.dp)
-                                .clip(MaterialTheme.shapes.medium),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        // Hiển thị tên sản phẩm
-                        Text(
-                            text = item.product?.name ?: "Sản phẩm",
-                            style = MaterialTheme.typography.subtitle1,
-                            maxLines = 2,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        // Hiển thị giá và số lượng
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .width(150.dp)
+                                .clip(MaterialTheme.shapes.medium)
+                                .background(MaterialTheme.colors.surface)
+                                .padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                text = formatVietnamCurrency((item.product?.price?.toLong() ?: 0) * item.quantity),
-                                style = MaterialTheme.typography.body2,
-                                color = MaterialTheme.colors.primary
+                            // Hiển thị hình ảnh sản phẩm từ API nếu có
+                            val imageUrl = if (product is ApiProduct) {
+                                product.images.find { it.is_primary }?.image_url
+                            } else null
+                                ?: item.product?.image
+                                ?: R.drawable.ic_shopping_bag
+                            
+                            Image(
+                                painter = if (imageUrl is Int) {
+                                    painterResource(id = imageUrl)
+                                } else {
+                                    rememberAsyncImagePainter(model = imageUrl)
+                                },
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(MaterialTheme.shapes.medium),
+                                contentScale = ContentScale.Crop
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            // Hiển thị tên sản phẩm từ API nếu có
                             Text(
-                                text = "x${item.quantity}",
-                                style = MaterialTheme.typography.body2
+                                text = if (product is ApiProduct) product.product_name 
+                                    else item.product?.name 
+                                    ?: "Sản phẩm",
+                                style = MaterialTheme.typography.subtitle1,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth()
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            
+                            // Hiển thị giá và số lượng
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = formatVietnamCurrency(
+                                        (if (product is ApiProduct) product.price
+                                            else item.product?.price?.toLong() 
+                                            ?: 0) * item.quantity
+                                    ),
+                                    style = MaterialTheme.typography.body2,
+                                    color = MaterialTheme.colors.primary
+                                )
+                                Text(
+                                    text = "x${item.quantity}",
+                                    style = MaterialTheme.typography.body2
+                                )
+                            }
                         }
                     }
                 }
@@ -384,20 +422,20 @@ fun CheckoutScreen(
                 /** sub total cost row */
                 SummaryRow(
                     title = stringResource(id = R.string.sub_total),
-                    value = formatVietnamCurrency(subTotal.toLong()),
+                    value = formatVietnamCurrency(checkoutViewModel.subTotalPrice.value.toLong()),
                     valueColor = Color(0xFF0052CC)
                 )
                 /** shipping cost row */
                 SummaryRow(
                     title = stringResource(id = R.string.shipping),
-                    value = formatVietnamCurrency(15000),
+                    value = formatVietnamCurrency(checkoutViewModel.shippingFee.value.toLong()),
                     valueColor = Color(0xFF0052CC)
                 )
                 Divider()
                 /** total cost row */
                 SummaryRow(
                     title = stringResource(id = R.string.total),
-                    value = formatVietnamCurrency(subTotal.toLong() + 15000),
+                    value = formatVietnamCurrency(checkoutViewModel.totalOrderAmount.value.toLong()),
                     valueColor = Color(0xFF0052CC)
                 )
                 CustomButton(

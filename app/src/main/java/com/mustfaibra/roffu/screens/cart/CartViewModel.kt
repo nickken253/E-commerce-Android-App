@@ -14,10 +14,9 @@ import com.mustfaibra.roffu.models.dto.CartResponse
 import com.mustfaibra.roffu.models.dto.Product
 import com.mustfaibra.roffu.repositories.ProductsRepository
 import com.mustfaibra.roffu.utils.UserPref
-import com.mustfaibra.roffu.utils.getDiscountedValue
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import retrofit2.Response
@@ -53,8 +52,7 @@ class CartViewModel @Inject constructor(
         totalPrice.value = 0.0
         items.forEach { cartItem ->
             /** Now should update the totalPrice */
-            totalPrice.value += cartItem.product?.price?.times(cartItem.quantity)
-                ?.getDiscountedValue(cartItem.product?.discount ?: 0) ?: 0.0
+            totalPrice.value += cartItem.product?.price?.times(cartItem.quantity) ?: 0.0
         }
     }
 

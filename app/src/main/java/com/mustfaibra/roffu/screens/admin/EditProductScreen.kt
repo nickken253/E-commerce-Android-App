@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.mustfaibra.roffu.models.Product
+
 @Composable
 fun EditProductScreen(
     productId: Int,
@@ -36,7 +37,6 @@ fun EditProductScreen(
     var manufacturerId by remember { mutableStateOf(0) }
     var color by remember { mutableStateOf("") }
     var barcode by remember { mutableStateOf("") }
-    var discount by remember { mutableStateOf(0) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var isError by remember { mutableStateOf(false) }
@@ -54,7 +54,6 @@ fun EditProductScreen(
                 manufacturerId = foundProduct.manufacturerId
                 color = foundProduct.basicColorName
                 barcode = foundProduct.barcode
-                discount = foundProduct.discount
                 imageUri = foundProduct.imagePath?.let { Uri.parse(it) }
             } else {
                 Log.d("EditProductScreen", "Product not found for ID: $productId")
@@ -116,11 +115,6 @@ fun EditProductScreen(
             label = { Text("Barcode") },
             isError = barcode.isBlank()
         )
-        OutlinedTextField(
-            value = discount.toString(),
-            onValueChange = { discount = it.toIntOrNull() ?: discount },
-            label = { Text("Discount") }
-        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -153,7 +147,6 @@ fun EditProductScreen(
                     name = name,
                     price = price,
                     description = description,
-                    discount = discount,
                     manufacturerId = manufacturerId,
                     basicColorName = color,
                     barcode = barcode,

@@ -514,6 +514,7 @@ fun ScaffoldSection(
                                 onNavigationRequested(Screen.Checkout.route, false)
                             },
                             onNavigationRequested = onNavigationRequested,
+                            onToastRequested = onToastRequested
                         )
                     } else {
                         LaunchedEffect(Unit) {

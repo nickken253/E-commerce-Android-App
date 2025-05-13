@@ -1,6 +1,5 @@
 package com.mustfaibra.roffu.screens.checkout
 
-
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.State
@@ -16,17 +15,18 @@ import com.mustfaibra.roffu.models.UserPaymentProviderDetails
 import com.mustfaibra.roffu.models.dto.BankCardListResponse
 import com.mustfaibra.roffu.models.dto.PaymentItem
 import com.mustfaibra.roffu.models.dto.ProcessPaymentRequest
+import com.mustfaibra.roffu.models.dto.Product as ApiProduct
 import com.mustfaibra.roffu.repositories.ProductsRepository
 import com.mustfaibra.roffu.repositories.UserRepository
-import com.mustfaibra.roffu.sealed.Error
 import com.mustfaibra.roffu.sealed.UiState
+import com.mustfaibra.roffu.sealed.Error
 import com.mustfaibra.roffu.utils.UserPref
-import com.mustfaibra.roffu.utils.getDiscountedValue
+import com.skydoves.whatif.whatIf
 import com.skydoves.whatif.whatIfNotNull
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.UUID
+import java.util.*
 import javax.inject.Inject
 
 /**
@@ -74,6 +74,26 @@ class CheckoutViewModel @Inject constructor(
 
     private val _checkoutState = mutableStateOf<UiState>(UiState.Idle)
     val checkoutState: State<UiState> = _checkoutState
+
+    // Thêm state cho danh sách sản phẩm đã chọn để thanh toán
+    private val _selectedCartItems = mutableStateListOf<CartItem>()
+    val selectedCartItems: List<CartItem> = _selectedCartItems
+
+    // Thêm state cho danh sách chi tiết sản phẩm đã lấy từ API
+    private val _productDetails = mutableStateOf<Map<Int, ApiProduct>>(emptyMap())
+    val productDetails: State<Map<Int, ApiProduct>> = _productDetails
+
+    // Thêm state cho trạng thái loading khi lấy chi tiết sản phẩm
+    private val _isLoadingProductDetails = mutableStateOf(false)
+    val isLoadingProductDetails: State<Boolean> = _isLoadingProductDetails
+
+    // Thêm state cho tổng tiền đơn hàng (bao gồm phí ship)
+    private val _totalOrderAmount = mutableStateOf(0.0)
+    val totalOrderAmount: State<Double> = _totalOrderAmount
+
+    // Phí ship mặc định
+    private val _shippingFee = mutableStateOf(30000.0) // 30,000 VND
+    val shippingFee: State<Double> = _shippingFee
 
     init {
         getUserPaymentProviders()
@@ -174,8 +194,7 @@ class CheckoutViewModel @Inject constructor(
         subTotalPrice.value = 0.0
         cartItems.forEach { cartItem ->
             /** Now should update the sub total price */
-            subTotalPrice.value += cartItem.product?.price?.times(cartItem.quantity)
-                ?.getDiscountedValue(cartItem.product?.discount ?: 0) ?: 0.0
+            subTotalPrice.value += cartItem.product?.price?.times(cartItem.quantity) ?: 0.0
         }
         
         // Tạo sẵn request thanh toán với idempotency_key
@@ -347,6 +366,77 @@ class CheckoutViewModel @Inject constructor(
                 onError("Lỗi: ${e.message}")
             }
         }
+    }
+    
+    /**
+     * Cập nhật danh sách sản phẩm đã chọn để thanh toán
+     */
+    fun updateSelectedCartItems(items: List<CartItem>) {
+        _selectedCartItems.clear()
+        _selectedCartItems.addAll(items)
+        
+        // Tính tổng tiền sản phẩm
+        calculateSubTotal()
+        
+        // Tính tổng tiền đơn hàng (bao gồm phí ship)
+        calculateTotalOrderAmount()
+        
+        // Lấy chi tiết sản phẩm cho mỗi item
+        fetchProductDetails()
+    }
+    
+    /**
+     * Tính tổng tiền sản phẩm
+     */
+    private fun calculateSubTotal() {
+        subTotalPrice.value = _selectedCartItems.sumOf { 
+            it.product?.price?.toDouble()?.times(it.quantity) ?: 0.0 
+        }
+    }
+    
+    /**
+     * Tính tổng tiền đơn hàng (bao gồm phí ship)
+     */
+    private fun calculateTotalOrderAmount() {
+        _totalOrderAmount.value = subTotalPrice.value + _shippingFee.value
+    }
+    
+    /**
+     * Lấy chi tiết sản phẩm cho mỗi item trong giỏ hàng
+     */
+    private fun fetchProductDetails() {
+        _isLoadingProductDetails.value = true
+        
+        viewModelScope.launch {
+            try {
+                val productDetailsMap = mutableMapOf<Int, ApiProduct>()
+                
+                // Lấy chi tiết từng sản phẩm
+                _selectedCartItems.forEach { cartItem ->
+                    cartItem.productId?.let { productId ->
+                        try {
+                            val productDetail = RetrofitClient.productApiService.getProductDetails(productId)
+                            productDetailsMap[productId] = productDetail
+                        } catch (e: Exception) {
+                            Log.e("CheckoutViewModel", "Error fetching product $productId: ${e.message}")
+                        }
+                    }
+                }
+                
+                _productDetails.value = productDetailsMap
+            } catch (e: Exception) {
+                Log.e("CheckoutViewModel", "Error fetching product details: ${e.message}")
+            } finally {
+                _isLoadingProductDetails.value = false
+            }
+        }
+    }
+    
+    /**
+     * Lấy chi tiết một sản phẩm cụ thể
+     */
+    fun getProductDetail(productId: Int): ApiProduct? {
+        return _productDetails.value[productId]
     }
     
     /**

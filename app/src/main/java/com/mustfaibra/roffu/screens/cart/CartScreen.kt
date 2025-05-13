@@ -38,10 +38,11 @@ import com.mustfaibra.roffu.components.IconButton as CustomIconButton
 import com.mustfaibra.roffu.models.User
 import com.mustfaibra.roffu.models.dto.CartItemWithProductDetails
 import com.mustfaibra.roffu.models.dto.CartResponse
+import com.skydoves.whatif.whatIf
 import com.skydoves.whatif.whatIfNotNull
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.sealed.Screen
-
+import com.mustfaibra.roffu.screens.holder.HolderViewModel
 
 // Hàm định dạng số thành chuỗi tiền tệ Việt Nam
 private fun formatVietnamCurrency(amount: Long): String {
@@ -52,10 +53,12 @@ private fun formatVietnamCurrency(amount: Long): String {
 fun CartScreen(
     user: User?,
     cartViewModel: CartViewModel = hiltViewModel(),
+    holderViewModel: HolderViewModel = hiltViewModel(),
     onProductClicked: (productId: Int) -> Unit,
     onCheckoutRequest: () -> Unit,
     onNavigationRequested: (route: String, removePreviousRoute: Boolean) -> Unit,
     onUserNotAuthorized: () -> Unit,
+    onToastRequested: (message: String, color: Color) -> Unit,
 ) {
     // Lấy context để truyền cho fetchCart
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -69,7 +72,6 @@ fun CartScreen(
     val isLoading = cartViewModel.isLoading.value
     val error = cartViewModel.error.value
     val cartItemsWithDetails = cartViewModel.cartItemsWithDetails.value
-    val holderViewModel: com.mustfaibra.roffu.screens.holder.HolderViewModel = hiltViewModel()
     val cartItems = holderViewModel.cartItems
 
     val checkedStates = remember { mutableStateMapOf<Int, Boolean>() }
@@ -270,22 +272,26 @@ fun CartScreen(
                                         item.cartId?.let { id -> checkedStates[id] == true } ?: false 
                                     }
                                     
-                                    // Tính tổng tiền của các sản phẩm được chọn
-                                    val totalAmount = selectedItems.sumOf { it.quantity * (it.product?.price ?: 0.0) }
+                                    // Kiểm tra nếu không có sản phẩm nào được chọn
+                                    if (selectedItems.isEmpty()) {
+                                        // Hiển thị thông báo
+                                        onToastRequested("Vui lòng chọn ít nhất một sản phẩm", Color.Red)
+                                        return@whatIfNotNull
+                                    }
                                     
-                                    // Tạo danh sách product_id và quantity
-                                    val productIds = selectedItems.mapNotNull { it.product?.id }.joinToString(",")
-                                    val quantities = selectedItems.map { it.quantity }.joinToString(",")
+                                    // Log để debug
+                                    android.util.Log.d("CartScreen", "Đã chọn ${selectedItems.size} sản phẩm để thanh toán")
                                     
-                                    // Đồng bộ giỏ hàng và chuyển đến màn hình thanh toán với các tham số
+                                    // Lưu các sản phẩm được chọn vào HolderViewModel
+                                    holderViewModel.selectedCartItems.clear()
+                                    holderViewModel.selectedCartItems.addAll(selectedItems)
+                                    
+                                    // Đồng bộ giỏ hàng và chuyển đến màn hình thanh toán
                                     cartViewModel.syncCartItems(
-                                        onSyncFailed = {},
+                                        onSyncFailed = {
+                                            onToastRequested("Không thể đồng bộ giỏ hàng", Color.Red)
+                                        },
                                         onSyncSuccess = {
-                                            // Đơn giản hóa: chuyển về màn hình Checkout thông thường
-                                            // Lưu các sản phẩm được chọn vào HolderViewModel
-                                            holderViewModel.selectedCartItems.clear()
-                                            holderViewModel.selectedCartItems.addAll(selectedItems)
-                                            
                                             // Chuyển đến màn hình thanh toán
                                             onCheckoutRequest()
                                         }

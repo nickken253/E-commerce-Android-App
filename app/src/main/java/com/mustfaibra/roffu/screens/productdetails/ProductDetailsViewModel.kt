@@ -67,7 +67,6 @@ class ProductDetailsViewModel @Inject constructor() : ViewModel() {
                     price = productDto.price.toDouble(),
                     description = productDto.description,
                     imagePath = productDto.images.firstOrNull()?.image_url,
-                    discount = 0, // Có thể cập nhật nếu API trả về
                     manufacturerId = productDto.brand_id,
                     basicColorName = "Default", // Mặc định
                     barcode = productDto.barcode

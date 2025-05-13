@@ -14,7 +14,6 @@ data class Product(
     val price: Double,
     val description: String,
     val imagePath: String? = null,
-    val discount: Int = 0,
     val manufacturerId: Int,
     val basicColorName: String,
     val barcode: String,
