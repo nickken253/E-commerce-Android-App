@@ -81,6 +81,15 @@ class HomeViewModel @Inject constructor(
 
     fun updateCurrentSelectedBrandId(index: Int) {
         currentSelectedBrandIndex.value = index
+        
+        // Khi chọn "Tất cả" (index = -1), ẩn filter options và reset filter
+        if (index == -1) {
+            filterType.value = null
+            selectedBrandId.value = null
+            selectedCategoryId.value = null
+            // Đảm bảo lấy lại toàn bộ sản phẩm
+            resetAndLoadAllProducts()
+        }
     }
 
     fun updateSearchInputValue(value: String) {
@@ -90,6 +99,16 @@ class HomeViewModel @Inject constructor(
     // Phương thức để hiển thị/ẩn filter options
     fun toggleFilterOptions() {
         showFilterOptions.value = !showFilterOptions.value
+    }
+    
+    // Phương thức để reset và tải lại toàn bộ sản phẩm
+    private fun resetAndLoadAllProducts() {
+        // Xóa danh sách sản phẩm hiện tại
+        allProducts.clear()
+        // Reset trang về 1
+        currentPage = 1
+        // Tải lại toàn bộ sản phẩm
+        getAllProducts()
     }
     
     // Phương thức để chọn loại filter (Brand hoặc Category)

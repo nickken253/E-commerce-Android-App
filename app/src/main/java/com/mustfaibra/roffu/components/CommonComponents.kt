@@ -494,13 +494,15 @@ fun ProductItemLayout(
                     }
                     .fillMaxSize()
                     .clip(MaterialTheme.shapes.medium)
-                    .rotate(-35f),
+                    // Xóa hiệu ứng xoay ảnh
+                    // .rotate(-35f),
             )
-            ReactiveBookmarkIcon(
-                modifier = Modifier.padding(Dimension.xs),
-                isOnBookmarks = onBookmark,
-                onBookmarkChange = onChangeBookmarkState
-            )
+            // Xóa nút bookmark
+            // ReactiveBookmarkIcon(
+            //     modifier = Modifier.padding(Dimension.xs),
+            //     isOnBookmarks = onBookmark,
+            //     onBookmarkChange = onChangeBookmarkState
+            // )
         }
         Column(
             verticalArrangement = Arrangement.spacedBy(Dimension.xs)
@@ -553,7 +555,8 @@ fun ProductItemLayout(
             }
             .offset { animatedFloatingProductOffset }
             .size(animatedFloatProductSize.getDp())
-            .rotate(-35f),
+            // Xóa hiệu ứng xoay ảnh
+            // .rotate(-35f),
     )
 }
 

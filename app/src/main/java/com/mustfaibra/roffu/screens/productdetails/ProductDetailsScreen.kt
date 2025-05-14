@@ -42,9 +42,9 @@ fun ProductDetailsScreen(
     productId: Int,
     cartItemsCount: Int,
     isOnCartStateProvider: () -> Boolean,
-    isOnBookmarksStateProvider: () -> Boolean,
+    isOnBookmarksStateProvider: () -> Boolean, // Giữ lại để tránh lỗi khi gọi hàm
     onUpdateCartState: (productId: Int) -> Unit,
-    onUpdateBookmarksState: (productId: Int) -> Unit,
+    onUpdateBookmarksState: (productId: Int) -> Unit, // Giữ lại để tránh lỗi khi gọi hàm
     onBackRequested: () -> Unit,
     navController: NavHostController,
     productDetailsViewModel: ProductDetailsViewModel = hiltViewModel(),
@@ -80,8 +80,7 @@ fun ProductDetailsScreen(
                 ),
             cartItemsCount = cartItemsCount,
             onBackRequested = onBackRequested,
-            isOnBookmarks = isOnBookmarksStateProvider(),
-            onBookmarkChange = { onUpdateBookmarksState(productId) },
+            // Xóa tham số isOnBookmarks và onBookmarkChange
             onNavigateToCartRequested = {
                 navController.navigate("cart") {
                     launchSingleTop = true
@@ -310,8 +309,7 @@ fun DetailsHeader(
     modifier: Modifier = Modifier,
     cartItemsCount: Int,
     onBackRequested: () -> Unit,
-    isOnBookmarks: Boolean = false,
-    onBookmarkChange: () -> Unit = {},
+    // Xóa tham số isOnBookmarks và onBookmarkChange
     onNavigateToCartRequested: () -> Unit = {}
 ) {
     Row(
@@ -335,14 +333,8 @@ fun DetailsHeader(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Nút bookmark
-            ReactiveBookmarkIcon(
-                modifier = Modifier,
-                iconSize = Dimension.smIcon,
-                isOnBookmarks = isOnBookmarks,
-                onBookmarkChange = { onBookmarkChange() }
-            )
-
+            // Xóa nút bookmark
+            
             // Giỏ hàng
             Box {
                 DrawableButton(

@@ -19,7 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mustfaibra.roffu.R
-import com.mustfaibra.roffu.components.ProductItemLayout
+//import com.mustfaibra.roffu.components.ProductItemLayout
 import com.mustfaibra.roffu.sealed.UiState
 import com.mustfaibra.roffu.ui.theme.Dimension
 
@@ -68,22 +68,22 @@ fun BookmarksScreen(
                 }
                 /** Show bookmarked products */
                 items(bookmarkProducts) { product ->
-                    ProductItemLayout(
-                        modifier = Modifier.fillMaxWidth(),
-                        cartOffset = cartOffset,
-                        price = product.price.toString(),
-                        title = product.name,
-                        imageUrl = product.imagePath ?: "",
-                        onCart = product.id in cartProductsIds,
-                        onBookmark = product in bookmarkProducts,
-                        onProductClicked = {
-                            onProductClicked(product.id)
-                        },
-                        onChangeCartState = {
-                            onCartStateChanged(product.id)
-                        },
-                        onChangeBookmarkState = { onBookmarkStateChanged(product.id) },
-                    )
+//                    ProductItemLayout(
+//                        modifier = Modifier.fillMaxWidth(),
+//                        cartOffset = cartOffset,
+//                        price = product.price.toString(),
+//                        title = product.name,
+//                        imageUrl = product.imagePath ?: "",
+//                        onCart = product.id in cartProductsIds,
+//                        onBookmark = product in bookmarkProducts,
+//                        onProductClicked = {
+//                            onProductClicked(product.id)
+//                        },
+//                        onChangeCartState = {
+//                            onCartStateChanged(product.id)
+//                        },
+//                        onChangeBookmarkState = { onBookmarkStateChanged(product.id) },
+//                    )
                 }
             }
             is UiState.Error -> {

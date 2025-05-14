@@ -2,6 +2,11 @@ package com.mustfaibra.roffu.screens.home
 
 import android.os.Handler
 import android.os.Looper
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -175,8 +180,12 @@ fun HomeScreen(
         }
 
         // Hiển thị danh sách brands hoặc categories nếu đã chọn filter type
-        if (filterType != null) {
-            item(span = { GridItemSpan(2) }) {
+        item(span = { GridItemSpan(2) }) {
+            AnimatedVisibility(
+                visible = filterType != null,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -443,11 +452,13 @@ fun ManufacturersSection(
     ) {
         // Thêm mục "Tất cả"
         item {
-            val backgroundColor = if (activeBrandIndex == -1) MaterialTheme.colors.primary
-            else MaterialTheme.colors.background
-
-            val contentColor = if (activeBrandIndex == -1) MaterialTheme.colors.onPrimary
-            else MaterialTheme.colors.onBackground
+            val homeViewModel: HomeViewModel = hiltViewModel()
+            val filterType by homeViewModel.filterType
+            
+            // Nút "Tất cả" có nền trắng khi không được chọn (khi chọn Brand/Category trong Filter)
+            val isAllActive = activeBrandIndex == -1 && filterType == null
+            val backgroundColor = if (isAllActive) MaterialTheme.colors.primary else MaterialTheme.colors.background
+            val contentColor = if (isAllActive) MaterialTheme.colors.onPrimary else MaterialTheme.colors.onBackground
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -480,6 +491,14 @@ fun ManufacturersSection(
         // Thêm nút Filter ngay sau nút All
         item {
             val showFilterOptions by homeViewModel.showFilterOptions
+            val filterType by homeViewModel.filterType
+            val selectedBrandId by homeViewModel.selectedBrandId
+            val selectedCategoryId by homeViewModel.selectedCategoryId
+            
+            // Highlight nút Filter chỉ khi đã chọn Brand/Category, không phải khi đang hiển thị filter options
+            val isFilterActive = filterType != null && (selectedBrandId != null || selectedCategoryId != null)
+            val backgroundColor = if (isFilterActive) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.1f)
+            val contentColor = if (isFilterActive) MaterialTheme.colors.onPrimary else MaterialTheme.colors.primary
             
             Box {
                 Row(
@@ -487,7 +506,7 @@ fun ManufacturersSection(
                     horizontalArrangement = Arrangement.spacedBy(Dimension.xs),
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(MaterialTheme.colors.primary.copy(alpha = 0.1f))
+                        .background(backgroundColor)
                         .clickable { homeViewModel.toggleFilterOptions() }
                         .padding(
                             horizontal = Dimension.md,
@@ -497,13 +516,13 @@ fun ManufacturersSection(
                     Icon(
                         painter = painterResource(id = R.drawable.ic_filtering_slidebars),
                         contentDescription = "Filter",
-                        tint = MaterialTheme.colors.primary,
+                        tint = contentColor,
                         modifier = Modifier.size(Dimension.smIcon)
                     )
                     Text(
                         text = "Filter",
                         style = MaterialTheme.typography.body1,
-                        color = MaterialTheme.colors.primary
+                        color = contentColor
                     )
                 }
                 
