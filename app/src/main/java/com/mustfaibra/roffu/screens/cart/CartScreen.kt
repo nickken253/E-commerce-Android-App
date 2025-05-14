@@ -377,13 +377,7 @@ fun CartItemModern(
                 color = Color(0xFF222222),
                 maxLines = 1
             )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = productColor,
-                style = MaterialTheme.typography.body1.copy(fontSize = 16.sp),
-                color = Color(0xFF888888),
-                maxLines = 1
-            )
+            // Đã loại bỏ phần hiển thị Brand (productColor)
             Spacer(Modifier.height(8.dp))
             // Quantity and delete controls
             Row(verticalAlignment = Alignment.CenterVertically) {

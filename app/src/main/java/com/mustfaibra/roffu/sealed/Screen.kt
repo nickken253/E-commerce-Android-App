@@ -112,7 +112,9 @@ sealed class Screen(
             totalAmount: Double
         ): String {
             val itemsJson = Json.encodeToString(items)
-            val encodedItems = URLEncoder.encode(itemsJson, "UTF-8")
+            // Xử lý các ký tự đặc biệt trước khi mã hóa URL
+            val safeItemsJson = itemsJson.replace("%", "%25").replace("+", "%2B")
+            val encodedItems = URLEncoder.encode(safeItemsJson, "UTF-8")
             return "checkout/$encodedItems/$totalAmount"
         }
     }

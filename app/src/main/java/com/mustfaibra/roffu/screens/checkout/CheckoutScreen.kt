@@ -91,15 +91,22 @@ fun CheckoutScreen(
     var selectedItems by remember { mutableStateOf<List<CartItemWithProductDetails>>(emptyList()) }
     var decodeError by remember { mutableStateOf<String?>(null) }
 
+    // Luôn gọi API lấy thẻ ngay khi màn hình được hiển thị
+    LaunchedEffect(Unit) {
+        checkoutViewModel.getBankCards(appContext)
+    }
+    
     // Giải mã itemsJson
     LaunchedEffect(itemsJson) {
         try {
-            val decodedItemsJson = URLDecoder.decode(itemsJson, "UTF-8")
+            // Xử lý URL trước khi giải mã để tránh lỗi URLDecoder
+            val safeItemsJson = itemsJson.replace("%(?![0-9A-Fa-f]{2})", "%25")
+                                       .replace("\\+", "%2B")
+            val decodedItemsJson = URLDecoder.decode(safeItemsJson, "UTF-8")
             val items = Json.decodeFromString<List<CartItemWithProductDetails>>(decodedItemsJson)
             selectedItems = items
             checkoutViewModel.updateSelectedCartItems(items)
             checkoutViewModel.setUserCart(items)
-            checkoutViewModel.getBankCards(appContext)
             Log.d("CheckoutScreen", "Successfully decoded ${items.size} items")
         } catch (e: Exception) {
             decodeError = "Lỗi tải dữ liệu giỏ hàng: ${e.message}"
