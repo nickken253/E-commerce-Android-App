@@ -52,7 +52,7 @@ fun ProfileScreen(
     selectedTab: String? = null,
 ) {
     val generalOptions = remember {
-        listOf(Screen.Settings, Screen.Bookmark)
+        listOf(Screen.Settings)
     }
     val personalOptions = remember {
         listOf(Screen.PrivacyPolicies, Screen.TermsConditions)
@@ -180,11 +180,7 @@ fun ProfileScreen(
             ProfileOptionItem(
                 icon = option.icon,
                 title = option.title,
-                onOptionClicked = {
-                    if (option is Screen.Bookmark) {
-                        onNavigationRequested(Screen.Bookmark.route, false)
-                    }
-                },
+                onOptionClicked = {},
             )
         }
         /** Personal options */
