@@ -77,10 +77,28 @@ interface ApiService {
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 20,
     ): SearchResponse
+    
+    @Headers(
+        "accept: application/json",
+        "Content-Type: application/json"
+    )
+    @GET("api/v1/products/category/{category_id}")
+    suspend fun getProductsByCategory(
+        @Path("category_id") categoryId: Int,
+        //@Header("Authorization") token: String = "Bearer ${ACCESS_TOKEN}"
+    ): SearchResponse
 
+    @Headers(
+        "accept: application/json",
+        "Content-Type: application/json"
+    )
     @GET("api/v1/products/brands")
-    suspend fun getBrands(): List<Brand>
+    suspend fun getBrands(@Header("Authorization") token: String = "Bearer ${ACCESS_TOKEN}"): List<Brand>
 
+    @Headers(
+        "accept: application/json",
+        "Content-Type: application/json"
+    )
     @GET("api/v1/products/categories")
-    suspend fun getCategories(): List<Category>
+    suspend fun getCategories(@Header("Authorization") token: String = "Bearer ${ACCESS_TOKEN}"): List<Category>
 } 

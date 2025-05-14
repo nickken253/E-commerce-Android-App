@@ -54,9 +54,9 @@ fun ProfileScreen(
     val generalOptions = remember {
         listOf(Screen.Settings)
     }
-    val personalOptions = remember {
-        listOf(Screen.PrivacyPolicies, Screen.TermsConditions)
-    }
+//    val personalOptions = remember {
+//        listOf(Screen.PrivacyPolicies, Screen.TermsConditions)
+//    }
     var showOrderHistory by remember { mutableStateOf(false) }
     val virtualCard by profileViewModel.virtualCard.collectAsState()
     var showAddCardScreen by remember { mutableStateOf(false) }
@@ -190,13 +190,13 @@ fun ProfileScreen(
                 style = MaterialTheme.typography.body1,
             )
         }
-        items(personalOptions) { option ->
-            ProfileOptionItem(
-                icon = option.icon,
-                title = option.title,
-                onOptionClicked = {},
-            )
-        }
+//        items(personalOptions) { option ->
+//            ProfileOptionItem(
+//                icon = option.icon,
+//                title = option.title,
+//                onOptionClicked = {},
+//            )
+//        }
         /** Logout option */
         item {
             Row(

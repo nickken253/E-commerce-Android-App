@@ -25,7 +25,7 @@ data class ProductResponse(
     @SerializedName("description")
     val description: String,
     @SerializedName("price")
-    val price: Double,
+    val price: Long,
     @SerializedName("category_id")
     val category_id: Int,
     @SerializedName("brand_id")

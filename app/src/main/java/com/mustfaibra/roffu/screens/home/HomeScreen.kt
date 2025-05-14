@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,15 +27,22 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActionScope
+import androidx.compose.material.Card
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
+import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +53,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.PopupProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -81,22 +91,31 @@ fun HomeScreen(
     onNavigateToSearch: () -> Unit,
 ) {
     LaunchedEffect(key1 = Unit) {
-        homeViewModel.getHomeAdvertisements()
         homeViewModel.getBrandsWithProducts()
         homeViewModel.getAllProducts()
     }
 
-    val pagerState = rememberPagerState()
     val scope = rememberCoroutineScope()
     val searchQuery by homeViewModel.searchQuery
-
-    val advertisementsUiState by homeViewModel.homeAdvertisementsUiState
-    val advertisements = homeViewModel.advertisements
 
     val brandsUiState by homeViewModel.brandsUiState
     val brands = homeViewModel.brands
 
     val currentSelectedBrandIndex by homeViewModel.currentSelectedBrandIndex
+
+    // Trạng thái cho filter
+    val showFilterOptions by homeViewModel.showFilterOptions
+    val filterType by homeViewModel.filterType
+
+    // Danh sách brands và categories từ API
+    val apiBrands = homeViewModel.apiBrands
+    val apiCategories = homeViewModel.apiCategories
+    val brandsApiState by homeViewModel.brandsApiState
+    val categoriesApiState by homeViewModel.categoriesApiState
+
+    // Filter đã chọn
+    val selectedBrandId by homeViewModel.selectedBrandId
+    val selectedCategoryId by homeViewModel.selectedCategoryId
 
     val gridState = rememberLazyGridState()
     val shouldLoadMore by remember {
@@ -110,38 +129,6 @@ fun HomeScreen(
         if (shouldLoadMore) {
             homeViewModel.loadMoreProducts()
         }
-    }
-
-    val mainHandler = Handler(Looper.getMainLooper())
-    val autoPagerScrollCallback = remember {
-        object : Runnable {
-            override fun run() {
-                /** Handle where to scroll */
-                val currentPage = pagerState.currentPage
-                val pagesCount = pagerState.pageCount
-                Timber.d("Current pager page is $currentPage and count is $pagesCount")
-                when {
-                    currentPage < (pagesCount - 1) -> {
-                        /** go to next page */
-                        scope.launch {
-                            pagerState.animateScrollToPage(currentPage.inc())
-                        }
-                    }
-                    else -> {
-                        /** Start from beginning */
-                        scope.launch {
-                            pagerState.animateScrollToPage(0)
-                        }
-                    }
-                }
-                mainHandler.postDelayed(this, 2000)
-            }
-        }
-    }
-
-    /** Staring our handler only once when the app is launched */
-    LaunchedEffect(key1 = Unit) {
-        mainHandler.post(autoPagerScrollCallback)
     }
 
     LazyVerticalGrid(
@@ -165,52 +152,126 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     text = stringResource(id = R.string.discover),
                     style = MaterialTheme.typography.h2,
-                )
-
-                DrawableButton(
-                    painter = painterResource(id = R.drawable.ic_filtering_slidebars),
-                    onButtonClicked = {},
-                    backgroundColor = MaterialTheme.colors.background,
-                    iconSize = Dimension.smIcon,
-                    iconTint = MaterialTheme.colors.onBackground.copy(alpha = 0.8f),
-                    shape = MaterialTheme.shapes.small,
                 )
             }
         }
 
-        when (advertisementsUiState) {
-            is UiState.Idle -> {}
-            is UiState.Loading -> {}
-            is UiState.Success -> {
-                item(
-                    span = { GridItemSpan(2) }
+        item(
+            span = { GridItemSpan(2) }
+        ) {
+            SearchField(
+                value = searchQuery,
+                onValueChange = { homeViewModel.updateSearchInputValue(it) },
+                onFocusChange = {
+                    if (it) {
+                        onNavigateToSearch()
+                    }
+                },
+                onImeActionClicked = {}
+            )
+        }
+
+        // Hiển thị danh sách brands hoặc categories nếu đã chọn filter type
+        if (filterType != null) {
+            item(span = { GridItemSpan(2) }) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    backgroundColor = MaterialTheme.colors.surface,
+                    elevation = 4.dp
                 ) {
-                    SearchField(
-                        value = searchQuery,
-                        onValueChange = { homeViewModel.updateSearchInputValue(it) },
-                        onFocusChange = {
-                            if (it) {
-                                onNavigateToSearch()
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = if (filterType == HomeViewModel.FilterType.BRAND) "Chọn thương hiệu" else "Chọn danh mục",
+                            style = MaterialTheme.typography.subtitle1.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+
+                        when {
+                            filterType == HomeViewModel.FilterType.BRAND && brandsApiState == UiState.Loading -> {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                Text(
+                                    "Đang tải thương hiệu...", 
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    style = MaterialTheme.typography.body2
+                                )
                             }
-                        },
-                        onImeActionClicked = {}
-                    )
-                }
-                /** Advertisements section */
-                item(
-                    span = { GridItemSpan(2) }
-                ) {
-                    AdvertisementsPager(
-                        pagerState = pagerState,
-                        advertisements = advertisements,
-                        onAdvertiseClicked = {}
-                    )
+                            filterType == HomeViewModel.FilterType.CATEGORY && categoriesApiState == UiState.Loading -> {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                Text(
+                                    "Đang tải danh mục...", 
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    style = MaterialTheme.typography.body2
+                                )
+                            }
+                            filterType == HomeViewModel.FilterType.BRAND -> {
+                                if (apiBrands.isEmpty()) {
+                                    Text(
+                                        "Không có thương hiệu nào",
+                                        style = MaterialTheme.typography.body2,
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
+                                } else {
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 4.dp)
+                                    ) {
+                                        item {
+                                            FilterChip(
+                                                text = "Tất cả",
+                                                selected = selectedBrandId == null,
+                                                onClick = { homeViewModel.selectBrand(null) }
+                                            )
+                                        }
+                                        items(apiBrands.size) { index ->
+                                            val brand = apiBrands[index]
+                                            FilterChip(
+                                                text = brand.name,
+                                                selected = selectedBrandId == brand.id,
+                                                onClick = { homeViewModel.selectBrand(brand.id) }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            filterType == HomeViewModel.FilterType.CATEGORY -> {
+                                if (apiCategories.isEmpty()) {
+                                    Text(
+                                        "Không có danh mục nào",
+                                        style = MaterialTheme.typography.body2,
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
+                                } else {
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 4.dp)
+                                    ) {
+                                        item {
+                                            FilterChip(
+                                                text = "Tất cả",
+                                                selected = selectedCategoryId == null,
+                                                onClick = { homeViewModel.selectCategory(null) }
+                                            )
+                                        }
+                                        items(apiCategories.size) { index ->
+                                            val category = apiCategories[index]
+                                            FilterChip(
+                                                text = category.name,
+                                                selected = selectedCategoryId == category.id,
+                                                onClick = { homeViewModel.selectCategory(category.id) }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
-            is UiState.Error -> {}
         }
 
         /** Handling what to show depending on brands ui state */
@@ -342,64 +403,28 @@ fun SearchField(
     )
 }
 
-@OptIn(ExperimentalPagerApi::class)
 @Composable
-fun AdvertisementsPager(
-    pagerState: PagerState,
-    advertisements: List<Advertisement>,
-    onAdvertiseClicked: (advertisement: Advertisement) -> Unit,
+fun FilterChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Dimension.pagePadding.div(2)),
+    Card(
+        modifier = Modifier
+            .padding(4.dp)
+            .clickable { onClick() },
+        backgroundColor = if (selected) MaterialTheme.colors.primary else MaterialTheme.colors.surface,
+        elevation = if (selected) 4.dp else 1.dp,
+        shape = MaterialTheme.shapes.small
     ) {
-        /** Horizontal pager section */
-        HorizontalPager(
-            modifier = Modifier
-                .fillMaxWidth(),
-            count = advertisements.size,
-            state = pagerState,
-            itemSpacing = Dimension.pagePadding.times(2),
-        ) {
-            val advertisement = advertisements[this.currentPage]
-            AsyncImage(
-                model = advertisement.imageUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(2f)
-                    .clip(MaterialTheme.shapes.medium)
-                    .clickable(
-                        indication = null,
-                        interactionSource = MutableInteractionSource(),
-                        onClick = { onAdvertiseClicked(advertisement) }
-                    ),
-                contentScale = ContentScale.Crop,
-            )
-        }
-        /** Horizontal pager indicators */
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = Dimension.pagePadding.times(2)),
-            horizontalArrangement = Arrangement.spacedBy(Dimension.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            items(pagerState.pageCount) { index ->
-                Box(
-                    modifier = Modifier
-                        .width(
-                            if (pagerState.currentPage == index) Dimension.sm.times(3)
-                            else Dimension.sm
-                        )
-                        .height(Dimension.sm)
-                        .clip(CircleShape)
-                        .background(
-                            if (pagerState.currentPage == index) MaterialTheme.colors.primary
-                            else MaterialTheme.colors.primary.copy(alpha = 0.4f)
-                        )
-                )
-            }
-        }
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.body2.copy(
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+            ),
+            color = if (selected) MaterialTheme.colors.onPrimary else MaterialTheme.colors.onSurface
+        )
     }
 }
 
@@ -409,6 +434,8 @@ fun ManufacturersSection(
     activeBrandIndex: Int,
     onBrandClicked: (index: Int) -> Unit,
 ) {
+    val homeViewModel: HomeViewModel = hiltViewModel()
+    
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -446,6 +473,58 @@ fun ManufacturersSection(
                         style = MaterialTheme.typography.body1,
                         color = contentColor,
                     )
+                }
+            }
+        }
+        
+        // Thêm nút Filter ngay sau nút All
+        item {
+            val showFilterOptions by homeViewModel.showFilterOptions
+            
+            Box {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimension.xs),
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colors.primary.copy(alpha = 0.1f))
+                        .clickable { homeViewModel.toggleFilterOptions() }
+                        .padding(
+                            horizontal = Dimension.md,
+                            vertical = Dimension.sm,
+                        )
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_filtering_slidebars),
+                        contentDescription = "Filter",
+                        tint = MaterialTheme.colors.primary,
+                        modifier = Modifier.size(Dimension.smIcon)
+                    )
+                    Text(
+                        text = "Filter",
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.primary
+                    )
+                }
+                
+                // Dropdown menu cho filter options
+                DropdownMenu(
+                    expanded = showFilterOptions,
+                    onDismissRequest = { homeViewModel.toggleFilterOptions() },
+                    properties = PopupProperties(focusable = true)
+                ) {
+                    DropdownMenuItem(onClick = {
+                        homeViewModel.selectFilterType(HomeViewModel.FilterType.BRAND)
+                        homeViewModel.toggleFilterOptions()
+                    }) {
+                        Text("Brand")
+                    }
+                    DropdownMenuItem(onClick = {
+                        homeViewModel.selectFilterType(HomeViewModel.FilterType.CATEGORY)
+                        homeViewModel.toggleFilterOptions()
+                    }) {
+                        Text("Category")
+                    }
                 }
             }
         }
