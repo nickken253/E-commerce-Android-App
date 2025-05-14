@@ -86,5 +86,4 @@ class UserRepository @Inject constructor(
 
     suspend fun addVirtualCard(card: VirtualCard) = dao.insertVirtualCard(card)
     suspend fun getVirtualCardByUser(userId: Int) = dao.getVirtualCardByUser(userId)
-    suspend fun deleteVirtualCard(card: VirtualCard) = dao.deleteVirtualCard(card)
 }

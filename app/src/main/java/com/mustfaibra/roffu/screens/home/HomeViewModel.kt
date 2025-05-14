@@ -5,7 +5,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mustfaibra.roffu.models.Advertisement
 import com.mustfaibra.roffu.models.Manufacturer
 import com.mustfaibra.roffu.models.dto.Product
 import com.mustfaibra.roffu.repositories.BrandsRepository
@@ -19,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
+// Thêm lại class ApiResponse vì vẫn được sử dụng trong BrandsRepository
 @Serializable
 data class ApiResponse(
     val data: List<Product>,
@@ -34,9 +34,6 @@ class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     val searchQuery = mutableStateOf("")
-
-    val homeAdvertisementsUiState = mutableStateOf<UiState>(UiState.Idle)
-    val advertisements: MutableList<Advertisement> = mutableStateListOf()
 
     val brandsUiState = mutableStateOf<UiState>(UiState.Idle)
     val brands: MutableList<Manufacturer> = mutableStateListOf()
@@ -55,26 +52,6 @@ class HomeViewModel @Inject constructor(
 
     fun updateSearchInputValue(value: String) {
         this.searchQuery.value = value
-    }
-
-    fun getHomeAdvertisements() {
-        if (advertisements.isNotEmpty()) return
-
-        homeAdvertisementsUiState.value = UiState.Loading
-        viewModelScope.launch {
-            when (val response = brandsRepository.getBrandsAdvertisements()) {
-                is DataResponse.Success -> {
-                    homeAdvertisementsUiState.value = UiState.Success
-                    response.data?.let { responseAds ->
-                        advertisements.addAll(responseAds)
-                    }
-                }
-                is DataResponse.Error -> {
-                    homeAdvertisementsUiState.value =
-                        UiState.Error(error = response.error ?: Error.Network)
-                }
-            }
-        }
     }
 
     fun getBrandsWithProducts() {

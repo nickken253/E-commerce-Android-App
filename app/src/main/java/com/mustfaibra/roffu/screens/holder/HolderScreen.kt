@@ -1,5 +1,6 @@
 package com.mustfaibra.roffu.screens.holder
 
+import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateDp
@@ -33,11 +34,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.mustfaibra.roffu.components.AppBottomNav
 import com.mustfaibra.roffu.components.CustomSnackBar
 import com.mustfaibra.roffu.models.CartItem
 import com.mustfaibra.roffu.models.ProductResponse
 import com.mustfaibra.roffu.models.User
+import com.mustfaibra.roffu.models.dto.CartResponse
+import com.mustfaibra.roffu.models.dto.Image
+import com.mustfaibra.roffu.models.dto.Product
 import com.mustfaibra.roffu.providers.LocalNavHost
 import com.mustfaibra.roffu.repositories.ProductsRepository
 import com.mustfaibra.roffu.screens.admin.AddProductScreen
@@ -49,6 +54,7 @@ import com.mustfaibra.roffu.screens.admin.EditUserScreen
 import com.mustfaibra.roffu.screens.barcode.BarcodeScannerScreen
 import com.mustfaibra.roffu.screens.bookmarks.BookmarksScreen
 import com.mustfaibra.roffu.screens.cart.CartScreen
+import com.mustfaibra.roffu.screens.cart.CartViewModel
 import com.mustfaibra.roffu.screens.checkout.CheckoutScreen
 import com.mustfaibra.roffu.screens.home.HomeScreen
 import com.mustfaibra.roffu.screens.locationpicker.LocationPickerScreen
@@ -83,6 +89,10 @@ fun HolderScreen(
     val destinations = remember {
         listOf(Screen.Home, Screen.Bookmark, Screen.OrderHistory, Screen.Cart, Screen.Profile)
     }
+
+
+
+    val cartViewModel: CartViewModel = hiltViewModel()
 
 
     /** Our navigation controller that the MainActivity provides */
@@ -154,6 +164,7 @@ fun HolderScreen(
             cartItems = cartItems,
             productsOnCartIds = productsOnCartIds,
             productsOnBookmarksIds = productsOnBookmarksIds,
+            holderViewModel = holderViewModel,
             onStatusBarColorChange = onStatusBarColorChange,
             holderViewModel = holderViewModel,
             bottomNavigationContent = {
@@ -264,6 +275,7 @@ fun ScaffoldSection(
     cartItems: List<CartItem>,
     productsOnCartIds: List<Int>,
     productsOnBookmarksIds: List<Int>,
+    holderViewModel: HolderViewModel,
     onStatusBarColorChange: (color: Color) -> Unit,
     holderViewModel: HolderViewModel,
     onSplashFinished: (nextDestination: Screen) -> Unit,
@@ -453,7 +465,7 @@ fun ScaffoldSection(
                         )
                     } else {
                         LaunchedEffect(Unit) {
-
+                            // onToastRequested("Bạn không có quyền truy cập!", Color.Red)
                             controller.navigate(Screen.Home.route) {
                                 popUpTo(Screen.EditUser.route) { inclusive = true }
                             }
@@ -465,7 +477,7 @@ fun ScaffoldSection(
                     if (user?.isAdmin() == true) {
                         AddProductScreen(
                             onBack = onBackRequested,
-                            onDone = { onBackRequested() },
+                            onDone = { onBackRequested() }, // hoặc một logic khác nếu cần
                             onToastRequested = onToastRequested
                         )
                     } else {
@@ -574,6 +586,9 @@ fun ScaffoldSection(
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     BarcodeScannerScreen(
                         navController = controller,
+                        onBookmarkStateChanged = { productId ->
+                            onUpdateBookmarkRequest(productId)
+                        },
                         viewModel = hiltViewModel()
                     )
                 }
@@ -581,13 +596,16 @@ fun ScaffoldSection(
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     if (user?.isAdmin() != true) {
                         CartScreen(
+                            navController = controller,
                             user = user,
                             // XÓA cartItems, CartScreen tự lấy từ HolderViewModel
                             onProductClicked = onShowProductRequest,
                             onUserNotAuthorized = { onUserNotAuthorized(false) },
                             onCheckoutRequest = {
                                 onNavigationRequested(Screen.Checkout.route, false)
-                            }
+                            },
+                            onNavigationRequested = onNavigationRequested,
+                            onToastRequested = onToastRequested
                         )
                     } else {
                         LaunchedEffect(Unit) {
@@ -626,6 +644,36 @@ fun ScaffoldSection(
                                 popUpTo(Screen.Checkout.route) { inclusive = true }
                             }
                         }
+                    }
+                }
+                composable(
+                    route = Screen.CheckoutWithProducts.route,
+                    arguments = listOf(
+                        navArgument("items") { type = NavType.StringType },
+                        navArgument("totalAmount") { type = NavType.FloatType }
+                    )
+                ) { backStackEntry ->
+                    val itemsJson = backStackEntry.arguments?.getString("items") ?: ""
+                    val totalAmount = backStackEntry.arguments?.getFloat("totalAmount")?.toDouble() ?: 0.0
+                    if (itemsJson.isEmpty()) {
+                        Log.w("NavGraph", "Empty itemsJson, redirecting to Cart")
+                        onToastRequested("Không có sản phẩm được chọn", Color.Red)
+                        onNavigationRequested(Screen.Cart.route, true)
+                    } else {
+                        CheckoutScreen(
+                            navController = controller,
+                            itemsJson = itemsJson,
+                            totalAmount = totalAmount,
+                            onChangeLocationRequested = {
+                                // Giả định route cho màn hình chọn địa chỉ
+                                onNavigationRequested("location_picker", false)
+                                onToastRequested("Đang mở màn hình chọn địa chỉ", Color.Blue)
+                            },
+                            onNavigationRequested = onNavigationRequested,
+                            onToastRequested = onToastRequested,
+                            checkoutViewModel = hiltViewModel(),
+                            profileViewModel = hiltViewModel()
+                        )
                     }
                 }
                 composable(Screen.LocationPicker.route) {
@@ -714,10 +762,16 @@ fun ScaffoldSection(
                     ProductDetailsScreen(
                         productId = productId,
                         cartItemsCount = cartItems.size,
-                        isOnBookmarksStateProvider = { productId in productsOnBookmarksIds },
-                        onUpdateBookmarksState = onUpdateBookmarkRequest,
+                        isOnCartStateProvider = { productsOnCartIds.contains(productId) },
+                        isOnBookmarksStateProvider = { productsOnBookmarksIds.contains(productId) },
+                        onUpdateCartState = { productId ->
+                            onUpdateCartRequest(productId)
+                        },
+                        onUpdateBookmarksState = { productId ->
+                            onUpdateBookmarkRequest(productId)
+                        },
                         onBackRequested = onBackRequested,
-//                        navController = controller
+                        navController = controller
                     )
                 }
                 composable(Screen.OrderHistory.route) {
@@ -785,7 +839,7 @@ fun HolderScreen(
     viewModel: HolderViewModel = hiltViewModel()
 ) {
     // ... existing code ...
-    
+
     // Thay thế ProductComparisonScreen và ProductSelectionScreen bằng các màn hình tương ứng
     // hoặc xóa nếu không cần thiết
 }

@@ -65,7 +65,6 @@ import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.sealed.MenuOption
 import com.mustfaibra.roffu.sealed.Screen
 import com.mustfaibra.roffu.ui.theme.Dimension
-import com.mustfaibra.roffu.utils.getDiscountedValue
 import com.mustfaibra.roffu.utils.getDp
 import kotlin.math.roundToInt
 

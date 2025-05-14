@@ -144,8 +144,6 @@ fun String.encryptCardNumber(): String {
     return "**** ".repeat(3).plus(this.takeLast(4))
 }
 
-fun Double.getDiscountedValue(discount: Int) = this - this * (discount / 100.0)
-
 fun List<LocalManufacturer>.getStructuredManufacturers(): List<Manufacturer> {
     return this.map { localManufacturer ->
         localManufacturer.manufacturer.also {
@@ -175,7 +173,7 @@ fun LocalProduct.getStructuredProduct() = this.product.also { product ->
 fun MutableList<CartItemWithProduct>.getStructuredCartItems(): List<CartItem> {
     return this.map {
         it.details.apply {
-            this.product = it.product.getStructuredProduct()
+//            this.product = it.product.getStructuredProduct()
         }
     }
 }

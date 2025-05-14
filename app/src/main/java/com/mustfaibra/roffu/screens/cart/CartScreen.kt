@@ -1,5 +1,6 @@
 package com.mustfaibra.roffu.screens.cart
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,17 +9,26 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Checkbox
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -28,22 +38,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.components.CustomButton
+import com.mustfaibra.roffu.components.IconButton as CustomIconButton
 import com.mustfaibra.roffu.components.DrawableButton
-import com.mustfaibra.roffu.components.IconButton
 import com.mustfaibra.roffu.components.PopupOptionsMenu
 import com.mustfaibra.roffu.components.SimpleLoadingDialog
 import com.mustfaibra.roffu.components.SummaryRow
 import com.mustfaibra.roffu.models.CartItem
 import com.mustfaibra.roffu.models.User
+import com.mustfaibra.roffu.models.dto.CartItemWithProductDetails
+import com.mustfaibra.roffu.sealed.Screen
+import com.mustfaibra.roffu.screens.holder.HolderViewModel
 import com.mustfaibra.roffu.sealed.MenuOption
 import com.mustfaibra.roffu.sealed.UiState
 import com.mustfaibra.roffu.ui.theme.Dimension
@@ -51,185 +67,260 @@ import com.mustfaibra.roffu.utils.getDp
 import com.skydoves.whatif.whatIfNotNull
 import kotlinx.coroutines.launch
 import java.text.DecimalFormat
+private const val USD_TO_VND = 25_000
+// Hàm định dạng số thành chuỗi tiền tệ Việt Nam
+private fun formatVietnamCurrency(amount: Long): String {
+    return amount.toString().reversed().chunked(3).joinToString(".").reversed() + " ₫"
+}
 
 @Composable
 fun CartScreen(
+    navController: NavHostController,
     user: User?,
     cartViewModel: CartViewModel = hiltViewModel(),
+    holderViewModel: HolderViewModel = hiltViewModel(),
     onProductClicked: (productId: Int) -> Unit,
     onCheckoutRequest: () -> Unit,
+    onNavigationRequested: (route: String, removePreviousRoute: Boolean) -> Unit,
     onUserNotAuthorized: () -> Unit,
+    onToastRequested: (message: String, color: Color) -> Unit,
 ) {
     val cartItems by cartViewModel.cartItems
     val cartUiState by cartViewModel.cartUiState
     val totalPrice by cartViewModel.totalPrice
     val cartOptionsMenuExpanded by cartViewModel.cartOptionsMenuExpanded
     val isSyncingCart by cartViewModel.isSyncingCart
+    val context = androidx.compose.ui.platform.LocalContext.current
 
-    val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val decimalFormat = DecimalFormat("#,###")
+    // Gọi API để lấy giỏ hàng
+    LaunchedEffect(Unit) {
+        cartViewModel.fetchCart(context)
+    }
 
-    LaunchedEffect(cartUiState) {
-        if (cartUiState is UiState.Error) {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar("Lỗi khi tải giỏ hàng")
+    // Lấy trạng thái từ CartViewModel
+    val isLoading by cartViewModel.isLoading
+    val error by cartViewModel.error
+    val cartItemsWithDetails by cartViewModel.cartItemsWithDetails
+
+    // Quản lý trạng thái checkbox
+    val checkedStates = remember { mutableStateMapOf<Int, Boolean>() }
+    LaunchedEffect(cartItemsWithDetails) {
+        cartItemsWithDetails.forEach { item ->
+            if (item.id !in checkedStates) {
+                checkedStates[item.id] = true // Mặc định chọn tất cả
             }
         }
     }
 
-    if (isSyncingCart) {
-        SimpleLoadingDialog(title = "Đang đồng bộ giỏ hàng...")
+    // Tính tổng giá từ API
+    val totalPrice by remember(cartItemsWithDetails, checkedStates) {
+        derivedStateOf {
+            cartItemsWithDetails
+                .filter { checkedStates[it.id] == true }
+                .sumOf { it.unitPrice.toDouble() * it.quantity }
+        }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            var cardHeight by remember { mutableStateOf(0) }
-
-            when (cartUiState) {
-                is UiState.Loading -> {
-                    Text(
-                        text = "Đang tải giỏ hàng...",
-                        style = MaterialTheme.typography.body1,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .wrapContentSize(Alignment.Center)
-                    )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF8F8F8))
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CustomIconButton(
+                    icon = Icons.Default.ArrowBack,
+                    backgroundColor = Color.White,
+                    iconTint = Color.Black,
+                    onButtonClicked = { onNavigationRequested(Screen.Home.route, false) },
+                    elevation = 1.dp,
+                )
+                Text(
+                    text = "Giỏ hàng",
+                    style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+                )
+                CustomIconButton(
+                    icon = Icons.Default.Delete,
+                    backgroundColor = Color.White,
+                    iconTint = Color.Black,
+                    onButtonClicked = {
+                        cartItemsWithDetails.forEach { item ->
+                            cartViewModel.removeCartItem(item.id, context)
+                        }
+                    },
+                    elevation = 1.dp,
+                )
+            }
+            // Items
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Hiển thị loading
+                if (isLoading) {
+                    item {
+                        androidx.compose.material.CircularProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .wrapContentSize(Alignment.Center),
+                            color = MaterialTheme.colors.primary
+                        )
+                    }
                 }
-                is UiState.Success -> {
-                    if (cartItems.isEmpty()) {
+                // Hiển thị lỗi
+                else if (error != null) {
+                    item {
+                        Text(
+                            text = "Lỗi: $error",
+                            color = Color.Red,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+                // Hiển thị dữ liệu từ API
+                else if (cartItemsWithDetails.isNotEmpty()) {
+                    items(cartItemsWithDetails, key = { it.id }) { item ->
+                        CartItemModern(
+                            cartId = item.id,
+                            productName = item.productName,
+                            productImage = item.productImage,
+                            productPrice = item.unitPrice.toDouble(),
+                            productColor = "Brand: ${item.productBrand}",
+                            currentQty = item.quantity,
+                            isChecked = checkedStates[item.id] == true,
+                            onCheckedChange = { checked -> checkedStates[item.id] = checked },
+                            onQuantityChanged = { qty ->
+                                cartViewModel.updateQuantity(item.id, qty, context)
+                            },
+                            onProductRemoved = {
+                                cartViewModel.removeCartItem(item.id, context)
+                            }
+                        )
+                    }
+                }
+                // Hiển thị giỏ hàng trống
+                else {
+                    item {
                         Text(
                             text = "Giỏ hàng trống",
                             style = MaterialTheme.typography.body1,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .wrapContentSize(Alignment.Center)
-                        )
-                    } else {
-                        LazyColumn(
+                            color = Color.Red,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colors.background),
-                            verticalArrangement = Arrangement.spacedBy(Dimension.pagePadding.div(2)),
-                            contentPadding = PaddingValues(bottom = cardHeight.getDp())
-                        ) {
-                            item {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(MaterialTheme.colors.background)
-                                        .padding(horizontal = Dimension.pagePadding),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                ) {
-                                    Text(
-                                        modifier = Modifier.weight(1f),
-                                        text = stringResource(id = R.string.cart),
-                                        style = MaterialTheme.typography.h3,
-                                    )
-                                    PopupOptionsMenu(
-                                        icon = painterResource(id = R.drawable.ic_more_vertical),
-                                        iconSize = Dimension.smIcon,
-                                        iconBackgroundColor = MaterialTheme.colors.background,
-                                        menuContentColor = MaterialTheme.colors.onBackground.copy(alpha = 0.8f),
-                                        options = listOf(MenuOption.ClearCart),
-                                        onOptionsMenuExpandChanges = { cartViewModel.toggleOptionsMenuExpandState() },
-                                        onMenuOptionSelected = {
-                                            cartViewModel.toggleOptionsMenuExpandState()
-                                            when (it) {
-                                                is MenuOption.ClearCart -> cartViewModel.clearCart()
-                                                else -> {}
-                                            }
-                                        },
-                                        optionsMenuExpanded = cartOptionsMenuExpanded
-                                    )
-                                }
-                            }
-                            items(cartItems, key = { it.id ?: it.product_id }) { cartItem ->
-                                cartItem.product?.let { product ->
-                                    CartItemLayout(
-                                        productName = product.product_name,
-                                        productImage = product.images.find { it.is_primary }?.image_url,
-                                        productPrice = product.price.toDouble(),
-                                        currentQty = cartItem.quantity,
-                                        onProductClicked = { onProductClicked(product.id) },
-                                        onQuantityChanged = { newQuantity ->
-                                            cartViewModel.updateQuantity(
-                                                productId = product.id,
-                                                quantity = newQuantity
-                                            )
-                                        },
-                                        onProductRemoved = {
-                                            cartViewModel.removeCartItem(productId = product.id)
-                                        }
-                                    )
-                                }
-                            }
-                        }
+                                .padding(16.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
                     }
                 }
-                is UiState.Error -> {
-                    Text(
-                        text = "Lỗi khi tải giỏ hàng",
-                        style = MaterialTheme.typography.body1,
-                        color = MaterialTheme.colors.error,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .wrapContentSize(Alignment.Center)
-                    )
-                }
-                is UiState.Idle -> {}
             }
 
-            if (cartItems.isNotEmpty() && cartUiState is UiState.Success) {
+            // Total & Checkout
+            if (cartItemsWithDetails.isNotEmpty()) {
                 Column(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .onGloballyPositioned { cardHeight = it.size.height }
-                        .shadow(
-                            elevation = Dimension.elevation.div(2),
-                            shape = RoundedCornerShape(topStartPercent = 15, topEndPercent = 15),
-                            spotColor = Color.Blue
-                        )
-                        .clip(shape = RoundedCornerShape(topStartPercent = 15, topEndPercent = 15))
-                        .background(MaterialTheme.colors.background)
-                        .padding(all = Dimension.pagePadding),
-                    verticalArrangement = Arrangement.spacedBy(Dimension.sm)
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    SummaryRow(
-                        title = stringResource(id = R.string.total),
-                        value = "${decimalFormat.format(totalPrice.toInt())} VND",
-                        valueColor = Color.Blue
-                    )
-                    CustomButton(
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        text = stringResource(R.string.proceed_to_checkout),
-                        textStyle = MaterialTheme.typography.body1,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Total:",
+                            style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = formatVietnamCurrency(totalPrice.toLong()),
+                            style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colors.primary
+                        )
+                    }
+                    CustomButton(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        text = "Thanh toán",
+                        textStyle = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Bold),
                         buttonColor = Color(0xFF0052CC),
-                        shape = RoundedCornerShape(percent = 35),
-                        padding = PaddingValues(all = Dimension.md.times(0.8f)),
+                        shape = RoundedCornerShape(16.dp),
+                        padding = PaddingValues(0.dp),
                         onButtonClicked = {
                             user.whatIfNotNull(
                                 whatIf = {
-                                    cartViewModel.syncCartItems(
-                                        onSyncFailed = { reason ->
-                                            coroutineScope.launch {
-                                                snackbarHostState.showSnackbar("Đồng bộ giỏ hàng thất bại: $reason")
+                                    val selectedItems = cartItemsWithDetails.filter { item ->
+                                        checkedStates[item.id] == true
+                                    }
+                                    Log.d("CartScreen", "Selected items count: ${selectedItems.size}, items: $selectedItems")
+                                    Log.d("CartScreen", "Checkbox states: $checkedStates")
+                                    if (selectedItems.isEmpty()) {
+                                        onToastRequested("Vui lòng chọn ít nhất một sản phẩm", Color.Red)
+                                        return@whatIfNotNull
+                                    }
+                                    holderViewModel.selectedCartItems.clear()
+                                    holderViewModel.selectedCartItems.addAll(
+                                        selectedItems.map { item ->
+                                            com.mustfaibra.roffu.models.CartItem(
+                                                cartId = item.id,
+                                                productId = item.productId,
+                                                quantity = item.quantity
+                                            ).apply {
+                                                product = com.mustfaibra.roffu.models.dto.Product(
+                                                    id = item.productId,
+                                                    barcode = "",
+                                                    product_name = item.productName,
+                                                    description = item.productDescription,
+                                                    price = item.unitPrice,
+                                                    category_id = 0,
+                                                    brand_id = 0,
+                                                    created_at = "",
+                                                    updated_at = "",
+                                                    quantity = item.quantity,
+                                                    variants = emptyList(),
+                                                    images = listOf(
+                                                        com.mustfaibra.roffu.models.dto.Image(
+                                                            id = 0,
+                                                            product_id = item.productId,
+                                                            image_url = item.productImage,
+                                                            is_primary = true,
+                                                            upload_date = ""
+                                                        )
+                                                    )
+                                                )
                                             }
+                                        }
+                                    )
+                                    Log.d("CartScreen", "HolderViewModel selectedCartItems: ${holderViewModel.selectedCartItems}")
+                                    cartViewModel.syncCartItems(
+                                        navController = navController,
+                                        selectedItems = selectedItems,
+                                        onSyncFailed = {
+                                            onToastRequested("Không thể đồng bộ giỏ hàng", Color.Red)
                                         },
-                                        onSyncSuccess = onCheckoutRequest
+                                        onSyncSuccess = {
+                                            // Không cần gọi onNavigationRequested vì điều hướng được xử lý trong syncCartItems
+                                        }
                                     )
                                 },
                                 whatIfNot = onUserNotAuthorized
                             )
                         },
-                        contentColor = MaterialTheme.colors.onPrimary
+                        contentColor = Color.White
                     )
                 }
             }
@@ -238,91 +329,118 @@ fun CartScreen(
 }
 
 @Composable
-fun CartItemLayout(
+fun CartItemModern(
+    cartId: Int,
     productName: String,
-    productImage: String?,
+    productImage: Any,
     productPrice: Double,
+    productColor: String,
     currentQty: Int,
-    onProductClicked: () -> Unit,
-    onQuantityChanged: (qty: Int) -> Unit,
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onQuantityChanged: (Int) -> Unit,
     onProductRemoved: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val decimalFormat = DecimalFormat("#,###")
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp)
-            .background(Color.White, shape = RoundedCornerShape(12.dp))
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .background(Color.White, RoundedCornerShape(22.dp))
+            .padding(vertical = 20.dp, horizontal = 18.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        /** Product Image */
-        Image(
-            painter = rememberAsyncImagePainter(model = productImage ?: "https://example.com/placeholder.jpg"),
-            contentDescription = null,
-            modifier = Modifier
-                .size(64.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFF5E8D7))
+        Checkbox(
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.padding(top = 14.dp)
         )
+        Spacer(Modifier.width(12.dp))
+        // Xử lý hiển thị hình ảnh
+        val imagePainter = when (productImage) {
+            is String -> {
+                if (productImage.isNotEmpty()) {
+                    rememberAsyncImagePainter(productImage)
+                } else {
 
-        /** Product Info */
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 12.dp)
-        ) {
-            Text(
-                text = productName,
-                style = MaterialTheme.typography.body1,
-                fontWeight = FontWeight.Normal
-            )
-            Text(
-                text = "${decimalFormat.format(productPrice.toInt())} VND",
-                style = MaterialTheme.typography.body2,
-                fontWeight = FontWeight.Bold,
-                color = Color.Blue
-            )
+                }
+            }
+            is Int -> rememberAsyncImagePainter(productImage)
+            else -> {}
         }
 
-        /** Quantity Selector */
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Image(
+            painter = imagePainter as Painter,
+            contentDescription = null,
             modifier = Modifier
-                .background(Color(0xFFF5F5F5), shape = RoundedCornerShape(8.dp))
-                .padding(4.dp)
-        ) {
-            DrawableButton(
-                painter = painterResource(id = R.drawable.ic_round_remove_24),
-                enabled = currentQty > 1,
-                onButtonClicked = { onQuantityChanged(currentQty.dec()) },
-                backgroundColor = if (currentQty > 1) Color.White else MaterialTheme.colors.background,
-                iconTint = if (currentQty > 1) Color.Black else MaterialTheme.colors.onBackground,
-                iconSize = Dimension.smIcon.times(0.8f),
-                shape = CircleShape
-            )
+                .size(90.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFFF5F5F5))
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "$currentQty",
-                modifier = Modifier.padding(horizontal = 8.dp),
-                color = Color.Blue,
-                fontWeight = FontWeight.Normal
+                text = productName,
+                style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF222222),
+                maxLines = 1
             )
-            IconButton(
-                icon = Icons.Rounded.Add,
-                onButtonClicked = { onQuantityChanged(currentQty.inc()) },
-                backgroundColor = Color.White,
-                iconSize = Dimension.smIcon.times(0.8f),
-                iconTint = Color.Black,
-                shape = CircleShape
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = productColor,
+                style = MaterialTheme.typography.body1.copy(fontSize = 16.sp),
+                color = Color(0xFF888888),
+                maxLines = 1
             )
-            IconButton(
-                icon = Icons.Rounded.Delete,
-                onButtonClicked = { onProductRemoved() },
-                backgroundColor = Color.White,
-                iconSize = Dimension.smIcon.times(0.8f),
-                iconTint = Color.Black,
-                shape = CircleShape
+            Spacer(Modifier.height(8.dp))
+            // Quantity and delete controls
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    IconButton(
+                        onClick = { if (currentQty > 1) onQuantityChanged(currentQty - 1) else onProductRemoved() },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Filled.Remove, contentDescription = "Giảm", modifier = Modifier.size(20.dp))
+                    }
+                    Text(
+                        text = "$currentQty",
+                        style = MaterialTheme.typography.subtitle1.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFF222222),
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    IconButton(
+                        onClick = { onQuantityChanged(currentQty + 1) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = "Tăng", modifier = Modifier.size(20.dp))
+                    }
+                }
+                Spacer(Modifier.width(16.dp))
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                        .size(width = 72.dp, height = 32.dp)
+                ) {
+                    IconButton(
+                        onClick = onProductRemoved,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Xóa", modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = formatVietnamCurrency((productPrice * currentQty).toLong()),
+                style = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF222222)
             )
         }
     }

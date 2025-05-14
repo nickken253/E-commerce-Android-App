@@ -39,11 +39,9 @@ import com.mustfaibra.roffu.models.User
 import com.mustfaibra.roffu.models.VirtualCard
 import com.mustfaibra.roffu.screens.profile.AddVirtualCardScreen
 import com.mustfaibra.roffu.screens.profile.VisaCardDisplay
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.ui.unit.dp
 import com.mustfaibra.roffu.sealed.Screen
 import com.mustfaibra.roffu.ui.theme.Dimension
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun ProfileScreen(
@@ -168,17 +166,6 @@ fun ProfileScreen(
                         expiryMonth = virtualCard!!.expiryMonth,
                         expiryYear = virtualCard!!.expiryYear
                     )
-                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(12.dp))
-                    androidx.compose.material.IconButton(
-                        onClick = { profileViewModel.deleteVirtualCard(virtualCard!!) },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        androidx.compose.material.Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.Delete,
-                            contentDescription = "Delete card",
-                            tint = MaterialTheme.colors.error
-                        )
-                    }
                 }
             }
         }

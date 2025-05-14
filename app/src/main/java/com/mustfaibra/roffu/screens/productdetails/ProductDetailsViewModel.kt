@@ -2,10 +2,18 @@
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
+import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mustfaibra.roffu.RetrofitClient
+import com.mustfaibra.roffu.models.Product
+import com.mustfaibra.roffu.models.ProductSize
+import com.mustfaibra.roffu.models.dto.AddToCartItem
+import com.mustfaibra.roffu.models.dto.AddToCartRequest
 import com.mustfaibra.roffu.models.dto.AddToCartRequest
 import com.mustfaibra.roffu.models.dto.CartItemReponse
 import com.mustfaibra.roffu.models.dto.Product
@@ -13,6 +21,7 @@ import com.mustfaibra.roffu.repositories.ProductsRepository
 import com.mustfaibra.roffu.sealed.DataResponse
 import com.mustfaibra.roffu.sealed.Error
 import com.mustfaibra.roffu.sealed.UiState
+import com.mustfaibra.roffu.utils.UserPref
 import com.mustfaibra.roffu.utils.UserPref
 import com.mustfaibra.roffu.utils.CartEventBus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +35,8 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
@@ -53,12 +64,76 @@ class ProductDetailsViewModel @Inject constructor(
     private val _product = mutableStateOf<Product?>(null)
     val product: State<Product?> = _product
 
+    private val _selectedSize = mutableStateOf(0)
+    val selectedSize: State<Int> = _selectedSize
+
+    private val _sizeScale = mutableStateOf(1f)
+    val sizeScale: State<Float> = _sizeScale
+
+    private val _selectedColor = mutableStateOf("")
+    val selectedColor: State<String> = _selectedColor
+
+    // Trạng thái số lượng sản phẩm
+    private val _quantity = mutableStateOf(1)
+    val quantity: State<Int> = _quantity
+
     private val _isInCart = mutableStateOf(false)
     val isInCart: State<Boolean> = _isInCart
 
+    /**
+     * Gọi API để lấy thông tin chi tiết sản phẩm theo ID
+     */
     fun getProductDetails(productId: Int) {
         _detailsUiState.value = UiState.Loading
+
         viewModelScope.launch {
+            try {
+                Log.d("ProductDetailsVM", "Fetching product details for ID: $productId")
+
+                // Gọi API để lấy chi tiết sản phẩm
+                val productDto = RetrofitClient.productApiService.getProductDetails(productId)
+                Log.d("ProductDetailsVM", "API response: $productDto")
+
+                // Chuyển đổi từ DTO sang model UI
+                val product = Product(
+                    id = productDto.id,
+                    name = productDto.product_name,
+                    image = 0, // Không dùng resource ID nữa
+                    price = productDto.price.toDouble(),
+                    description = productDto.description,
+                    imagePath = productDto.images.firstOrNull()?.image_url,
+                    manufacturerId = productDto.brand_id,
+                    basicColorName = "Default", // Mặc định
+                    barcode = productDto.barcode
+                )
+
+                Log.d("ProductDetailsVM", "Converted to UI model: $product")
+
+                // Cập nhật UI
+                _detailsUiState.value = UiState.Success
+                _product.value = product
+                _selectedColor.value = product.basicColorName
+                _selectedSize.value = product.sizes?.maxOf { size -> size.size } ?: 0
+
+            } catch (e: HttpException) {
+                // Xử lý lỗi HTTP
+                Log.e("ProductDetailsVM", "HTTP error: ${e.code()} - ${e.message()}")
+                _detailsUiState.value = UiState.Error(error = when(e.code()) {
+                    401 -> Error.Unauthorized
+                    403 -> Error.Forbidden
+                    404 -> Error.Unknown
+                    else -> Error.Network
+                })
+            } catch (e: IOException) {
+                // Xử lý lỗi kết nối
+                Log.e("ProductDetailsVM", "IO error: ${e.message}")
+                _detailsUiState.value = UiState.Error(error = Error.Network)
+            } catch (e: Exception) {
+                // Xử lý các lỗi khác
+                Log.e("ProductDetailsVM", "Unexpected error: ${e.javaClass.simpleName} - ${e.message}")
+                e.printStackTrace()
+                _detailsUiState.value = UiState.Error(error = Error.Unknown)
+            }
             productsRepository.getProductDetails(productId = productId).let {
                 when (it) {
                     is DataResponse.Success -> {
@@ -76,142 +151,99 @@ class ProductDetailsViewModel @Inject constructor(
         }
     }
 
-    fun toggleCartState(productId: Int) {
-        _cartUiState.value = UiState.Loading
+    /**
+     * Update the current product's color.
+     * @param color The new color name
+     */
+    fun updateSelectedColor(color: String) {
+        _selectedColor.value = color
+    }
+
+    /**
+     * Update the current product's size.
+     * @param size the new selected size.
+     */
+    fun updateSelectedSize(size: Int) {
+        /** Check when user click again on the same size ! */
+        if(size == _selectedSize.value) return
+        /** Update the product's image scale depending on the new size */
+        _sizeScale.value = if (size < _selectedSize.value) {
+            _sizeScale.value.minus(0.1f)
+        } else {
+            _sizeScale.value.plus(0.1f)
+        }
+        _selectedSize.value = size
+    }
+
+    /**
+     * Tăng số lượng sản phẩm
+     */
+    fun increaseQuantity() {
+        _quantity.value = _quantity.value + 1
+    }
+
+    /**
+     * Giảm số lượng sản phẩm (tối thiểu là 1)
+     */
+    fun decreaseQuantity() {
+        if (_quantity.value > 1) {
+            _quantity.value = _quantity.value - 1
+        }
+    }
+
+    /**
+     * Thêm sản phẩm vào giỏ hàng thông qua API
+     * @param productId ID của sản phẩm cần thêm
+     * @param size Kích thước sản phẩm đã chọn
+     * @param color Màu sắc sản phẩm đã chọn
+     * @param context Context để lấy token xác thực (sẽ được truyền từ UI)
+     */
+    fun addToCart(productId: Int, size: String, color: String, context: Context? = null) {
+        Log.d("ProductDetailsVM", "Adding product $productId to cart with size: $size, color: $color, quantity: ${_quantity.value}")
+
+        // Nếu context được cung cấp, gọi API để thêm vào giỏ hàng
+        context?.let {
+            addToCartWithApi(it, productId, _quantity.value)
+        }
+    }
+
+    /**
+     * Gọi API để thêm sản phẩm vào giỏ hàng
+     * @param context Context để lấy token xác thực
+     * @param productId ID của sản phẩm cần thêm
+     * @param quantity Số lượng sản phẩm cần thêm
+     */
+    private fun addToCartWithApi(context: Context, productId: Int, quantity: Int) {
         viewModelScope.launch {
             try {
+                // Lấy token xác thực từ UserPref
                 val token = UserPref.getToken(context)
-                if (token.isNullOrBlank()) {
-                    _cartUiState.value = UiState.Error(error = Error.Unknown) // Sử dụng Error.Unknown cho lỗi xác thực
-                    Log.e("ProductDetailsViewModel", "No token found, user not authenticated")
+
+                if (token == null) {
+                    Log.e("ProductDetailsVM", "Token is null, user not authenticated")
+                    Toast.makeText(context, "Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng", Toast.LENGTH_SHORT).show()
                     return@launch
                 }
-                // Phần còn lại của hàm giữ nguyên
-                if (_isInCart.value) {
-                    val (isInCart, itemId) = checkIfInCart(productId)
-                    if (!isInCart || itemId == null) {
-                        _cartUiState.value = UiState.Error(error = Error.Unknown)
-                        Log.e("ProductDetailsViewModel", "Cart item not found for productId=$productId")
-                        _isInCart.value = false
-                        return@launch
-                    }
-                    Log.d("ProductDetailsViewModel", "Attempting to delete cart item with itemId=$itemId")
-                    val response = client.delete("http://103.90.226.131:8000/api/v1/carts/items/$itemId") {
-                        header("accept", "application/json")
-                        header("Authorization", "Bearer $token")
-                    }
-                    when (response.status) {
-                        HttpStatusCode.OK -> {
-                            _isInCart.value = false
-                            _cartUiState.value = UiState.Success
-                            cartEventBus.notifyCartChanged()
-                            Log.d("ProductDetailsViewModel", "Cart item deleted successfully")
-                        }
-                        HttpStatusCode.NotFound -> {
-                            _cartUiState.value = UiState.Error(error = Error.Unknown)
-                            Log.e("ProductDetailsViewModel", "Delete failed: Cart item not found, body: ${response.bodyAsText()}")
-                            _isInCart.value = false
-                        }
-                        HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
-                            _cartUiState.value = UiState.Error(error = Error.Unknown) // Sử dụng Error.Unknown cho lỗi xác thực
-                            Log.e("ProductDetailsViewModel", "Delete failed: Unauthorized, body: ${response.bodyAsText()}")
-                        }
-                        else -> {
-                            _cartUiState.value = UiState.Error(error = Error.Network)
-                            Log.e("ProductDetailsViewModel", "Delete cart item failed: ${response.status}, body: ${response.bodyAsText()}")
-                        }
-                    }
+
+                // Tạo request body
+                val cartItem = AddToCartItem(productId = productId, quantity = quantity)
+                val request = AddToCartRequest(items = listOf(cartItem))
+
+                // Gọi API với token xác thực
+                val authToken = "Bearer $token"
+                val response = RetrofitClient.cartApiService.addToCart(request, authToken)
+
+                if (response.isSuccessful) {
+                    Log.d("ProductDetailsVM", "Thêm sản phẩm vào giỏ hàng thành công")
+                    // Dialog thành công sẽ được hiển thị bởi UI
                 } else {
-                    Log.d("ProductDetailsViewModel", "Attempting to add cart item with productId=$productId")
-                    val response = client.post("http://103.90.226.131:8000/api/v1/carts/items") {
-                        header("accept", "application/json")
-                        header("Content-Type", "application/json")
-                        header("Authorization", "Bearer $token")
-                        setBody(
-                            AddToCartRequest(
-                                items = listOf(
-                                    AddToCartRequest.Item(
-                                        product_id = productId,
-                                        quantity = 1
-                                    )
-                                )
-                            )
-                        )
-                    }
-                    when (response.status) {
-                        HttpStatusCode.OK, HttpStatusCode.Created -> {
-                            Log.d("ProductDetailsViewModel", "Add to cart response: ${response.bodyAsText()}")
-                            val (isInCart, _) = checkIfInCart(productId)
-                            if (isInCart) {
-                                _isInCart.value = true
-                                _cartUiState.value = UiState.Success
-                                cartEventBus.notifyCartChanged()
-                                Log.d("ProductDetailsViewModel", "Added to cart successfully, confirmed in cart")
-                            } else {
-                                _cartUiState.value = UiState.Error(error = Error.Unknown)
-                                Log.e("ProductDetailsViewModel", "Add to cart failed: CartItem not found in cart after POST")
-                            }
-                        }
-                        HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
-                            _cartUiState.value = UiState.Error(error = Error.Unknown) // Sử dụng Error.Unknown cho lỗi xác thực
-                            Log.e("ProductDetailsViewModel", "Add to cart failed: Unauthorized, body: ${response.bodyAsText()}")
-                        }
-                        else -> {
-                            _cartUiState.value = UiState.Error(error = Error.Network)
-                            Log.e("ProductDetailsViewModel", "Add to cart failed: ${response.status}, body: ${response.bodyAsText()}")
-                        }
-                    }
+                    Log.e("ProductDetailsVM", "Error ${response.code()}: ${response.message()}")
+                    Toast.makeText(context, "Lỗi khi thêm vào giỏ hàng: ${response.message()}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                _cartUiState.value = UiState.Error(error = Error.Network)
-                Log.e("ProductDetailsViewModel", "Cart operation error: ${e.message}", e)
+                Log.e("ProductDetailsVM", "Exception when adding to cart: ${e.message}")
+                Toast.makeText(context, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-        }
-
-    }
-
-    private suspend fun checkIfInCart(productId: Int): Pair<Boolean, Int?> {
-        return try {
-            val token = UserPref.getToken(context)
-            if (token.isNullOrBlank()) {
-                Log.e("ProductDetailsViewModel", "No token found, user not authenticated")
-                return Pair(false, null)
-            }
-
-            Log.d("ProductDetailsViewModel", "Checking cart for productId=$productId")
-            val response = client.get("http://103.90.226.131:8000/api/v1/carts/") {
-                header("accept", "application/json")
-                header("Authorization", "Bearer $token")
-            }
-            when (response.status) {
-                HttpStatusCode.OK -> {
-                    Log.d("ProductDetailsViewModel", "Cart response body: ${response.bodyAsText()}")
-                    val cartResponse: CartResponse = response.body()
-                    val cartItem = cartResponse.items.find { it.product_id == productId }
-                    val isInCart = cartItem != null
-                    val itemId = cartItem?.id
-                    Log.d("ProductDetailsViewModel", "Check cart: productId=$productId, isInCart=$isInCart, itemId=$itemId")
-                    Pair(isInCart, itemId)
-                }
-                HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
-                    Log.e("ProductDetailsViewModel", "Token expired or invalid")
-                    _cartUiState.value = UiState.Error(error = Error.Unknown) // Sử dụng Error.Unknown
-                    Pair(false, null)
-                }
-                else -> {
-                    Log.e("ProductDetailsViewModel", "Check cart failed: ${response.status}, body: ${response.bodyAsText()}")
-                    Pair(false, null)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("ProductDetailsViewModel", "Check cart error: ${e.message}", e)
-            Pair(false, null)
-        }
-    }
-
-    fun addToCart(productId: Int, size: String, color: String) {
-        viewModelScope.launch {
-            productsRepository.updateCartState(productId, size, color)
         }
     }
 }

@@ -6,15 +6,23 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavHostController
+import com.mustfaibra.roffu.RetrofitClient
+import com.mustfaibra.roffu.models.dto.AddToCartItem
 import com.mustfaibra.roffu.models.dto.AddToCartRequest
-import com.mustfaibra.roffu.models.dto.CartItem
+import com.mustfaibra.roffu.models.dto.CartItemWithProductDetails
 import com.mustfaibra.roffu.models.dto.CartResponse
+import com.mustfaibra.roffu.repositories.ProductsRepository
+import com.mustfaibra.roffu.sealed.Screen
+import com.mustfaibra.roffu.utils.UserPref
+import com.mustfaibra.roffu.models.dto.CartItem
 import com.mustfaibra.roffu.models.dto.Product
 import com.mustfaibra.roffu.sealed.UiState
 import com.mustfaibra.roffu.sealed.Error
-import com.mustfaibra.roffu.utils.UserPref
 import com.mustfaibra.roffu.utils.CartEventBus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -25,226 +33,150 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.launch
+import retrofit2.Response
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
-@Serializable
-data class UpdateCartItemRequest(val quantity: Int)
-
 @HiltViewModel
 class CartViewModel @Inject constructor(
-    private val client: HttpClient,
-    private val context: Context,
-    private val cartEventBus: CartEventBus
+    private val productRepository: ProductsRepository,
 ) : ViewModel() {
-    private val _cartItems = mutableStateOf<List<CartItem>>(emptyList())
-    val cartItems: State<List<CartItem>> = _cartItems
-
-    private val _cartUiState = mutableStateOf<UiState>(UiState.Idle)
-    val cartUiState: State<UiState> = _cartUiState
-
-    private val _totalPrice = mutableStateOf(0.0)
-    val totalPrice: State<Double> = _totalPrice
-
-    private val _isSyncingCart = mutableStateOf(false)
-    val isSyncingCart: State<Boolean> = _isSyncingCart
-
+    val isSyncingCart = mutableStateOf(false)
     private val _cartOptionsMenuExpanded = mutableStateOf(false)
     val cartOptionsMenuExpanded: State<Boolean> = _cartOptionsMenuExpanded
 
+    private val _isLoading = mutableStateOf(false)
+    val isLoading: State<Boolean> = _isLoading
+
+    private val _cartData = mutableStateOf<CartResponse?>(null)
+    val cartData: State<CartResponse?> = _cartData
+
+    private val _cartItemsWithDetails = mutableStateOf<List<CartItemWithProductDetails>>(emptyList())
+    val cartItemsWithDetails: State<List<CartItemWithProductDetails>> = _cartItemsWithDetails
+
+    private val _error = mutableStateOf<String?>(null)
+    val error: State<String?> = _error
+
     init {
-        fetchCartItems()
+        Log.d("CartViewModel", "Init called - fetching cart")
+    }
+
+    fun updateQuantity(cartItemId: Int, quantity: Int, context: android.content.Context) {
         viewModelScope.launch {
-            cartEventBus.cartEvents.collect {
-                Log.d("CartViewModel", "Received cart change event, refreshing cart")
-                fetchCartItems()
+            isSyncingCart.value = true
+            _error.value = null
+
+            try {
+                val token = UserPref.getToken(context)
+                if (token == null) {
+                    _error.value = "Bạn chưa đăng nhập"
+                    Log.e("CartViewModel", "Token is null, user not authenticated")
+                    return@launch
+                }
+
+                val authToken = "Bearer $token"
+                if (quantity <= 0) {
+                    val response = RetrofitClient.cartApiService.deleteCartItem(cartItemId, authToken)
+                    handleCartResponse(response, context, "Xóa sản phẩm thành công")
+                } else {
+                    val quantityData = mapOf("quantity" to quantity)
+                    val response = RetrofitClient.cartApiService.updateCartItemQuantity(cartItemId, quantityData, authToken)
+                    handleCartResponse(response, context, "Cập nhật số lượng thành công")
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Unknown error"
+                Log.e("CartViewModel", "Exception when updating cart: ${e.message}")
+            } finally {
+                isSyncingCart.value = false
             }
         }
     }
 
-    fun fetchCartItems() {
-        _cartUiState.value = UiState.Loading
+    fun removeCartItem(cartItemId: Int, context: android.content.Context) {
         viewModelScope.launch {
+            isSyncingCart.value = true
+            _error.value = null
+
             try {
                 val token = UserPref.getToken(context)
-                if (token.isNullOrBlank()) {
-                    _cartUiState.value = UiState.Error(error = Error.Unknown)
-                    Log.e("CartViewModel", "No token found, user not authenticated")
+                if (token == null) {
+                    _error.value = "Bạn chưa đăng nhập"
+                    Log.e("CartViewModel", "Token is null, user not authenticated")
                     return@launch
                 }
 
-                Log.d("CartViewModel", "Fetching cart items with token: $token")
-                val response = client.get("http://103.90.226.131:8000/api/v1/carts/") {
-                    header("accept", "application/json")
-                    header("Authorization", "Bearer $token")
-                }
-                when (response.status) {
-                    HttpStatusCode.OK -> {
-                        val cartResponse: CartResponse = response.body()
-                        val items = cartResponse.items
-                        val updatedItems = items.map { item ->
-                            if (item.product == null) {
-                                try {
-                                    val productResponse = client.get("http://103.90.226.131:8000/api/v1/products/${item.product_id}") {
-                                        header("accept", "application/json")
-                                    }
-                                    if (productResponse.status == HttpStatusCode.OK) {
-                                        item.copy(product = productResponse.body<Product>())
-                                    } else {
-                                        item
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e("CartViewModel", "Failed to fetch product ${item.product_id}: ${e.message}")
-                                    item
-                                }
-                            } else {
-                                item
-                            }
-                        }
-                        _cartItems.value = updatedItems
-                        updateTotalPrice(updatedItems)
-                        _cartUiState.value = UiState.Success
-                        Log.d("CartViewModel", "Fetched cart items: $updatedItems")
-                    }
-                    HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
-                        _cartUiState.value = UiState.Error(error = Error.Unknown)
-                        Log.e("CartViewModel", "Fetch cart failed: Unauthorized, body: ${response.bodyAsText()}")
-                    }
-                    HttpStatusCode.InternalServerError -> {
-                        _cartUiState.value = UiState.Error(error = Error.Unknown)
-                        Log.e("CartViewModel", "Fetch cart failed: ${response.status}, body: ${response.bodyAsText()}")
-                    }
-                    else -> {
-                        _cartUiState.value = UiState.Error(error = Error.Network)
-                        Log.e("CartViewModel", "Fetch cart failed: ${response.status}, body: ${response.bodyAsText()}")
-                    }
-                }
+                val authToken = "Bearer $token"
+                val response = RetrofitClient.cartApiService.deleteCartItem(cartItemId, authToken)
+                handleCartResponse(response, context, "Xóa sản phẩm thành công")
             } catch (e: Exception) {
-                _cartUiState.value = UiState.Error(error = Error.Network)
-                Log.e("CartViewModel", "Fetch cart error: ${e.message}", e)
+                _error.value = e.message ?: "Unknown error"
+                Log.e("CartViewModel", "Exception when removing cart item: ${e.message}")
+            } finally {
+                isSyncingCart.value = false
             }
         }
     }
 
-    private fun updateTotalPrice(items: List<CartItem>) {
-        _totalPrice.value = items.sumOf { cartItem ->
-            val price = cartItem.product?.price?.toDouble() ?: 0.0
-            price * cartItem.quantity
+    private suspend fun handleCartResponse(response: Response<CartResponse>, context: android.content.Context, successMessage: String) {
+        if (response.isSuccessful) {
+            fetchCart(context)
+            Log.d("CartViewModel", successMessage)
+        } else {
+            _error.value = "Error ${response.code()}: ${response.message()}"
+            Log.e("CartViewModel", "Error ${response.code()}: ${response.message()}")
         }
     }
 
-    fun updateQuantity(productId: Int, quantity: Int) {
+    fun addToCart(
+        productId: Int,
+        quantity: Int,
+        context: android.content.Context,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
         viewModelScope.launch {
+            isSyncingCart.value = true
+            _error.value = null
+
             try {
                 val token = UserPref.getToken(context)
-                if (token.isNullOrBlank()) {
-                    _cartUiState.value = UiState.Error(error = Error.Unknown)
-                    Log.e("CartViewModel", "No token found, user not authenticated")
+                if (token == null) {
+                    val errorMsg = "Bạn chưa đăng nhập"
+                    _error.value = errorMsg
+                    onError(errorMsg)
+                    Log.e("CartViewModel", "Token is null, user not authenticated")
                     return@launch
                 }
 
-                val cartItem = _cartItems.value.find { it.product_id == productId }
-                if (cartItem == null) {
-                    _cartUiState.value = UiState.Error(error = Error.Unknown)
-                    Log.e("CartViewModel", "Cart item not found for productId=$productId")
-                    return@launch
-                }
+                val cartItem = AddToCartItem(productId = productId, quantity = quantity)
+                val request = AddToCartRequest(items = listOf(cartItem))
+                val authToken = "Bearer $token"
+                val response = RetrofitClient.cartApiService.addToCart(request, authToken)
 
-                val itemId = cartItem.id
-                Log.d("CartViewModel", "Attempting to update quantity for itemId=$itemId (productId=$productId) to $quantity")
-                val response = client.put("http://103.90.226.131:8000/api/v1/carts/items/$itemId") {
-                    header("accept", "application/json")
-                    header("Content-Type", "application/json")
-                    header("Authorization", "Bearer $token")
-                    setBody(UpdateCartItemRequest(quantity = quantity))
-                }
-                Log.d("CartViewModel", "PUT response status: ${response.status}, body: ${response.bodyAsText()}")
-                when (response.status) {
-                    HttpStatusCode.OK -> {
-                        _cartItems.value = _cartItems.value.map { item ->
-                            if (item.id == itemId) item.copy(quantity = quantity) else item
-                        }
-                        updateTotalPrice(_cartItems.value)
-                        cartEventBus.notifyCartChanged()
-                        Log.d("CartViewModel", "Updated quantity for itemId=$itemId (productId=$productId) to $quantity")
-                    }
-                    HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
-                        _cartUiState.value = UiState.Error(error = Error.Unknown)
-                        Log.e("CartViewModel", "Update quantity failed: Unauthorized, body: ${response.bodyAsText()}")
-                    }
-                    HttpStatusCode.NotFound -> {
-                        _cartUiState.value = UiState.Error(error = Error.Unknown)
-                        Log.e("CartViewModel", "Update quantity failed: Cart item not found, body: ${response.bodyAsText()}")
-                    }
-                    else -> {
-                        _cartUiState.value = UiState.Error(error = Error.Network)
-                        Log.e("CartViewModel", "Update quantity failed: ${response.status}, body: ${response.bodyAsText()}")
-                    }
+                if (response.isSuccessful) {
+                    fetchCart(context)
+                    Log.d("CartViewModel", "Thêm sản phẩm vào giỏ hàng thành công")
+                    onSuccess()
+                } else {
+                    val errorMsg = "Error ${response.code()}: ${response.message()}"
+                    _error.value = errorMsg
+                    onError(errorMsg)
+                    Log.e("CartViewModel", errorMsg)
                 }
             } catch (e: Exception) {
-                _cartUiState.value = UiState.Error(error = Error.Network)
-                Log.e("CartViewModel", "Update quantity error: ${e.message}", e)
-                fetchCartItems() // Đồng bộ lại giỏ hàng khi có lỗi
-            }
-        }
-    }
-
-    fun removeCartItem(productId: Int) {
-        viewModelScope.launch {
-            try {
-                val token = UserPref.getToken(context)
-                if (token.isNullOrBlank()) {
-                    _cartUiState.value = UiState.Error(error = Error.Unknown)
-                    Log.e("CartViewModel", "No token found, user not authenticated")
-                    return@launch
-                }
-
-                val cartItem = _cartItems.value.find { it.product_id == productId }
-                if (cartItem == null) {
-                    _cartUiState.value = UiState.Error(error = Error.Unknown)
-                    Log.e("CartViewModel", "Cart item not found for productId=$productId")
-                    return@launch
-                }
-
-                val itemId = cartItem.id
-                Log.d("CartViewModel", "Attempting to delete itemId=$itemId (productId=$productId)")
-                val response = client.delete("http://103.90.226.131:8000/api/v1/carts/items/$itemId") {
-                    header("accept", "application/json")
-                    header("Authorization", "Bearer $token")
-                }
-                Log.d("CartViewModel", "DELETE response status: ${response.status}, body: ${response.bodyAsText()}")
-                when (response.status) {
-                    HttpStatusCode.OK -> {
-                        _cartItems.value = _cartItems.value.filter { it.product_id != productId }
-                        updateTotalPrice(_cartItems.value)
-                        cartEventBus.notifyCartChanged()
-                        Log.d("CartViewModel", "Removed itemId=$itemId (productId=$productId) from cart")
-                    }
-                    HttpStatusCode.NotFound -> {
-                        _cartItems.value = _cartItems.value.filter { it.product_id != productId }
-                        updateTotalPrice(_cartItems.value)
-                        _cartUiState.value = UiState.Error(error = Error.Unknown)
-                        Log.e("CartViewModel", "Remove cart item failed: Cart item not found, body: ${response.bodyAsText()}")
-                    }
-                    HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
-                        _cartUiState.value = UiState.Error(error = Error.Unknown)
-                        Log.e("CartViewModel", "Remove cart item failed: Unauthorized, body: ${response.bodyAsText()}")
-                    }
-                    else -> {
-                        _cartUiState.value = UiState.Error(error = Error.Network)
-                        Log.e("CartViewModel", "Remove cart item failed: ${response.status}, body: ${response.bodyAsText()}")
-                    }
-                }
-            } catch (e: Exception) {
-                _cartUiState.value = UiState.Error(error = Error.Network)
-                Log.e("CartViewModel", "Remove cart item error: ${e.message}", e)
-                fetchCartItems()
+                val errorMsg = e.message ?: "Unknown error"
+                _error.value = errorMsg
+                onError(errorMsg)
+                Log.e("CartViewModel", "Exception when adding to cart: ${e.message}")
+            } finally {
+                isSyncingCart.value = false
             }
         }
     }
 
     fun clearCart() {
         viewModelScope.launch {
+            productRepository.clearCart()
             try {
                 val token = UserPref.getToken(context)
                 if (token.isNullOrBlank()) {
@@ -282,68 +214,115 @@ class CartViewModel @Inject constructor(
     }
 
     fun syncCartItems(
+        navController: NavHostController,
+        selectedItems: List<CartItemWithProductDetails>,
         onSyncSuccess: () -> Unit,
         onSyncFailed: (reason: Int) -> Unit,
     ) {
-        _isSyncingCart.value = true
+        isSyncingCart.value = true
         viewModelScope.launch {
             try {
-                val token = UserPref.getToken(context)
-                if (token.isNullOrBlank()) {
-                    _isSyncingCart.value = false
-                    onSyncFailed(401)
-                    Log.e("CartViewModel", "No token found, user not authenticated")
-                    return@launch
-                }
-
-                val response = client.get("http://103.90.226.131:8000/api/v1/carts/") {
-                    header("accept", "application/json")
-                    header("Authorization", "Bearer $token")
-                }
-                when (response.status) {
-                    HttpStatusCode.OK -> {
-                        val cartResponse: CartResponse = response.body()
-                        val items = cartResponse.items
-                        val updatedItems = items.map { item ->
-                            if (item.product == null) {
-                                try {
-                                    val productResponse = client.get("http://103.90.226.131:8000/api/v1/products/${item.product_id}") {
-                                        header("accept", "application/json")
-                                    }
-                                    if (productResponse.status == HttpStatusCode.OK) {
-                                        item.copy(product = productResponse.body<Product>())
-                                    } else {
-                                        item
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e("CartViewModel", "Failed to fetch product ${item.product_id}: ${e.message}")
-                                    item
-                                }
-                            } else {
-                                item
-                            }
-                        }
-                        _cartItems.value = updatedItems
-                        updateTotalPrice(updatedItems)
-                        _isSyncingCart.value = false
-                        onSyncSuccess()
-                        Log.d("CartViewModel", "Synced cart successfully: $updatedItems")
-                    }
-                    else -> {
-                        _isSyncingCart.value = false
-                        onSyncFailed(response.status.value)
-                        Log.e("CartViewModel", "Sync cart failed: ${response.status}, body: ${response.bodyAsText()}")
-                    }
-                }
+                val totalAmount = selectedItems.sumOf { it.unitPrice.toDouble() * it.quantity }
+                Log.d("CartViewModel", "Navigating to checkout with ${selectedItems.size} items, totalAmount: $totalAmount")
+                navController.navigate(
+                    Screen.CheckoutWithProducts.createRoute(
+                        items = selectedItems,
+                        totalAmount = totalAmount
+                    )
+                )
+                onSyncSuccess()
             } catch (e: Exception) {
-                _isSyncingCart.value = false
+                Log.e("CartViewModel", "Sync failed: ${e.message}")
                 onSyncFailed(-1)
-                Log.e("CartViewModel", "Sync cart error: ${e.message}", e)
+            } finally {
+                isSyncingCart.value = false
             }
         }
     }
 
     fun toggleOptionsMenuExpandState() {
         _cartOptionsMenuExpanded.value = !_cartOptionsMenuExpanded.value
+    }
+
+    fun fetchCart(context: android.content.Context) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            _cartItemsWithDetails.value = emptyList()
+
+            try {
+                val token = UserPref.getToken(context)
+                if (token == null) {
+                    _error.value = "Bạn chưa đăng nhập"
+                    Log.e("CartViewModel", "Token is null, user not authenticated")
+                    return@launch
+                }
+
+                val authToken = "Bearer $token"
+                val response = RetrofitClient.cartApiService.getCart(authToken)
+
+                if (response.isSuccessful) {
+                    val data = response.body()
+                    if (data != null) {
+                        _cartData.value = data
+                        fetchProductDetails(data)
+                        Log.d("CartViewModel", "Successfully fetched cart with ${data.items.size} items")
+                    } else {
+                        _error.value = "Empty response body"
+                        Log.e("CartViewModel", "Empty response body")
+                    }
+                } else {
+                    _error.value = "Error ${response.code()}: ${response.message()}"
+                    Log.e("CartViewModel", "Error ${response.code()}: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Unknown error"
+                Log.e("CartViewModel", "Exception when fetching cart: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    private suspend fun fetchProductDetails(cartResponse: CartResponse) {
+        try {
+            val cartItemsWithDetailsDeferred = cartResponse.items.map { cartItem ->
+                viewModelScope.async {
+                    try {
+                        val productDetails = RetrofitClient.productApiService.getProductDetails(cartItem.productId)
+                        CartItemWithProductDetails(
+                            id = cartItem.id,
+                            productId = cartItem.productId,
+                            quantity = cartItem.quantity,
+                            unitPrice = cartItem.unitPrice,
+                            productName = productDetails.product_name,
+                            productImage = if (productDetails.images.isNotEmpty()) productDetails.images[0].image_url else "",
+                            productDescription = productDetails.description,
+                            productCategory = productDetails.category_id.toString(),
+                            productBrand = productDetails.brand_id.toString()
+                        )
+                    } catch (e: Exception) {
+                        Log.e("CartViewModel", "Error fetching product details for product ${cartItem.productId}: ${e.message}")
+                        CartItemWithProductDetails(
+                            id = cartItem.id,
+                            productId = cartItem.productId,
+                            quantity = cartItem.quantity,
+                            unitPrice = cartItem.unitPrice,
+                            productName = "Sản phẩm #${cartItem.productId}",
+                            productImage = "",
+                            productDescription = "",
+                            productCategory = "",
+                            productBrand = ""
+                        )
+                    }
+                }
+            }
+            val cartItemsWithDetails = cartItemsWithDetailsDeferred.awaitAll()
+            _cartItemsWithDetails.value = cartItemsWithDetails
+            Log.d("CartViewModel", "Successfully fetched details for ${cartItemsWithDetails.size} products")
+        } catch (e: Exception) {
+            Log.e("CartViewModel", "Error fetching product details: ${e.message}")
+            _error.value = "Lỗi khi lấy thông tin sản phẩm: ${e.message}"
+        }
     }
 }

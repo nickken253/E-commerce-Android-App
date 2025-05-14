@@ -44,6 +44,7 @@
     <string name="master_card">Master Card</string>
     <string name="pay_now">Pay Now</string>
     <string name="please_select_payment">Pleaes select payment method!</string>
+    <string name="please_select_delivery_address">Please select delivery address!</string>
     <string name="size">Size</string>
     <string name="color">Color</string>
     <string name="onboard">Onboard</string>
@@ -59,4 +60,5 @@
 
     <string name="product_comparison">So sánh sản phẩm</string>
     <string name="product_selection">Chọn sản phẩm để so sánh</string>
+    <string name="error_saving_order">Lỗi khi lưu</string>
 </resources>

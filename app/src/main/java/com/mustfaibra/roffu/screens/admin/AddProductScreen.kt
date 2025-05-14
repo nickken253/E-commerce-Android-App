@@ -36,7 +36,6 @@ fun AddProductScreen(
     var manufacturerId by remember { mutableStateOf(0) }
     var color by remember { mutableStateOf("") }
     var barcode by remember { mutableStateOf("") }
-    var discount by remember { mutableStateOf(0) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -141,11 +140,6 @@ fun AddProductScreen(
             label = { Text("Barcode") },
             isError = barcode.isBlank()
         )
-        OutlinedTextField(
-            value = discount.toString(),
-            onValueChange = { discount = it.toIntOrNull() ?: discount },
-            label = { Text("Discount") }
-        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -178,7 +172,6 @@ fun AddProductScreen(
                     name = name,
                     price = price,
                     description = description,
-                    discount = discount,
                     manufacturerId = selectedManufacturer!!.id,
                     basicColorName = color,
                     barcode = barcode,
