@@ -31,7 +31,7 @@ import javax.inject.Provider
         ProductSize::class,
         VirtualCard::class
     ],
-    version = 9, exportSchema = false)
+    version = 10, exportSchema = false)
 abstract class RoomDb : RoomDatabase() {
 
     /** A function that used to retrieve Room's related dao instance */
