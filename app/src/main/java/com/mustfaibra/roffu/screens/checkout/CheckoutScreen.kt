@@ -768,8 +768,10 @@ private fun DeliveryLocationSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Checkbox(
-                            checked = false,
-                            onCheckedChange = { }
+                            checked = isDefault,
+                            onCheckedChange = { newValue ->
+                                isDefault = newValue
+                            }
                         )
                         Text(
                             text = "Đặt làm địa chỉ mặc định",
@@ -800,6 +802,15 @@ private fun DeliveryLocationSection(
                                     return@Button
                                 }
                                 
+                                // Tìm địa chỉ mặc định hiện tại
+                                val currentDefaultAddress = deliveryAddresses.find { it.isDefault }
+                                
+                                // Kiểm tra nếu đây là địa chỉ đầu tiên
+                                val isFirstAddress = deliveryAddresses.isEmpty()
+                                
+                                // Nếu đây là địa chỉ đầu tiên, luôn đặt làm mặc định
+                                val shouldBeDefault = isFirstAddress || isDefault
+                                
                                 if (isEditMode && currentAddressId != null) {
                                     // Update existing address
                                     viewModel.updateAddress(
@@ -810,8 +821,25 @@ private fun DeliveryLocationSection(
                                         city = city,
                                         district = district,
                                         postalCode = postalCode.takeIf { it.isNotBlank() },
-                                        isDefault = isDefault,
+                                        isDefault = shouldBeDefault,
                                         onSuccess = {
+                                            // Nếu đánh dấu là địa chỉ mặc định và có một địa chỉ mặc định khác
+                                            if (shouldBeDefault && currentDefaultAddress != null && currentDefaultAddress.id != currentAddressId) {
+                                                // Cập nhật địa chỉ mặc định cũ thành không mặc định
+                                                viewModel.updateAddress(
+                                                    context = context,
+                                                    addressId = currentDefaultAddress.id,
+                                                    addressType = "Home", // Giữ nguyên loại
+                                                    street = currentDefaultAddress.address,
+                                                    city = currentDefaultAddress.city.split(", ").getOrNull(1) ?: "",
+                                                    district = currentDefaultAddress.city.split(", ").firstOrNull() ?: "",
+                                                    isDefault = false,
+                                                    onSuccess = {
+                                                        // Không cần thông báo cho việc cập nhật địa chỉ mặc định cũ
+                                                    },
+                                                    onError = { _ -> }
+                                                )
+                                            }
                                             showAddressDialog = false
                                             onToastRequested("Cập nhật địa chỉ thành công", Color.Green)
                                         },
@@ -828,8 +856,25 @@ private fun DeliveryLocationSection(
                                         city = city,
                                         district = district,
                                         postalCode = postalCode.takeIf { it.isNotBlank() },
-                                        isDefault = isDefault,
+                                        isDefault = shouldBeDefault,
                                         onSuccess = {
+                                            // Nếu đánh dấu là địa chỉ mặc định và có một địa chỉ mặc định khác
+                                            if (shouldBeDefault && currentDefaultAddress != null) {
+                                                // Cập nhật địa chỉ mặc định cũ thành không mặc định
+                                                viewModel.updateAddress(
+                                                    context = context,
+                                                    addressId = currentDefaultAddress.id,
+                                                    addressType = "Home", // Giữ nguyên loại
+                                                    street = currentDefaultAddress.address,
+                                                    city = currentDefaultAddress.city.split(", ").getOrNull(1) ?: "",
+                                                    district = currentDefaultAddress.city.split(", ").firstOrNull() ?: "",
+                                                    isDefault = false,
+                                                    onSuccess = {
+                                                        // Không cần thông báo cho việc cập nhật địa chỉ mặc định cũ
+                                                    },
+                                                    onError = { _ -> }
+                                                )
+                                            }
                                             showAddressDialog = false
                                             onToastRequested("Thêm địa chỉ mới thành công", Color.Green)
                                         },
@@ -889,8 +934,19 @@ private fun PaymentMethodsSection(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(60.dp)
-                            .clickable { onPaymentSelected("visa") }
-                            .background(if (selectedPayment == "visa") MaterialTheme.colors.primary.copy(alpha = 0.1f) else MaterialTheme.colors.surface)
+                            .clickable(enabled = bankCards.isNotEmpty()) { 
+                                if (bankCards.isNotEmpty()) {
+                                    onPaymentSelected("visa") 
+                                }
+                            }
+                            .background(
+                                if (selectedPayment == "visa") 
+                                    MaterialTheme.colors.primary.copy(alpha = 0.1f) 
+                                else if (bankCards.isEmpty())
+                                    Color.LightGray.copy(alpha = 0.3f)
+                                else 
+                                    MaterialTheme.colors.surface
+                            )
                             .padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -898,24 +954,49 @@ private fun PaymentMethodsSection(
                         Icon(
                             imageVector = Icons.Default.CreditCard,
                             contentDescription = null,
-                            tint = MaterialTheme.colors.primary,
+                            tint = if (bankCards.isEmpty()) Color.Gray else MaterialTheme.colors.primary,
                             modifier = Modifier.size(28.dp)
                         )
-                        Text(
-                            text = "Thẻ Visa",
-                            style = MaterialTheme.typography.body1,
-                            color = MaterialTheme.colors.onSurface,
-                            modifier = Modifier.weight(1f)
-                        )
+                        
+                        if (bankCards.isEmpty()) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Thẻ Visa",
+                                    style = MaterialTheme.typography.body1,
+                                    color = Color.Gray
+                                )
+                                Text(
+                                    text = "Bạn chưa thêm thẻ nào",
+                                    style = MaterialTheme.typography.caption,
+                                    color = Color.Gray
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "Thẻ Visa",
+                                style = MaterialTheme.typography.body1,
+                                color = MaterialTheme.colors.onSurface,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        
                         RadioButton(
                             selected = selectedPayment == "visa",
-                            onClick = { onPaymentSelected("visa") },
+                            onClick = { 
+                                if (bankCards.isNotEmpty()) {
+                                    onPaymentSelected("visa") 
+                                }
+                            },
+                            enabled = bankCards.isNotEmpty(),
                             colors = RadioButtonDefaults.colors(
                                 selectedColor = MaterialTheme.colors.primary,
                                 unselectedColor = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
+                                disabledColor = Color.Gray.copy(alpha = 0.3f)
                             )
                         )
                     }
+                    
+                    // Đã xóa nút thêm thẻ mới
                     
                     // Hiển thị ô nhập CVV khi chọn phương thức thanh toán Visa
                     AnimatedVisibility(visible = selectedPayment == "visa") {
