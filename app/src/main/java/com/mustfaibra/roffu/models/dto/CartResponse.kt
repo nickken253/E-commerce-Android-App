@@ -6,6 +6,7 @@ import com.google.gson.annotations.SerializedName
  * Model cho response từ API lấy giỏ hàng
  */
 import kotlinx.serialization.Serializable
+
 @Serializable
 data class CartResponse(
     @SerializedName("id")
@@ -20,6 +21,7 @@ data class CartResponse(
     @SerializedName("items")
     val items: List<CartItemResponse> = emptyList()
 ) {
+    @Serializable
     data class CartItemResponse(
         @SerializedName("id")
         val id: Int = 0,

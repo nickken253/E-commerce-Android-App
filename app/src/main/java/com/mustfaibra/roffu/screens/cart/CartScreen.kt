@@ -85,22 +85,15 @@ fun CartScreen(
     onUserNotAuthorized: () -> Unit,
     onToastRequested: (message: String, color: Color) -> Unit,
 ) {
-    val cartItems by cartViewModel.cartItems
-    val cartUiState by cartViewModel.cartUiState
-    val totalPrice by cartViewModel.totalPrice
-    val cartOptionsMenuExpanded by cartViewModel.cartOptionsMenuExpanded
-    val isSyncingCart by cartViewModel.isSyncingCart
+    val cartItemsWithDetails by cartViewModel.cartItemsWithDetails
+    val isLoading by cartViewModel.isLoading
+    val error by cartViewModel.error
     val context = androidx.compose.ui.platform.LocalContext.current
 
     // Gọi API để lấy giỏ hàng
     LaunchedEffect(Unit) {
         cartViewModel.fetchCart(context)
     }
-
-    // Lấy trạng thái từ CartViewModel
-    val isLoading by cartViewModel.isLoading
-    val error by cartViewModel.error
-    val cartItemsWithDetails by cartViewModel.cartItemsWithDetails
 
     // Quản lý trạng thái checkbox
     val checkedStates = remember { mutableStateMapOf<Int, Boolean>() }
@@ -151,9 +144,7 @@ fun CartScreen(
                     backgroundColor = Color.White,
                     iconTint = Color.Black,
                     onButtonClicked = {
-                        cartItemsWithDetails.forEach { item ->
-                            cartViewModel.removeCartItem(item.id, context)
-                        }
+                        cartViewModel.clearCart(context)
                     },
                     elevation = 1.dp,
                 )

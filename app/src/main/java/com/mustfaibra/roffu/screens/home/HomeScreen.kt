@@ -88,15 +88,15 @@ fun HomeScreen(
 
     val pagerState = rememberPagerState()
     val scope = rememberCoroutineScope()
-    val searchQuery by remember { homeViewModel.searchQuery }
+    val searchQuery by homeViewModel.searchQuery
 
-    val advertisementsUiState by remember { homeViewModel.homeAdvertisementsUiState }
+    val advertisementsUiState by homeViewModel.homeAdvertisementsUiState
     val advertisements = homeViewModel.advertisements
 
-    val brandsUiState by remember { homeViewModel.brandsUiState }
+    val brandsUiState by homeViewModel.brandsUiState
     val brands = homeViewModel.brands
 
-    val currentSelectedBrandIndex by remember { homeViewModel.currentSelectedBrandIndex }
+    val currentSelectedBrandIndex by homeViewModel.currentSelectedBrandIndex
 
     val gridState = rememberLazyGridState()
     val shouldLoadMore by remember {
@@ -364,7 +364,7 @@ fun AdvertisementsPager(
         ) {
             val advertisement = advertisements[this.currentPage]
             AsyncImage(
-                model = advertisement.image,
+                model = advertisement.imageUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()

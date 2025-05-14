@@ -48,9 +48,9 @@ abstract class RoomDb : RoomDatabase() {
             Manufacturer(id = 2, name = "Adidas", icon = R.drawable.adidas_48),
         )
         private val advertisements = listOf(
-            Advertisement(1, R.drawable.air_huarache_gold_black_ads, 1, 0),
-            Advertisement(2, R.drawable.pegasus_trail_gortex_ads, 2, 0),
-            Advertisement(3, R.drawable.blazer_low_black_ads, 3, 0),
+            Advertisement(1, "Air Huarache Gold Black", "https://example.com/air_huarache.jpg"),
+            Advertisement(2, "Pegasus Trail Gortex", "https://example.com/pegasus_trail.jpg"),
+            Advertisement(3, "Blazer Low Black", "https://example.com/blazer_low.jpg"),
         )
 
         private val nikeProducts = listOf(

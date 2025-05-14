@@ -1,10 +1,13 @@
 package com.mustfaibra.roffu.screens.product
 
 import com.mustfaibra.roffu.models.dto.Product
-import retrofit2.http.GET
-import retrofit2.http.Path
+import retrofit2.Response
+import retrofit2.http.*
 
 interface ProductApiService {
-    @GET("api/v1/products/{productId}")
-    suspend fun getProductDetails(@Path("productId") productId: Int): Product
+    @GET("api/v1/products/{id}")
+    suspend fun getProductDetails(@Path("id") id: Int): Product
+
+    @GET("api/v1/products/barcode/{barcode}")
+    suspend fun getProductByBarcode(@Path("barcode") barcode: String): Product
 }

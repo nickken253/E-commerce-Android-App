@@ -1,4 +1,4 @@
-package com.mustfaibra.roffu.screens.barcode
+package com.mustfaibra.roffu.screens.scanner
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -166,17 +166,9 @@ fun ProductDisplay(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(imageUrl)
                     .crossfade(true)
-                    .listener(
-                        onError = { _, result ->
-                            Timber.e("Failed to load image: $imageUrl, error: ${result.throwable.message}")
-                        },
-                        onSuccess = { _, _ ->
-                            Timber.d("Successfully loaded image: $imageUrl")
-                        }
-                    )
                     .build(),
                 contentDescription = "Product Image",
-                modifier = Modifier.size(80.dp), // Tăng kích thước để dễ nhìn
+                modifier = Modifier.size(80.dp),
                 placeholder = painterResource(R.drawable.placeholder),
                 error = painterResource(R.drawable.error),
                 contentScale = ContentScale.Crop
@@ -187,7 +179,6 @@ fun ProductDisplay(
                 contentDescription = "No image available",
                 modifier = Modifier.size(80.dp)
             )
-            Timber.w("No images available for product: ${product.product_name}")
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {

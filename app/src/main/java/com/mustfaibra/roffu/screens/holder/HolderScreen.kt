@@ -51,7 +51,7 @@ import com.mustfaibra.roffu.screens.admin.AdminScreen
 import com.mustfaibra.roffu.screens.admin.AdminViewModel
 import com.mustfaibra.roffu.screens.admin.EditProductScreen
 import com.mustfaibra.roffu.screens.admin.EditUserScreen
-import com.mustfaibra.roffu.screens.barcode.BarcodeScannerScreen
+import com.mustfaibra.roffu.screens.scanner.BarcodeScannerScreen
 import com.mustfaibra.roffu.screens.bookmarks.BookmarksScreen
 import com.mustfaibra.roffu.screens.cart.CartScreen
 import com.mustfaibra.roffu.screens.cart.CartViewModel
@@ -90,14 +90,10 @@ fun HolderScreen(
         listOf(Screen.Home, Screen.Bookmark, Screen.OrderHistory, Screen.Cart, Screen.Profile)
     }
 
-
-
     val cartViewModel: CartViewModel = hiltViewModel()
-
 
     /** Our navigation controller that the MainActivity provides */
     val controller = LocalNavHost.current
-
 
     /** The current active navigation route */
     val currentRouteAsState = getActiveRoute(navController = controller)
@@ -166,7 +162,6 @@ fun HolderScreen(
             productsOnBookmarksIds = productsOnBookmarksIds,
             holderViewModel = holderViewModel,
             onStatusBarColorChange = onStatusBarColorChange,
-            holderViewModel = holderViewModel,
             bottomNavigationContent = {
                 if (
                     currentRouteAsState in destinations.map { it.route }
@@ -277,17 +272,16 @@ fun ScaffoldSection(
     productsOnBookmarksIds: List<Int>,
     holderViewModel: HolderViewModel,
     onStatusBarColorChange: (color: Color) -> Unit,
-    holderViewModel: HolderViewModel,
+    bottomNavigationContent: @Composable () -> Unit,
     onSplashFinished: (nextDestination: Screen) -> Unit,
     onBoardFinished: () -> Unit,
-    onNavigationRequested: (route: String, removePreviousRoute: Boolean) -> Unit,
     onBackRequested: () -> Unit,
+    onNavigationRequested: (route: String, removePreviousRoute: Boolean) -> Unit,
+    onShowProductRequest: (productId: Int) -> Unit,
     onUpdateCartRequest: (productId: Int) -> Unit,
     onUpdateBookmarkRequest: (productId: Int) -> Unit,
-    onShowProductRequest: (productId: Int) -> Unit,
     onUserNotAuthorized: (removeCurrentRoute: Boolean) -> Unit,
     onToastRequested: (message: String, color: Color) -> Unit,
-    bottomNavigationContent: @Composable () -> Unit,
 ) {
     // Kiểm tra vai trò người dùng và điều hướng
     LaunchedEffect(user) {
@@ -586,9 +580,6 @@ fun ScaffoldSection(
                     onStatusBarColorChange(MaterialTheme.colors.background)
                     BarcodeScannerScreen(
                         navController = controller,
-                        onBookmarkStateChanged = { productId ->
-                            onUpdateBookmarkRequest(productId)
-                        },
                         viewModel = hiltViewModel()
                     )
                 }
@@ -598,7 +589,6 @@ fun ScaffoldSection(
                         CartScreen(
                             navController = controller,
                             user = user,
-                            // XÓA cartItems, CartScreen tự lấy từ HolderViewModel
                             onProductClicked = onShowProductRequest,
                             onUserNotAuthorized = { onUserNotAuthorized(false) },
                             onCheckoutRequest = {
@@ -621,15 +611,16 @@ fun ScaffoldSection(
                         user.whatIfNotNull(
                             whatIf = {
                                 CheckoutScreen(
-                                    cartItems = cartItems,
-                                    onBackRequested = onBackRequested,
-                                    onCheckoutSuccess = {
-                                        onNavigationRequested(Screen.OrderHistory.route, true)
-                                    },
-                                    onToastRequested = onToastRequested,
+                                    navController = controller,
+                                    itemsJson = "",  // Truyền giá trị mặc định
+                                    totalAmount = 0.0,  // Truyền giá trị mặc định
                                     onChangeLocationRequested = {
                                         onNavigationRequested(Screen.LocationPicker.route, false)
-                                    }
+                                    },
+                                    onNavigationRequested = onNavigationRequested,
+                                    onToastRequested = onToastRequested,
+                                    checkoutViewModel = hiltViewModel(),
+                                    profileViewModel = hiltViewModel()
                                 )
                             },
                             whatIfNot = {
@@ -832,7 +823,6 @@ fun ProductItem(
 ) {
     // ... existing code ...
 }
-
 @Composable
 fun HolderScreen(
     navController: NavController,

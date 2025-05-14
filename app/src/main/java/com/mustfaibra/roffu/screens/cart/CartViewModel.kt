@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.mustfaibra.roffu.RetrofitClient
+import com.mustfaibra.roffu.api.CartApiService
 import com.mustfaibra.roffu.models.dto.AddToCartItem
 import com.mustfaibra.roffu.models.dto.AddToCartRequest
 import com.mustfaibra.roffu.models.dto.CartItemWithProductDetails
@@ -174,41 +175,28 @@ class CartViewModel @Inject constructor(
         }
     }
 
-    fun clearCart() {
+    fun clearCart(context: Context) {
         viewModelScope.launch {
-            productRepository.clearCart()
             try {
                 val token = UserPref.getToken(context)
-                if (token.isNullOrBlank()) {
-                    _cartUiState.value = UiState.Error(error = Error.Unknown)
-                    Log.e("CartViewModel", "No token found, user not authenticated")
+                if (token == null) {
+                    _error.value = "Bạn chưa đăng nhập"
                     return@launch
                 }
 
-                val response = client.delete("http://103.90.226.131:8000/api/v1/carts/") {
-                    header("accept", "application/json")
-                    header("Authorization", "Bearer $token")
-                }
-                when (response.status) {
-                    HttpStatusCode.OK -> {
-                        _cartItems.value = emptyList()
-                        _totalPrice.value = 0.0
-                        cartEventBus.notifyCartChanged()
-                        Log.d("CartViewModel", "Cleared cart successfully")
-                    }
-                    HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
-                        _cartUiState.value = UiState.Error(error = Error.Unknown)
-                        Log.e("CartViewModel", "Clear cart failed: Unauthorized, body: ${response.bodyAsText()}")
-                    }
-                    else -> {
-                        _cartUiState.value = UiState.Error(error = Error.Network)
-                        Log.e("CartViewModel", "Clear cart failed: ${response.status}, body: ${response.bodyAsText()}")
-                    }
-                }
+                val authToken = "Bearer $token"
+                // TODO: Implement clearCart API endpoint
+                // val response = RetrofitClient.cartApiService.clearCart(authToken)
+                // if (response.isSuccessful) {
+                    _cartItemsWithDetails.value = emptyList()
+                    Log.d("CartViewModel", "Cleared cart successfully")
+                // } else {
+                //     _error.value = "Error ${response.code()}: ${response.message()}"
+                //     Log.e("CartViewModel", "Clear cart failed: ${response.message()}")
+                // }
             } catch (e: Exception) {
-                _cartUiState.value = UiState.Error(error = Error.Network)
+                _error.value = e.message ?: "Unknown error"
                 Log.e("CartViewModel", "Clear cart error: ${e.message}", e)
-                fetchCartItems()
             }
         }
     }

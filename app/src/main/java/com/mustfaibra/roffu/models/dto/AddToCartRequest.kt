@@ -12,6 +12,7 @@ data class AddToCartRequest(
     val items: List<AddToCartItem>
 )
 
+@Serializable
 data class AddToCartItem(
     @SerializedName("product_id")
     val productId: Int,

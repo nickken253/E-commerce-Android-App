@@ -17,6 +17,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
+import com.mustfaibra.roffu.models.Advertisement
 
 // Thêm lại class ApiResponse vì vẫn được sử dụng trong BrandsRepository
 @Serializable
@@ -34,6 +35,10 @@ class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     val searchQuery = mutableStateOf("")
+
+    // Thêm các biến cho quảng cáo
+    val homeAdvertisementsUiState = mutableStateOf<UiState>(UiState.Idle)
+    val advertisements = mutableStateListOf<Advertisement>()
 
     val brandsUiState = mutableStateOf<UiState>(UiState.Idle)
     val brands: MutableList<Manufacturer> = mutableStateListOf()
@@ -119,5 +124,25 @@ class HomeViewModel @Inject constructor(
 
     fun loadMoreProducts() {
         getAllProducts()
+    }
+
+    // Thêm phương thức getHomeAdvertisements
+    fun getHomeAdvertisements() {
+        homeAdvertisementsUiState.value = UiState.Loading
+        viewModelScope.launch {
+            try {
+                // TODO: Implement API call to get advertisements
+                // Tạm thời dùng dữ liệu mẫu
+                val sampleAds = listOf(
+                    Advertisement(1, "Ad 1", "https://example.com/ad1.jpg"),
+                    Advertisement(2, "Ad 2", "https://example.com/ad2.jpg")
+                )
+                advertisements.clear()
+                advertisements.addAll(sampleAds)
+                homeAdvertisementsUiState.value = UiState.Success
+            } catch (e: Exception) {
+                homeAdvertisementsUiState.value = UiState.Error(error = Error.Network)
+            }
+        }
     }
 }
