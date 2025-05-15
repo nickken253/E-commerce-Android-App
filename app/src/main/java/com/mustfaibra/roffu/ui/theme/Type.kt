@@ -2,67 +2,100 @@ package com.mustfaibra.roffu.ui.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.mustfaibra.roffu.R
 
-val font = FontFamily(
-    Font(resId = R.font.poppins_light, weight = FontWeight.ExtraLight, style = FontStyle.Normal),
-    Font(resId = R.font.poppins_black, weight = FontWeight.Black, style = FontStyle.Normal),
-    Font(resId = R.font.poppins_regular, weight = FontWeight.Normal, style = FontStyle.Normal),
-    Font(resId = R.font.poppin_medium, weight = FontWeight.Medium, style = FontStyle.Normal),
-    Font(resId = R.font.poppins_bold, weight = FontWeight.SemiBold, style = FontStyle.Normal),
-    Font(resId = R.font.poppins_extra_bold, weight = FontWeight.Bold, style = FontStyle.Normal),
-)
-
-// Set of Material typography styles to start with
 val Typography = Typography(
     h1 = TextStyle(
-        fontWeight = FontWeight.Black,
-        fontSize = 35.sp
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
+        letterSpacing = 0.sp
     ),
     h2 = TextStyle(
-        fontWeight = FontWeight.Bold,
-        fontSize = 32.sp
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+        letterSpacing = 0.sp
     ),
     h3 = TextStyle(
-        fontWeight = FontWeight.Bold,
-        fontSize = 28.sp
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 20.sp,
+        lineHeight = 28.sp,
+        letterSpacing = 0.sp
     ),
     h4 = TextStyle(
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 25.sp
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 18.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.sp
     ),
     h5 = TextStyle(
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 22.sp
-    ),
-    body1 = TextStyle(
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 17.sp
-    ),
-    body2 = TextStyle(
+        fontFamily = appFontFamily,
         fontWeight = FontWeight.Medium,
-        fontSize = 16.sp
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
+        letterSpacing = 0.sp
     ),
-    button = TextStyle(
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 19.sp
-    ),
-    caption = TextStyle(
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp
+    h6 = TextStyle(
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.sp
     ),
     subtitle1 = TextStyle(
-        fontWeight = FontWeight.Light,
-        fontSize = 15.sp
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.15.sp
     ),
     subtitle2 = TextStyle(
-        fontWeight = FontWeight.Light,
-        fontSize = 14.sp
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.1.sp
     ),
-    defaultFontFamily = font,
+    body1 = TextStyle(
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
+    ),
+    body2 = TextStyle(
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.25.sp
+    ),
+    button = TextStyle(
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 1.25.sp
+    ),
+    caption = TextStyle(
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.4.sp
+    ),
+    overline = TextStyle(
+        fontFamily = appFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 10.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 1.5.sp
+    )
 )

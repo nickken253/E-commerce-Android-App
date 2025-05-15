@@ -28,14 +28,14 @@ class SplashViewModel @Inject constructor(
 
     /** Is the app launched before or not? */
     val isAppLaunchedBefore = context.dataStore.data.map {
-        it[APP_LAUNCHED] ?: false
+        // Luôn trả về true để bỏ qua màn hình Onboard
+        true
     }
 
     /** Logged user's id as flow  */
     val loggedUserId = context.dataStore.data.map {
         it[LOGGED_USER_ID]
     }
-
 
     fun checkLoggedUser(userId: Int, onCheckFinish: () -> Unit) {
         viewModelScope.launch {
