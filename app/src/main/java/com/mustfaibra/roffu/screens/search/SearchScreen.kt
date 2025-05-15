@@ -95,13 +95,6 @@ fun SearchScreen(
                     unfocusedBorderColor = Color(0xFFE0E0E0),
                     backgroundColor = Color(0xFFF5F5F5)
                 ),
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = Color(0xFF666666)
-                    )
-                },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(
                     onSearch = {
@@ -111,6 +104,27 @@ fun SearchScreen(
                     }
                 )
             )
+
+            // Nút tìm kiếm
+            IconButton(
+                onClick = {
+                    focusManager.clearFocus()
+                    viewModel.resetSearch()
+                    viewModel.onSearch(searchQuery)
+                },
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = Color(0xFF0052CC),
+                        shape = RoundedCornerShape(20.dp)
+                    )
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = Color.White
+                )
+            }
 
             // Thêm nút filter
             if (searchResults.isNotEmpty()) {
@@ -403,9 +417,9 @@ fun SearchScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedTextField(
-                        value = currentFilters.minPrice.toString(),
+                        value = if (currentFilters.minPrice > 0) String.format("%,.0f", currentFilters.minPrice) else "",
                         onValueChange = { 
-                            val newValue = it.toFloatOrNull() ?: 0f
+                            val newValue = it.replace(",", "").toFloatOrNull() ?: 0f
                             if (newValue >= 0) {
                                 viewModel.updateFilters(
                                     currentFilters.copy(
@@ -416,12 +430,13 @@ fun SearchScreen(
                         },
                         modifier = Modifier.weight(1f),
                         label = { Text("Giá từ") },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        placeholder = { Text("0") }
                     )
                     OutlinedTextField(
-                        value = currentFilters.maxPrice.toString(),
+                        value = if (currentFilters.maxPrice < 10000000f) String.format("%,.0f", currentFilters.maxPrice) else "",
                         onValueChange = { 
-                            val newValue = it.toFloatOrNull() ?: 10000000f
+                            val newValue = it.replace(",", "").toFloatOrNull() ?: 10000000f
                             if (newValue >= currentFilters.minPrice) {
                                 viewModel.updateFilters(
                                     currentFilters.copy(
@@ -432,7 +447,8 @@ fun SearchScreen(
                         },
                         modifier = Modifier.weight(1f),
                         label = { Text("Đến") },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        placeholder = { Text("10,000,000") }
                     )
                 }
 
@@ -648,7 +664,7 @@ fun SearchScreen(
                                     style = MaterialTheme.typography.subtitle1
                                 )
                                 Text(
-                                    text = "${product.price}đ",
+                                    text = String.format("%,dđ", product.price),
                                     style = MaterialTheme.typography.body2
                                 )
                             }
