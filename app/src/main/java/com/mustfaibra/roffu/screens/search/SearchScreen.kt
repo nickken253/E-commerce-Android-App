@@ -28,6 +28,12 @@ import coil.compose.AsyncImage
 import com.mustfaibra.roffu.models.SearchFilters
 import com.mustfaibra.roffu.models.SortOptions
 import com.mustfaibra.roffu.models.SortOrderOptions
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.painterResource
+import com.mustfaibra.roffu.R
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -48,51 +54,231 @@ fun SearchScreen(
     var isSearchFocused by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val listState = rememberLazyListState()
+    val recommendations by viewModel.recommendations.collectAsState()
 
-    Column {
-        // Search bar
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF8F8F8))
+    ) {
+        // Search bar với thiết kế mới
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .background(Color.White)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            IconButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color(0xFF333333)
+                )
             }
+            
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier
                     .weight(1f)
                     .onFocusChanged { isSearchFocused = it.isFocused },
-                placeholder = { Text("Tìm kiếm...") },
+                placeholder = { Text("Tìm kiếm sản phẩm...") },
                 singleLine = true,
+                shape = RoundedCornerShape(24.dp),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = Color(0xFF0052CC),
+                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                    backgroundColor = Color(0xFFF5F5F5)
+                ),
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = Color(0xFF666666)
+                    )
+                },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(
                     onSearch = {
-                        Log.d("DEBUG", "Search button clicked with query: $searchQuery")
                         focusManager.clearFocus()
                         viewModel.resetSearch()
                         viewModel.onSearch(searchQuery)
                     }
                 )
             )
-            IconButton(
-                onClick = {
-                    Log.d("DEBUG", "Search button clicked with query: $searchQuery")
-                    focusManager.clearFocus()
-                    viewModel.resetSearch()
-                    viewModel.onSearch(searchQuery)
+
+            // Thêm nút filter
+            if (searchResults.isNotEmpty()) {
+                IconButton(
+                    onClick = { viewModel.toggleFilters() },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        Icons.Default.FilterList,
+                        contentDescription = "Filter",
+                        tint = Color(0xFF333333)
+                    )
                 }
-            ) {
-                Icon(Icons.Default.Search, contentDescription = "Tìm kiếm")
             }
-            IconButton(
-                onClick = viewModel::toggleFilters
+        }
+
+        // Search suggestions and history với thiết kế mới
+        AnimatedVisibility(
+            visible = isSearchFocused || (searchResults.isEmpty() && !isLoading && searchQuery.isEmpty()),
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
             ) {
-                Icon(Icons.Default.FilterList, contentDescription = "Bộ lọc")
+                if (searchQuery.isEmpty()) {
+                    // Gợi ý tìm kiếm
+                    if (recommendations.isNotEmpty()) {
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Gợi ý cho bạn",
+                                    style = MaterialTheme.typography.subtitle1.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF333333)
+                                    )
+                                )
+                                Icon(
+                                    Icons.Default.Lightbulb,
+                                    contentDescription = "Suggestions",
+                                    tint = Color(0xFFFFB800),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                        
+                        items(recommendations.take(5)) { suggestion ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { 
+                                        searchQuery = suggestion
+                                        focusManager.clearFocus()
+                                        viewModel.onSearch(suggestion)
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = null,
+                                    tint = Color(0xFF666666),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = suggestion,
+                                    style = MaterialTheme.typography.body1.copy(
+                                        color = Color(0xFF333333)
+                                    )
+                                )
+                            }
+                        }
+                        
+                        item { 
+                            Divider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = Color(0xFFE0E0E0)
+                            )
+                        }
+                    }
+
+                    // Lịch sử tìm kiếm
+                    if (searchHistory.isNotEmpty()) {
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Lịch sử tìm kiếm",
+                                    style = MaterialTheme.typography.subtitle1.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF333333)
+                                    )
+                                )
+                            }
+                        }
+                        
+                        items(searchHistory.take(5)) { historyItem ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { 
+                                        searchQuery = historyItem
+                                        focusManager.clearFocus()
+                                        viewModel.onSearch(historyItem)
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.History,
+                                    contentDescription = null,
+                                    tint = Color(0xFF666666),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = historyItem,
+                                    style = MaterialTheme.typography.body1.copy(
+                                        color = Color(0xFF333333)
+                                    )
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Gợi ý tìm kiếm khi đang nhập
+                    items(searchSuggestions.take(5)) { suggestion ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { 
+                                    searchQuery = suggestion
+                                    focusManager.clearFocus()
+                                    viewModel.onSearch(suggestion)
+                                }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                tint = Color(0xFF666666),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = suggestion,
+                                style = MaterialTheme.typography.body1.copy(
+                                    color = Color(0xFF333333)
+                                )
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -219,11 +405,14 @@ fun SearchScreen(
                     OutlinedTextField(
                         value = currentFilters.minPrice.toString(),
                         onValueChange = { 
-                            viewModel.updateFilters(
-                                currentFilters.copy(
-                                    minPrice = it.toFloatOrNull() ?: 0f
+                            val newValue = it.toFloatOrNull() ?: 0f
+                            if (newValue >= 0) {
+                                viewModel.updateFilters(
+                                    currentFilters.copy(
+                                        minPrice = newValue
+                                    )
                                 )
-                            )
+                            }
                         },
                         modifier = Modifier.weight(1f),
                         label = { Text("Giá từ") },
@@ -232,11 +421,14 @@ fun SearchScreen(
                     OutlinedTextField(
                         value = currentFilters.maxPrice.toString(),
                         onValueChange = { 
-                            viewModel.updateFilters(
-                                currentFilters.copy(
-                                    maxPrice = it.toFloatOrNull() ?: Float.MAX_VALUE
+                            val newValue = it.toFloatOrNull() ?: 10000000f
+                            if (newValue >= currentFilters.minPrice) {
+                                viewModel.updateFilters(
+                                    currentFilters.copy(
+                                        maxPrice = newValue
+                                    )
                                 )
-                            )
+                            }
                         },
                         modifier = Modifier.weight(1f),
                         label = { Text("Đến") },
@@ -336,56 +528,6 @@ fun SearchScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Áp dụng")
-                }
-            }
-        }
-
-        // Search suggestions and history
-        AnimatedVisibility(
-            visible = isSearchFocused || (searchResults.isEmpty() && !isLoading && searchQuery.isEmpty()),
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            LazyColumn {
-                if (searchQuery.isEmpty()) {
-                    // Show search history
-                    if (searchHistory.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Lịch sử tìm kiếm",
-                                style = MaterialTheme.typography.subtitle1,
-                                modifier = Modifier.padding(16.dp)
-                            )
-                        }
-                        items(searchHistory) { historyItem ->
-                            Text(
-                                text = historyItem,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { 
-                                        searchQuery = historyItem
-                                        focusManager.clearFocus()
-                                        viewModel.onSearch(historyItem)
-                                    }
-                                    .padding(16.dp)
-                            )
-                        }
-                    }
-                } else {
-                    // Show search suggestions
-                    items(searchSuggestions) { suggestion ->
-                        Text(
-                            text = suggestion,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { 
-                                    searchQuery = suggestion
-                                    focusManager.clearFocus()
-                                    viewModel.onSearch(suggestion)
-                                }
-                                .padding(16.dp)
-                        )
-                    }
                 }
             }
         }
@@ -495,7 +637,8 @@ fun SearchScreen(
                                 contentDescription = product.product_name,
                                 modifier = Modifier
                                     .size(80.dp),
-                                contentScale = ContentScale.Crop
+                                contentScale = ContentScale.Crop,
+                                error = painterResource(id = R.drawable.ic_placeholder)
                             )
                             
                             // Product details

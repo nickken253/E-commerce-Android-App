@@ -67,6 +67,7 @@ import com.mustfaibra.roffu.utils.getDp
 import com.skydoves.whatif.whatIfNotNull
 import kotlinx.coroutines.launch
 import java.text.DecimalFormat
+import androidx.compose.ui.layout.ContentScale
 private const val USD_TO_VND = 25_000
 // Hàm định dạng số thành chuỗi tiền tệ Việt Nam
 private fun formatVietnamCurrency(amount: Long): String {
@@ -352,22 +353,25 @@ fun CartItemModern(
         val imagePainter = when (productImage) {
             is String -> {
                 if (productImage.isNotEmpty()) {
-                    rememberAsyncImagePainter(productImage)
+                    rememberAsyncImagePainter(model = productImage)
                 } else {
-
+                    painterResource(id = R.drawable.ic_placeholder)
                 }
             }
-            is Int -> rememberAsyncImagePainter(productImage)
-            else -> {}
+            is Int -> rememberAsyncImagePainter(model = productImage)
+            else -> {
+                painterResource(id = R.drawable.ic_placeholder)
+            }
         }
 
         Image(
-            painter = imagePainter as Painter,
-            contentDescription = null,
+            painter = imagePainter,
+            contentDescription = productName,
             modifier = Modifier
                 .size(90.dp)
                 .clip(RoundedCornerShape(14.dp))
-                .background(Color(0xFFF5F5F5))
+                .background(Color(0xFFF5F5F5)),
+            contentScale = ContentScale.Crop
         )
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {

@@ -1,8 +1,8 @@
 package com.mustfaibra.roffu.models
 
 data class SearchFilters(
-    val minPrice: Float? = null,
-    val maxPrice: Float? = null,
+    val minPrice: Float = 0f,
+    val maxPrice: Float = 10000000f,
     val sortBy: String? = null,
     val sortOrder: String? = null,
     val categoryId: Int? = null,

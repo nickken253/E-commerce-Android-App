@@ -12,6 +12,8 @@ import com.mustfaibra.roffu.models.dto.RegisterResponse
 import com.mustfaibra.roffu.models.dto.ResetPasswordRequest
 import com.mustfaibra.roffu.models.dto.ResetPasswordResponse
 import com.mustfaibra.roffu.models.dto.UserResponse
+import com.mustfaibra.roffu.models.dto.RecommendationRequest
+import com.mustfaibra.roffu.models.dto.RecommendationResponse
 import com.mustfaibra.roffu.utils.Constants
 import com.mustfaibra.roffu.utils.UserPref
 import retrofit2.Response
@@ -101,4 +103,9 @@ interface ApiService {
     )
     @GET("api/v1/products/categories")
     suspend fun getCategories(@Header("Authorization") token: String = "Bearer ${ACCESS_TOKEN}"): List<Category>
+
+    @POST("api/v1/recommendation/suggest")
+    suspend fun getRecommendations(
+        @Body request: RecommendationRequest
+    ): Response<RecommendationResponse>
 } 

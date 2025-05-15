@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -74,12 +75,27 @@ fun OrderScreen(
     refreshOrders: Boolean = true,
 ) {
     val orders = orderViewModel.ordersWithProducts
+    val productPrices = remember { mutableStateMapOf<Int, Double>() }
     
     // Gọi API "read orders" mỗi khi màn hình được hiển thị hoặc khi refreshOrders thay đổi
     LaunchedEffect(refreshOrders) {
         orderViewModel.getOrdersWithProducts()
         // Log để debug
         android.util.Log.d("OrderScreen", "Loading orders data. RefreshOrders: $refreshOrders")
+    }
+    
+    // Lấy giá sản phẩm từ API cho mỗi order item
+    LaunchedEffect(orders) {
+        orders.forEach { order ->
+            order.orderItems?.forEach { item ->
+                if (!productPrices.containsKey(item.productId)) {
+                    val productResponse = orderViewModel.getProductPrice(item.productId)
+                    productResponse?.let { price ->
+                        productPrices[item.productId] = price
+                    }
+                }
+            }
+        }
     }
     
     // Debug log cho danh sách đơn hàng
@@ -272,27 +288,16 @@ fun OrderScreen(
                                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            // Hiển thị ảnh sản phẩm sử dụng Coil
-                                            if (orderItem.productImage != null) {
-                                                AsyncImage(
-                                                    model = ImageRequest.Builder(LocalContext.current)
-                                                        .data(orderItem.productImage)
-                                                        .crossfade(true)
-                                                        .build(),
-                                                    contentDescription = null,
-                                                    modifier = Modifier
-                                                        .size(68.dp)
-                                                        .clip(RoundedCornerShape(8.dp))
-                                                )
-                                            } else {
-                                                Image(
-                                                    painter = painterResource(R.drawable.placeholder_image),
-                                                    contentDescription = null,
-                                                    modifier = Modifier
-                                                        .size(68.dp)
-                                                        .clip(RoundedCornerShape(8.dp))
-                                                )
-                                            }
+                                            // Hiển thị ảnh sản phẩm sử dụng Coil với xử lý lỗi
+                                            AsyncImage(
+                                                model = orderItem.productImage,
+                                                contentDescription = null,
+                                                modifier = Modifier
+                                                    .size(68.dp)
+                                                    .clip(RoundedCornerShape(8.dp)),
+                                                error = painterResource(id = R.drawable.ic_placeholder),
+                                                contentScale = ContentScale.Fit
+                                            )
 
                                             Spacer(Modifier.width(12.dp))
 
@@ -308,11 +313,8 @@ fun OrderScreen(
                                                 Spacer(Modifier.height(4.dp))
 
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    // Hiển thị giá sản phẩm
-                                                    android.util.Log.d("OrderScreen", "Item price debug: productName=${orderItem.productName}, price=${orderItem.price}, subtotal=${orderItem.subtotal}, quantity=${orderItem.quantity}")
-                                                    
-                                                    // Luôn ưu tiên sử dụng giá trực tiếp từ API
-                                                    val displayPrice = orderItem.price ?: 0.0
+                                                    // Hiển thị giá sản phẩm từ API
+                                                    val displayPrice = orderViewModel.productPrices[orderItem.productId] ?: orderItem.price ?: 0.0
                                                     
                                                     Text(
                                                         text = "₫" + String.format(

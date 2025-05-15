@@ -17,24 +17,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActionScope
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Snackbar
-import androidx.compose.material.SnackbarData
-import androidx.compose.material.SnackbarHost
-import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.Text
-import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowLeft
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalTextInputService
@@ -61,6 +48,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
 import com.mustfaibra.roffu.R
 import com.mustfaibra.roffu.sealed.MenuOption
 import com.mustfaibra.roffu.sealed.Screen
@@ -471,20 +459,18 @@ fun ProductItemLayout(
             ),
         verticalArrangement = Arrangement.spacedBy(Dimension.pagePadding)
     ) {
-        BoxWithConstraints(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(MaterialTheme.shapes.medium)
+                .aspectRatio(1f),
+            elevation = 4.dp,
+            shape = MaterialTheme.shapes.medium
         ) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(this.constraints.maxHeight.div(2).getDp())
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colors.surface),
-            )
+                    .fillMaxSize()
+                    .padding(8.dp)
+            ) {
             AsyncImage(
                 model = imageUrl,
                 contentDescription = null,
@@ -492,19 +478,14 @@ fun ProductItemLayout(
                     .onGloballyPositioned {
                         floatingProductSize = it.size.width
                     }
-                    .fillMaxSize()
-                    .clip(MaterialTheme.shapes.medium)
-                    // Xóa hiệu ứng xoay ảnh
-                    // .rotate(-35f),
-            )
-            // Xóa nút bookmark
-            // ReactiveBookmarkIcon(
-            //     modifier = Modifier.padding(Dimension.xs),
-            //     isOnBookmarks = onBookmark,
-            //     onBookmarkChange = onChangeBookmarkState
-            // )
+                        .fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                    error = painterResource(id = R.drawable.ic_placeholder)
+                )
+            }
         }
         Column(
+            modifier = Modifier.padding(horizontal = 8.dp),
             verticalArrangement = Arrangement.spacedBy(Dimension.xs)
         ) {
             Row(
@@ -513,7 +494,7 @@ fun ProductItemLayout(
             ) {
                 Text(
                     modifier = Modifier.weight(1f),
-                    text = stringResource( id = R.string.x_VND,price),
+                    text = stringResource(id = R.string.x_VND, price),
                     style = MaterialTheme.typography.body1.copy(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colors.onBackground.copy(alpha = 0.7f),
@@ -554,9 +535,9 @@ fun ProductItemLayout(
                 }
             }
             .offset { animatedFloatingProductOffset }
-            .size(animatedFloatProductSize.getDp())
-            // Xóa hiệu ứng xoay ảnh
-            // .rotate(-35f),
+            .size(animatedFloatProductSize.getDp()),
+        contentScale = ContentScale.Fit,
+        error = painterResource(id = R.drawable.ic_placeholder)
     )
 }
 

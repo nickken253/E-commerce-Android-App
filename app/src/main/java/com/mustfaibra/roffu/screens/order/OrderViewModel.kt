@@ -3,6 +3,7 @@ package com.mustfaibra.roffu.screens.order
 import android.os.Build
 import androidx.annotation.RequiresExtension
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mustfaibra.roffu.models.dto.OrderItem
@@ -32,6 +33,9 @@ class OrderViewModel @Inject constructor(
 
     private val _showNotifications = MutableStateFlow(false)
     val showNotifications: StateFlow<Boolean> = _showNotifications.asStateFlow()
+
+    private val _productPrices = mutableStateMapOf<Int, Double>()
+    val productPrices: Map<Int, Double> = _productPrices
 
     private val tabStatus = listOf("Tất cả", "Chờ lấy hàng", "Đang giao", "Đã giao", "Đã hủy")
     private val statusMapping = mapOf(
@@ -88,6 +92,8 @@ class OrderViewModel @Inject constructor(
                                                                     if (product.images.isNotEmpty()) {
                                                                         item.productImage = product.images.firstOrNull()?.image_url
                                                                     }
+                                                                    // Cập nhật giá sản phẩm vào map
+                                                                    _productPrices[item.productId] = product.price.toDouble()
                                                                 }
                                                             }
                                                             is DataResponse.Error -> {
@@ -146,5 +152,21 @@ class OrderViewModel @Inject constructor(
 
     fun clearErrorMessage() {
         _errorMessage.value = null
+    }
+
+    suspend fun getProductPrice(productId: Int): Double? {
+        return try {
+            val productResponse = productsRepository.getProductResponseDetails(productId)
+            when (productResponse) {
+                is DataResponse.Success -> {
+                    productResponse.data?.price?.toDouble()
+                }
+                is DataResponse.Error -> {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
 }

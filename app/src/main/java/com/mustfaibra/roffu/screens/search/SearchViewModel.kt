@@ -9,6 +9,7 @@ import com.mustfaibra.roffu.models.Brand
 import com.mustfaibra.roffu.models.Category
 import com.mustfaibra.roffu.models.ProductResponse
 import com.mustfaibra.roffu.models.SearchFilters
+import com.mustfaibra.roffu.models.dto.RecommendationRequest
 import com.mustfaibra.roffu.utils.SearchHistoryPref
 import com.mustfaibra.roffu.utils.UserPref
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -82,6 +83,9 @@ class SearchViewModel @Inject constructor(
     private val _categories = MutableStateFlow<List<Category>>(emptyList())
     val categories: StateFlow<List<Category>> = _categories
 
+    private val _recommendations = MutableStateFlow<List<String>>(emptyList())
+    val recommendations: StateFlow<List<String>> = _recommendations
+
     init {
         // Debounce search query changes
         viewModelScope.launch {
@@ -95,6 +99,7 @@ class SearchViewModel @Inject constructor(
                 }
         }
         loadBrandsAndCategories()
+        loadRecommendations()
     }
 
     fun onSearchQueryChanged(query: String) {
@@ -192,6 +197,27 @@ class SearchViewModel @Inject constructor(
                 } finally {
                     _isLoading.value = false
                 }
+            }
+        }
+    }
+
+    private fun loadRecommendations() {
+        viewModelScope.launch {
+            try {
+                val recentSearches = _searchHistory.value.take(5) // Lấy 5 từ khóa tìm kiếm gần nhất
+                val cartItemIds = RetrofitClient.cartApiService.getCartItems().body()?.map { it.id.toString() } ?: emptyList()
+                
+                val request = RecommendationRequest(
+                    recent_searches = recentSearches,
+                    cart_item_ids = cartItemIds
+                )
+                
+                val response = RetrofitClient.apiService.getRecommendations(request)
+                if (response.isSuccessful) {
+                    _recommendations.value = response.body()?.suggestions ?: emptyList()
+                }
+            } catch (e: Exception) {
+                Log.e("SearchViewModel", "Error loading recommendations", e)
             }
         }
     }

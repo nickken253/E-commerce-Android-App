@@ -164,7 +164,8 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.4"
 
     // Coil
-    implementation "io.coil-kt:coil-svg:2.6.0"
+    implementation "io.coil-kt:coil-compose:2.4.0"
+    implementation "io.coil-kt:coil:2.4.0"
 
     // Room
     def room_version = "2.4.3"

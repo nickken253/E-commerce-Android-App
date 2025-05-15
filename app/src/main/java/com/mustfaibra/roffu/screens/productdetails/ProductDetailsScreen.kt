@@ -133,7 +133,8 @@ fun ProductDetailsScreen(
 
                     Image(
                         painter = rememberAsyncImagePainter(
-                            model = currentProduct.imagePath ?: R.drawable.adidas_48
+                            model = currentProduct.imagePath,
+                            error = painterResource(id = R.drawable.ic_placeholder)
                         ),
                         contentDescription = "Product Image",
                         contentScale = ContentScale.Inside,
