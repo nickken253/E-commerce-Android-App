@@ -13,5 +13,6 @@ data class OrderItem(
     @SerializedName("product_name") var productName: String?,
     @SerializedName("product_image") var productImage: String?,
     @SerializedName("created_at") val createdAt: String,
-    @SerializedName("updated_at") val updatedAt: String
+    @SerializedName("updated_at") val updatedAt: String,
+    @SerializedName("price") val price: Double? = null
 )

@@ -40,93 +40,6 @@ class OrderViewModel @Inject constructor(
         "shipped" to "Đã giao",
         "cancelled" to "Đã hủy"
     )
-
-    // Tạo dữ liệu mẫu để kiểm tra UI
-    /*
-    private fun createSampleOrderData(): List<OrderWithItemsAndProducts> {
-        android.util.Log.d("OrderViewModel", "Creating sample order data for testing")
-        return listOf(
-            OrderWithItemsAndProducts(
-                orderId = 1,
-                userId = 1,
-                total = 250000.0,
-                status = "pending",
-                shippingAddressId = 1,
-                paymentMethod = "COD",
-                shippingCarrier = "GHN",
-                trackingNumber = "GHN123456",
-                createdAt = "2025-05-15T07:30:00Z",
-                updatedAt = "2025-05-15T07:30:00Z",
-                paymentStatus = "pending",
-                orderDate = "2025-05-15T07:30:00Z",
-                orderItems = listOf(
-                    OrderItem(
-                        id = 1,
-                        orderId = 1,
-                        productId = 101,
-                        quantity = 2,
-                        subtotal = 150000.0,
-                        productName = "Áo thun nam cổ tròn",
-                        productImage = "https://picsum.photos/200",
-                        createdAt = "2025-05-15T07:30:00Z",
-                        updatedAt = "2025-05-15T07:30:00Z"
-                    ),
-                    OrderItem(
-                        id = 2,
-                        orderId = 1,
-                        productId = 102,
-                        quantity = 1,
-                        subtotal = 100000.0,
-                        productName = "Quần jean nam",
-                        productImage = "https://picsum.photos/200",
-                        createdAt = "2025-05-15T07:30:00Z",
-                        updatedAt = "2025-05-15T07:30:00Z"
-                    )
-                ),
-                shippingAddress = null
-            ),
-            OrderWithItemsAndProducts(
-                orderId = 2,
-                userId = 1,
-                total = 350000.0,
-                status = "processing",
-                shippingAddressId = 1,
-                paymentMethod = "COD",
-                shippingCarrier = "GHN",
-                trackingNumber = "GHN789012",
-                createdAt = "2025-05-14T10:15:00Z",
-                updatedAt = "2025-05-14T10:15:00Z",
-                paymentStatus = "completed",
-                orderDate = "2025-05-14T10:15:00Z",
-                orderItems = listOf(
-                    OrderItem(
-                        id = 3,
-                        orderId = 2,
-                        productId = 103,
-                        quantity = 1,
-                        subtotal = 200000.0,
-                        productName = "Giày thể thao nam",
-                        productImage = "https://picsum.photos/200",
-                        createdAt = "2025-05-14T10:15:00Z",
-                        updatedAt = "2025-05-14T10:15:00Z"
-                    ),
-                    OrderItem(
-                        id = 4,
-                        orderId = 2,
-                        productId = 104,
-                        quantity = 3,
-                        subtotal = 150000.0,
-                        productName = "Tất nam cổ ngắn",
-                        productImage = "https://picsum.photos/200",
-                        createdAt = "2025-05-14T10:15:00Z",
-                        updatedAt = "2025-05-14T10:15:00Z"
-                    )
-                ),
-                shippingAddress = null
-            )
-        )
-    }
-    */
     
     fun getOrdersWithProducts() {
         viewModelScope.launch {
@@ -136,24 +49,17 @@ class OrderViewModel @Inject constructor(
             productsRepository.getOrdersWithProducts().let { response ->
                 when (response) {
                     is DataResponse.Success -> {
-                        android.util.Log.d("OrderViewModel", "API Success: Got orders data")
                         response.data?.let { data ->
-                            android.util.Log.d("OrderViewModel", "Orders count: ${data.size}")
                             data.forEach { order ->
-                                android.util.Log.d("OrderViewModel", "Order ID: ${order.orderId}, Status: ${order.status}, Items: ${order.orderItems?.size ?: 0}")
                                 order.orderItems?.forEach { item ->
-                                    android.util.Log.d("OrderViewModel", "  Item: ${item.productName}, Image: ${item.productImage}")
                                 }
                             }
                             _ordersWithProducts.clear()
                             _ordersWithProducts.addAll(data)
-                            android.util.Log.d("OrderViewModel", "Updated _ordersWithProducts, new size: ${_ordersWithProducts.size}")
                             _errorMessage.value = null // Xóa thông báo lỗi
                             
                             // Log dữ liệu của OrderWithItemsAndProducts để kiểm tra
                             data.forEach { order ->
-                                android.util.Log.d("OrderViewModel", "Order: ${order.orderId}, Status: ${order.status}, Total: ${order.total}, PaymentMethod: ${order.paymentMethod}, PaymentStatus: ${order.paymentStatus}")
-                                
                                 // Gọi API lấy chi tiết sản phẩm trong đơn hàng
                                 viewModelScope.launch {
                                     val orderItemsResponse = productsRepository.getOrderItems(order.orderId)
@@ -182,9 +88,6 @@ class OrderViewModel @Inject constructor(
                                                                     if (product.images.isNotEmpty()) {
                                                                         item.productImage = product.images.firstOrNull()?.image_url
                                                                     }
-                                                                    
-                                                                    // Log thông tin đã cập nhật
-                                                                    android.util.Log.d("OrderViewModel", "  - Updated Item: ${item.id}, ProductName: ${item.productName}, ProductImage: ${item.productImage}, Quantity: ${item.quantity}, Subtotal: ${item.subtotal}")
                                                                 }
                                                             }
                                                             is DataResponse.Error -> {
@@ -223,15 +126,6 @@ class OrderViewModel @Inject constructor(
                         }
                         android.util.Log.e("OrderViewModel", "API Error: $errorMsg, Error type: ${response.error}")
                         _errorMessage.value = errorMsg
-                        
-                        // Sử dụng dữ liệu mẫu để kiểm tra UI khi API trả về lỗi
-                        /*
-                        android.util.Log.d("OrderViewModel", "Using sample data for testing UI")
-                        val sampleData = createSampleOrderData()
-                        _ordersWithProducts.clear()
-                        _ordersWithProducts.addAll(sampleData)
-                        android.util.Log.d("OrderViewModel", "Added ${sampleData.size} sample orders to UI")
-                        */
                     }
                 }
             }

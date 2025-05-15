@@ -84,10 +84,7 @@ fun OrderScreen(
     
     // Debug log cho danh sách đơn hàng
     LaunchedEffect(orders) {
-        android.util.Log.d("OrderScreen", "Orders count: ${orders.size}")
         orders.forEachIndexed { index, order ->
-            android.util.Log.d("OrderScreen", "Order #$index - ID: ${order.orderId}, Status: ${order.status}")
-            android.util.Log.d("OrderScreen", "Order #$index - Items count: ${order.orderItems?.size ?: 0}")
             order.orderItems?.forEachIndexed { itemIndex, item ->
                 android.util.Log.d("OrderScreen", "  Item #$itemIndex - Name: ${item.productName}, Image: ${item.productImage}")
             }
@@ -311,18 +308,16 @@ fun OrderScreen(
                                                 Spacer(Modifier.height(4.dp))
 
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    // Giá tiền của 1 sản phẩm
-                                                    val unitPrice = if (orderItem.quantity > 0) {
-                                                        (orderItem.subtotal
-                                                            ?: 0.0) / orderItem.quantity
-                                                    } else {
-                                                        0.0
-                                                    }
-
+                                                    // Hiển thị giá sản phẩm
+                                                    android.util.Log.d("OrderScreen", "Item price debug: productName=${orderItem.productName}, price=${orderItem.price}, subtotal=${orderItem.subtotal}, quantity=${orderItem.quantity}")
+                                                    
+                                                    // Luôn ưu tiên sử dụng giá trực tiếp từ API
+                                                    val displayPrice = orderItem.price ?: 0.0
+                                                    
                                                     Text(
                                                         text = "₫" + String.format(
                                                             "%,.0f",
-                                                            unitPrice * 25000
+                                                            displayPrice
                                                         ),
                                                         color = MaterialTheme.colors.primary,
                                                         fontWeight = FontWeight.Bold,
@@ -385,7 +380,7 @@ fun OrderScreen(
                                         Text(
                                             "₫" + String.format(
                                                 "%,.0f",
-                                                (orderWithProducts.total ?: 0.0) * 25000
+                                                (orderWithProducts.total ?: 0.0)
                                             ),
                                             color = MaterialTheme.colors.primary,
                                             fontWeight = FontWeight.Bold,
