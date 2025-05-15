@@ -16,6 +16,6 @@ data class OrderWithItemsAndProducts(
     @SerializedName("updated_at") val updatedAt: String,
     @SerializedName("payment_status") val paymentStatus: String,
     @SerializedName("order_date") val orderDate: String,
-    @SerializedName("items") val orderItems: List<OrderItem>,
+    @SerializedName("items") var orderItems: List<OrderItem> = emptyList(),
     @SerializedName("shipping_address") val shippingAddress: ShippingAddress?
 )

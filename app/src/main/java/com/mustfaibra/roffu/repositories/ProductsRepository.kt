@@ -187,6 +187,66 @@ class ProductsRepository @Inject constructor(
         return DataResponse.Error(error = Error.Empty)
     }
 
+    suspend fun getProductResponseDetails(productId: Int): DataResponse<com.mustfaibra.roffu.models.ProductResponse> {
+        return try {
+            val token = UserPref.getToken(context)
+            if (token == null) {
+                return DataResponse.Error(error = Error.Unknown)
+            }
+
+            // Set token cho RetrofitClient
+            RetrofitClient.init(token)
+
+            val response = RetrofitClient.apiService.getProductDetails(productId)
+
+            if (response.isSuccessful && response.body() != null) {
+                DataResponse.Success(data = response.body()!!)
+            } else {
+                DataResponse.Error(error = Error.Empty)
+            }
+        } catch (e: HttpException) {
+            when (e.code()) {
+                401 -> DataResponse.Error(error = Error.Unauthorized)
+                403 -> DataResponse.Error(error = Error.Forbidden)
+                else -> DataResponse.Error(error = Error.Network)
+            }
+        } catch (e: IOException) {
+            DataResponse.Error(error = Error.Network)
+        } catch (e: Exception) {
+            DataResponse.Error(error = Error.Unknown)
+        }
+    }
+
+    suspend fun getOrderItems(orderId: Int): DataResponse<List<com.mustfaibra.roffu.models.dto.OrderItem>> {
+        return try {
+            val token = UserPref.getToken(context)
+            if (token == null) {
+                return DataResponse.Error(error = Error.Unknown)
+            }
+
+            // Set token cho RetrofitClient
+            RetrofitClient.init(token)
+
+            val response = RetrofitClient.orderApiService.getOrderItems(orderId)
+
+            if (response.isNotEmpty()) {
+                DataResponse.Success(data = response)
+            } else {
+                DataResponse.Error(error = Error.Empty)
+            }
+        } catch (e: HttpException) {
+            when (e.code()) {
+                401 -> DataResponse.Error(error = Error.Unauthorized)
+                403 -> DataResponse.Error(error = Error.Forbidden)
+                else -> DataResponse.Error(error = Error.Network)
+            }
+        } catch (e: IOException) {
+            DataResponse.Error(error = Error.Network)
+        } catch (e: Exception) {
+            DataResponse.Error(error = Error.Unknown)
+        }
+    }
+
     suspend fun getOrdersWithProducts(): DataResponse<List<com.mustfaibra.roffu.models.dto.OrderWithItemsAndProducts>> {
         return try {
             val token = UserPref.getToken(context)

@@ -27,11 +27,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.mustfaibra.roffu.R
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -69,26 +73,37 @@ fun OrderScreen(
     onBack: () -> Unit = {},
     refreshOrders: Boolean = true,
 ) {
+    val orders = orderViewModel.ordersWithProducts
+    
     // Gọi API "read orders" mỗi khi màn hình được hiển thị hoặc khi refreshOrders thay đổi
     LaunchedEffect(refreshOrders) {
         orderViewModel.getOrdersWithProducts()
         // Log để debug
         android.util.Log.d("OrderScreen", "Loading orders data. RefreshOrders: $refreshOrders")
     }
-    val orders = orderViewModel.ordersWithProducts
+    
+    // Debug log cho danh sách đơn hàng
+    LaunchedEffect(orders) {
+        android.util.Log.d("OrderScreen", "Orders count: ${orders.size}")
+        orders.forEachIndexed { index, order ->
+            android.util.Log.d("OrderScreen", "Order #$index - ID: ${order.orderId}, Status: ${order.status}")
+            android.util.Log.d("OrderScreen", "Order #$index - Items count: ${order.orderItems?.size ?: 0}")
+            order.orderItems?.forEachIndexed { itemIndex, item ->
+                android.util.Log.d("OrderScreen", "  Item #$itemIndex - Name: ${item.productName}, Image: ${item.productImage}")
+            }
+        }
+    }
     val errorMessage by orderViewModel.errorMessage.collectAsState()
     val showNotifications by orderViewModel.showNotifications.collectAsState()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
     val tabTitles =
-        listOf("Tất cả", "Chờ xác nhận", "Chờ lấy hàng", "Đang giao", "Đã giao", "Đã hủy")
+        listOf("Tất cả", "Chờ lấy hàng", "Đang giao", "Đã giao", "Đã hủy")
     val statusMapping = mapOf(
-        "pending" to "Chờ xác nhận",
-        "processing" to "Chờ lấy hàng",
-        "shipped" to "Đang giao",
-        "delivered" to "Đã giao",
-        "completed" to "Đã giao", // Thêm trạng thái completed tương ứng với Đã giao
+        "pending" to "Chờ lấy hàng",
+        "processing" to "Đang giao",
+        "shipped" to "Đã giao",
         "cancelled" to "Đã hủy"
     )
     var selectedTab by remember { mutableStateOf(0) }
@@ -200,6 +215,7 @@ fun OrderScreen(
                         .background(Color(0xFFF8F8F8)),
                     contentPadding = PaddingValues(8.dp)
                 ) {
+
                     items(filteredOrders) { orderWithProducts ->
                         val orderItems = orderWithProducts.orderItems
                         Card(
@@ -217,7 +233,10 @@ fun OrderScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        formatDate(orderWithProducts.orderDate ?: orderWithProducts.createdAt),
+                                        formatDate(
+                                            orderWithProducts.orderDate
+                                                ?: orderWithProducts.createdAt
+                                        ),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp
                                     )
@@ -233,6 +252,10 @@ fun OrderScreen(
                                 Divider(color = Color(0xFFF2F2F2), thickness = 1.dp)
                                 val expandedOrders =
                                     remember { mutableStateMapOf<String, Boolean>() }
+
+                                // Debug log cho orderItems
+                                android.util.Log.d("OrderScreen", "OrderItems for order ${orderWithProducts.orderId}: ${orderItems?.size ?: 0}")
+                                
                                 // Kiểm tra null và xử lý an toàn
                                 if (orderItems != null && orderItems.isNotEmpty()) {
                                     val items = orderItems
@@ -240,6 +263,11 @@ fun OrderScreen(
                                     val expanded = expandedOrders[orderId] == true
                                     val showItems =
                                         if (expanded || items.size <= 2) items else items.take(2)
+
+                                    // Debug log cho showItems
+                                    android.util.Log.d("OrderScreen", "ShowItems count: ${showItems.size} for order ${orderId}")
+                                    
+                                    // Hiển thị các sản phẩm
                                     showItems.forEach { orderItem ->
                                         Row(
                                             Modifier
@@ -247,163 +275,253 @@ fun OrderScreen(
                                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Image(
-                                                painter = painterResource(R.drawable.placeholder_image), // Thay bằng Coil để tải từ orderItem.productImage
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .size(68.dp)
-                                                    .clip(RoundedCornerShape(8.dp))
-                                            )
+                                            // Hiển thị ảnh sản phẩm sử dụng Coil
+                                            if (orderItem.productImage != null) {
+                                                AsyncImage(
+                                                    model = ImageRequest.Builder(LocalContext.current)
+                                                        .data(orderItem.productImage)
+                                                        .crossfade(true)
+                                                        .build(),
+                                                    contentDescription = null,
+                                                    modifier = Modifier
+                                                        .size(68.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                )
+                                            } else {
+                                                Image(
+                                                    painter = painterResource(R.drawable.placeholder_image),
+                                                    contentDescription = null,
+                                                    modifier = Modifier
+                                                        .size(68.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                )
+                                            }
+
                                             Spacer(Modifier.width(12.dp))
+
                                             Column(Modifier.weight(1f)) {
                                                 Text(
-                                                    orderItem.productName ?: "Sản phẩm không xác định",
+                                                    orderItem.productName
+                                                        ?: "Sản phẩm không xác định",
                                                     fontWeight = FontWeight.Medium,
                                                     fontSize = 15.sp,
-                                                    maxLines = 1
+                                                    maxLines = 2
                                                 )
-                                                Spacer(Modifier.height(2.dp))
+
+                                                Spacer(Modifier.height(4.dp))
+
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    // Giá tiền của 1 sản phẩm
+                                                    val unitPrice = if (orderItem.quantity > 0) {
+                                                        (orderItem.subtotal
+                                                            ?: 0.0) / orderItem.quantity
+                                                    } else {
+                                                        0.0
+                                                    }
+
                                                     Text(
                                                         text = "₫" + String.format(
                                                             "%,.0f",
-                                                            (orderItem.subtotal ?: 0.0) * 25000
+                                                            unitPrice * 25000
                                                         ),
                                                         color = MaterialTheme.colors.primary,
                                                         fontWeight = FontWeight.Bold,
                                                         fontSize = 15.sp
                                                     )
+
                                                     Spacer(Modifier.width(8.dp))
+
                                                     Text(
-                                                        "x${orderItem.quantity ?: 0}",
+                                                        "x${orderItem.quantity}",
                                                         color = Color.Gray,
                                                         fontSize = 13.sp
                                                     )
-                                                    Row(
-                                                        Modifier
-                                                            .fillMaxWidth()
-                                                            .padding(
-                                                                horizontal = 12.dp,
-                                                                vertical = 8.dp
-                                                            ),
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        Spacer(Modifier.weight(1f))
-                                                        Text(
-                                                            "Tổng cộng: ",
-                                                            fontWeight = FontWeight.Bold,
-                                                            fontSize = 15.sp
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Hiển thị nút Xem thêm/Thu gọn nếu có nhiều hơn 2 sản phẩm
+                                    if (items.size > 2) {
+                                        Row(
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                                                .clickable {
+                                                    expandedOrders[orderId] = !expanded
+                                                },
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                if (expanded) "Thu gọn" else "Xem thêm ${items.size - 2} sản phẩm",
+                                                color = MaterialTheme.colors.primary,
+                                                fontWeight = FontWeight.Medium,
+                                                fontSize = 14.sp
+                                            )
+                                            Icon(
+                                                if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colors.primary
+                                            )
+                                        }
+                                    }
+
+                                    Divider(color = Color(0xFFF2F2F2), thickness = 1.dp)
+
+                                    // Hiển thị tổng tiền của đơn hàng
+                                    Row(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Spacer(Modifier.weight(1f))
+                                        Text(
+                                            "Tổng cộng: ",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp
+                                        )
+                                        Text(
+                                            "₫" + String.format(
+                                                "%,.0f",
+                                                (orderWithProducts.total ?: 0.0) * 25000
+                                            ),
+                                            color = MaterialTheme.colors.primary,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 17.sp
+                                        )
+                                    }
+
+                                    // Hiển thị thông tin thanh toán
+                                    Row(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            "Trạng thái thanh toán: ",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            when (orderWithProducts.paymentStatus) {
+                                                "completed" -> "Đã thanh toán"
+                                                "pending" -> "Chưa thanh toán"
+                                                else -> orderWithProducts.paymentStatus
+                                                    ?: "Không rõ"
+                                            },
+                                            color = when (orderWithProducts.paymentStatus) {
+                                                "completed" -> Color(0xFF4CAF50)
+                                                "pending" -> Color(0xFFFFA000)
+                                                else -> Color.Gray
+                                            },
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    // Hiển thị các nút tùy theo trạng thái
+                                    Row(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        horizontalArrangement = Arrangement.End
+                                    ) {
+                                        when (statusMapping[orderWithProducts.status]
+                                            ?: orderWithProducts.status) {
+                                            "Chờ lấy hàng" -> {
+                                                TextButton(
+                                                    onClick = { /* TODO: Hủy đơn */ },
+                                                    border = BorderStroke(
+                                                        1.dp,
+                                                        MaterialTheme.colors.primary
+                                                    ),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    colors = ButtonDefaults.textButtonColors(
+                                                        backgroundColor = Color.White
+                                                    ),
+                                                    contentPadding = PaddingValues(
+                                                        horizontal = 12.dp,
+                                                        vertical = 0.dp
+                                                    )
+                                                ) {
+                                                    Text(
+                                                        "Hủy đơn",
+                                                        color = MaterialTheme.colors.primary,
+                                                        fontSize = 14.sp
+                                                    )
+                                                }
+                                            }
+
+                                            "Đang giao" -> {
+                                                Button(
+                                                    onClick = { showShippingDetail = true },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        backgroundColor = MaterialTheme.colors.primary
+                                                    )
+                                                ) {
+                                                    Text(
+                                                        "Chi tiết vận chuyển",
+                                                        color = Color.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 14.sp
+                                                    )
+                                                }
+                                            }
+
+                                            "Đã giao" -> {
+                                                Row {
+                                                    Button(
+                                                        onClick = { /* TODO: Đánh giá */ },
+                                                        shape = RoundedCornerShape(8.dp),
+                                                        colors = ButtonDefaults.buttonColors(
+                                                            backgroundColor = MaterialTheme.colors.primary
                                                         )
+                                                    ) {
                                                         Text(
-                                                            "₫" + String.format(
-                                                                "%,.0f",
-                                                                (orderWithProducts.total ?: 0.0) * 25000
-                                                            ),
-                                                            color = MaterialTheme.colors.primary,
+                                                            "Đánh giá",
+                                                            color = Color.White,
                                                             fontWeight = FontWeight.Bold,
-                                                            fontSize = 17.sp
+                                                            fontSize = 14.sp
                                                         )
                                                     }
-                                                    Row(
-                                                        Modifier
-                                                            .fillMaxWidth()
-                                                            .padding(
-                                                                horizontal = 12.dp,
-                                                                vertical = 8.dp
-                                                            ),
-                                                        horizontalArrangement = Arrangement.End
+
+                                                    Spacer(Modifier.width(8.dp))
+
+                                                    Button(
+                                                        onClick = { /* TODO: Mua lại */ },
+                                                        shape = RoundedCornerShape(8.dp),
+                                                        colors = ButtonDefaults.buttonColors(
+                                                            backgroundColor = Color(0xFF4CAF50)
+                                                        )
                                                     ) {
-                                                        // Hiển thị thông tin thanh toán
-                                                        Row(
-                                                            Modifier.fillMaxWidth(),
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            Text(
-                                                                "Trạng thái thanh toán: ",
-                                                                fontSize = 14.sp,
-                                                                fontWeight = FontWeight.Medium
-                                                            )
-                                                            Text(
-                                                                when(orderWithProducts.paymentStatus) {
-                                                                    "completed" -> "Đã thanh toán"
-                                                                    "pending" -> "Chưa thanh toán"
-                                                                    else -> orderWithProducts.paymentStatus ?: "Không rõ"
-                                                                },
-                                                                color = when(orderWithProducts.paymentStatus) {
-                                                                    "completed" -> Color(0xFF4CAF50)
-                                                                    "pending" -> Color(0xFFFFA000)
-                                                                    else -> Color.Gray
-                                                                },
-                                                                fontSize = 14.sp,
-                                                                fontWeight = FontWeight.Bold
-                                                            )
-                                                        }
-                                                        
-                                                        // Hiển thị các nút tùy theo trạng thái
-                                                        when (statusMapping[orderWithProducts.status]
-                                                            ?: orderWithProducts.status) {
-                                                            "Chờ xác nhận", "Chờ lấy hàng" -> {
-                                                                TextButton(
-                                                                    onClick = { /* TODO: Hủy đơn */ },
-                                                                    border = BorderStroke(
-                                                                        1.dp,
-                                                                        MaterialTheme.colors.primary
-                                                                    ),
-                                                                    shape = RoundedCornerShape(8.dp),
-                                                                    colors = ButtonDefaults.textButtonColors(
-                                                                        backgroundColor = Color.White
-                                                                    ),
-                                                                    contentPadding = PaddingValues(
-                                                                        horizontal = 12.dp,
-                                                                        vertical = 0.dp
-                                                                    )
-                                                                ) {
-                                                                    Text(
-                                                                        "Hủy đơn",
-                                                                        color = MaterialTheme.colors.primary,
-                                                                        fontSize = 14.sp
-                                                                    )
-                                                                }
-                                                            }
-
-                                                            "Đang giao" -> {
-                                                                Button(
-                                                                    onClick = {
-                                                                        showShippingDetail = true
-                                                                    },
-                                                                    shape = RoundedCornerShape(8.dp),
-                                                                    colors = ButtonDefaults.buttonColors(
-                                                                        backgroundColor = MaterialTheme.colors.primary
-                                                                    )
-                                                                ) {
-                                                                    Text(
-                                                                        "Chi tiết vận chuyển",
-                                                                        color = Color.White,
-                                                                        fontWeight = FontWeight.Bold,
-                                                                        fontSize = 14.sp
-                                                                    )
-                                                                }
-                                                            }
-
-                                                            "Đã giao" -> {
-                                                                Text(
-                                                                    "Đã giao hàng",
-                                                                    color = Color.Gray,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    fontSize = 14.sp
-                                                                )
-                                                            }
-
-                                                            "Đã hủy" -> {
-                                                                Text(
-                                                                    "Đơn đã hủy",
-                                                                    color = Color.Red,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    fontSize = 14.sp
-                                                                )
-                                                            }
-                                                        }
+                                                        Text(
+                                                            "Mua lại",
+                                                            color = Color.White,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 14.sp
+                                                        )
                                                     }
+                                                }
+                                            }
+
+                                            "Đã hủy" -> {
+                                                Button(
+                                                    onClick = { /* TODO: Mua lại */ },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        backgroundColor = Color(0xFF4CAF50)
+                                                    )
+                                                ) {
+                                                    Text(
+                                                        "Mua lại",
+                                                        color = Color.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 14.sp
+                                                    )
                                                 }
                                             }
                                         }
@@ -417,4 +535,5 @@ fun OrderScreen(
         }
     }
 }
+
 
