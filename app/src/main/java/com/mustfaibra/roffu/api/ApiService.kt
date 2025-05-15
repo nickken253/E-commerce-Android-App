@@ -3,6 +3,7 @@ package com.mustfaibra.roffu.api
 import android.content.Context
 import com.mustfaibra.roffu.models.Brand
 import com.mustfaibra.roffu.models.Category
+import com.mustfaibra.roffu.models.CategoryProductsResponse
 import com.mustfaibra.roffu.models.ProductResponse
 import com.mustfaibra.roffu.models.SearchResponse
 import com.mustfaibra.roffu.models.dto.LoginRequest
@@ -87,8 +88,8 @@ interface ApiService {
     @GET("api/v1/products/category/{category_id}")
     suspend fun getProductsByCategory(
         @Path("category_id") categoryId: Int,
-        //@Header("Authorization") token: String = "Bearer ${ACCESS_TOKEN}"
-    ): SearchResponse
+        @Header("Authorization") token: String
+    ): CategoryProductsResponse
 
     @Headers(
         "accept: application/json",

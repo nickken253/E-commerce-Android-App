@@ -93,7 +93,7 @@ fun ProductItem(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         AsyncImage(
-            model = product.image,
+            model = product.imagePath,
             contentDescription = "Product image",
             modifier = Modifier
                 .size(80.dp)
@@ -104,8 +104,9 @@ fun ProductItem(
                 style = MaterialTheme.typography.subtitle1
             )
             Text(
-                text = "$${product.price}",
-                style = MaterialTheme.typography.body1
+                text = "${String.format("%,d", product.price.toInt())} VND",
+                style = MaterialTheme.typography.body1,
+                color = MaterialTheme.colors.primary
             )
         }
     }

@@ -36,6 +36,7 @@ import com.mustfaibra.roffu.utils.*
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
+import com.mustfaibra.roffu.sealed.Screen
 
 @Composable
 fun ProductDetailsScreen(
@@ -278,6 +279,25 @@ fun ProductDetailsScreen(
             ) {
                 Text(
                     text = "Add to cart",
+                    style = MaterialTheme.typography.button
+                )
+            }
+
+            /** Compare button */
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                onClick = {
+                    navController.navigate("product-selection/$productId")
+                },
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.secondary,
+                    contentColor = MaterialTheme.colors.onSecondary
+                )
+            ) {
+                Text(
+                    text = "So sánh",
                     style = MaterialTheme.typography.button
                 )
             }

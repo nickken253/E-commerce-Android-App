@@ -10,7 +10,11 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.mustfaibra.roffu.ui.theme.Dimension
@@ -28,6 +32,7 @@ fun ProductComparisonScreen(
 
     val product1 by viewModel.product1.collectAsState()
     val product2 by viewModel.product2.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Column(
         modifier = Modifier
@@ -48,97 +53,221 @@ fun ProductComparisonScreen(
                 text = "So sánh sản phẩm",
                 style = MaterialTheme.typography.h6
             )
-            Spacer(modifier = Modifier.width(48.dp)) // Để căn giữa tiêu đề
+            Spacer(modifier = Modifier.width(48.dp))
         }
 
-        // Nội dung so sánh
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(top = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Hình ảnh sản phẩm
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                product1?.let {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        AsyncImage(
-                            model = it.image,
-                            contentDescription = "Product 1",
-                            modifier = Modifier
-                                .size(150.dp)
-                                .padding(8.dp)
-                        )
-                        Text(text = it.name)
-                        Text(text = "$${it.price}")
-                    }
-                }
-                
-                product2?.let {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        AsyncImage(
-                            model = it.image,
-                            contentDescription = "Product 2",
-                            modifier = Modifier
-                                .size(150.dp)
-                                .padding(8.dp)
-                        )
-                        Text(text = it.name)
-                        Text(text = "$${it.price}")
-                    }
-                }
+                CircularProgressIndicator()
             }
+        } else {
+            // Bảng so sánh
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(top = 16.dp)
+            ) {
+                // Header của bảng
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colors.primary)
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = "Tiêu chí",
+                        modifier = Modifier.weight(1f),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "Sản phẩm 1",
+                        modifier = Modifier.weight(1f),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "Sản phẩm 2",
+                        modifier = Modifier.weight(1f),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
 
-            // Thông tin chi tiết
-            product1?.let { p1 ->
-                product2?.let { p2 ->
-                    // Màu sắc
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                // Hình ảnh sản phẩm
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Hình ảnh",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Màu sắc:")
-                            p1.colors?.forEach { color ->
-                                Text("- ${color.colorName}")
-                            }
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Màu sắc:")
-                            p2.colors?.forEach { color ->
-                                Text("- ${color.colorName}")
-                            }
+                        product1?.let {
+                            AsyncImage(
+                                model = it.imagePath,
+                                contentDescription = "Product 1",
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .padding(8.dp)
+                            )
                         }
                     }
-
-                    // Kích thước
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Kích thước:")
-                            p1.sizes?.forEach { size ->
-                                Text("- Size ${size.size}")
-                            }
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Kích thước:")
-                            p2.sizes?.forEach { size ->
-                                Text("- Size ${size.size}")
-                            }
+                        product2?.let {
+                            AsyncImage(
+                                model = it.imagePath,
+                                contentDescription = "Product 2",
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .padding(8.dp)
+                            )
                         }
                     }
+                }
+
+                // Tên sản phẩm
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF5F5F5))
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Tên sản phẩm",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = product1?.name ?: "",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = product2?.name ?: "",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                // Giá
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Giá",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${product1?.price?.toInt()?.let { String.format("%,d", it) }} VND",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colors.primary
+                    )
+                    Text(
+                        text = "${product2?.price?.toInt()?.let { String.format("%,d", it) }} VND",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colors.primary
+                    )
+                }
+
+                // Mô tả
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF5F5F5))
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Mô tả",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = product1?.description ?: "",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        textAlign = TextAlign.Center,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        text = product2?.description ?: "",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        textAlign = TextAlign.Center,
+                        fontSize = 14.sp
+                    )
+                }
+
+                // Mã vạch
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Mã vạch",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = product1?.barcode ?: "",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = product2?.barcode ?: "",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp),
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
