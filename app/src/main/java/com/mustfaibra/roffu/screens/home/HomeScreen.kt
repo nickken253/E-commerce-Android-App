@@ -2,11 +2,8 @@ package com.mustfaibra.roffu.screens.home
 
 import android.os.Handler
 import android.os.Looper
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -536,13 +533,13 @@ fun ManufacturersSection(
                         homeViewModel.selectFilterType(HomeViewModel.FilterType.BRAND)
                         homeViewModel.toggleFilterOptions()
                     }) {
-                        Text("Brand")
+                        Text("Thương Hiệu")
                     }
                     DropdownMenuItem(onClick = {
                         homeViewModel.selectFilterType(HomeViewModel.FilterType.CATEGORY)
                         homeViewModel.toggleFilterOptions()
                     }) {
-                        Text("Category")
+                        Text("Danh mục")
                     }
                 }
             }

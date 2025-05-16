@@ -140,15 +140,15 @@ fun CartScreen(
                     text = "Giỏ hàng",
                     style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
                 )
-                CustomIconButton(
-                    icon = Icons.Default.Delete,
-                    backgroundColor = Color.White,
-                    iconTint = Color.Black,
-                    onButtonClicked = {
-                        cartViewModel.clearCart(context)
-                    },
-                    elevation = 1.dp,
-                )
+                // CustomIconButton(
+                //     icon = Icons.Default.Delete,
+                //     backgroundColor = Color.White,
+                //     iconTint = Color.Black,
+                //     onButtonClicked = {
+                //         cartViewModel.clearCart(context)
+                //     },
+                //     elevation = 1.dp,
+                // )
             }
             // Items
             LazyColumn(

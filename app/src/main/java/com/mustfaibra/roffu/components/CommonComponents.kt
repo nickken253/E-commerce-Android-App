@@ -471,14 +471,10 @@ fun ProductItemLayout(
                     .fillMaxSize()
                     .padding(8.dp)
             ) {
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .onGloballyPositioned {
-                        floatingProductSize = it.size.width
-                    }
-                        .fillMaxSize(),
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
                     error = painterResource(id = R.drawable.ic_placeholder)
                 )
@@ -520,25 +516,27 @@ fun ProductItemLayout(
             )
         }
     }
-    AsyncImage(
-        model = imageUrl,
-        contentDescription = null,
-        modifier = Modifier
-            .onGloballyPositioned {
-                it.positionInWindow().let { originalOffset ->
-                    val requiredX = cartOffset.x - originalOffset.x
-                    val requiredY = cartOffset.y - originalOffset.y
-                    floatingProductOffset = IntOffset(
-                        x = requiredX.roundToInt(),
-                        y = requiredY.roundToInt(),
-                    )
+    if (productFloatToCartAnim) {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = null,
+            modifier = Modifier
+                .onGloballyPositioned {
+                    it.positionInWindow().let { originalOffset ->
+                        val requiredX = cartOffset.x - originalOffset.x
+                        val requiredY = cartOffset.y - originalOffset.y
+                        floatingProductOffset = IntOffset(
+                            x = requiredX.roundToInt(),
+                            y = requiredY.roundToInt(),
+                        )
+                    }
                 }
-            }
-            .offset { animatedFloatingProductOffset }
-            .size(animatedFloatProductSize.getDp()),
-        contentScale = ContentScale.Fit,
-        error = painterResource(id = R.drawable.ic_placeholder)
-    )
+                .offset { animatedFloatingProductOffset }
+                .size(animatedFloatProductSize.getDp()),
+            contentScale = ContentScale.Fit,
+            error = painterResource(id = R.drawable.ic_placeholder)
+        )
+    }
 }
 
 @Composable

@@ -43,9 +43,9 @@ fun ProductDetailsScreen(
     productId: Int,
     cartItemsCount: Int,
     isOnCartStateProvider: () -> Boolean,
-    isOnBookmarksStateProvider: () -> Boolean, // Giữ lại để tránh lỗi khi gọi hàm
+    isOnBookmarksStateProvider: () -> Boolean,
     onUpdateCartState: (productId: Int) -> Unit,
-    onUpdateBookmarksState: (productId: Int) -> Unit, // Giữ lại để tránh lỗi khi gọi hàm
+    onUpdateBookmarksState: (productId: Int) -> Unit,
     onBackRequested: () -> Unit,
     navController: NavHostController,
     productDetailsViewModel: ProductDetailsViewModel = hiltViewModel(),
@@ -62,244 +62,274 @@ fun ProductDetailsScreen(
     val quantity by productDetailsViewModel.quantity
     val context = LocalContext.current
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colors.background)
-            .padding(Dimension.pagePadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Dimension.pagePadding),
     ) {
-        /** Details screen header */
-        DetailsHeader(
+        Column(
             modifier = Modifier
-                .addMoveAnimation(
-                    orientation = Orientation.Vertical,
-                    from = (-100).dp,
-                    to = 0.dp,
-                    duration = 700,
-                ),
-            cartItemsCount = cartItemsCount,
-            onBackRequested = onBackRequested,
-            // Xóa tham số isOnBookmarks và onBookmarkChange
-            onNavigateToCartRequested = {
-                navController.navigate("cart") {
-                    launchSingleTop = true
-                }
-            }
-        )
-
-        product?.let { currentProduct ->
-            /** Product's name */
-            Text(
-                text = currentProduct.name,
-                style = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Black),
-                textAlign = TextAlign.Center,
+                .fillMaxSize()
+                .padding(Dimension.pagePadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header
+            DetailsHeader(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Dimension.pagePadding)
-                    .addMoveAnimation(
-                        orientation = Orientation.Vertical,
-                        from = 100.dp,
-                        to = 0.dp,
-                        duration = 700,
-                    )
+                    .padding(bottom = 8.dp),
+                cartItemsCount = cartItemsCount,
+                onBackRequested = onBackRequested,
+                onNavigateToCartRequested = {
+                    navController.navigate("cart") {
+                        launchSingleTop = true
+                    }
+                }
             )
 
+            // Scrollable content
             Box(
                 modifier = Modifier
+                    .weight(1f)
                     .fillMaxWidth()
-                    .padding(top = Dimension.pagePadding)
-                    .weight(1f),
             ) {
-                // Product image
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp)
-                        .align(Alignment.TopCenter)
-                ) {
-                    val infiniteTransition = rememberInfiniteTransition()
-                    val animatedOffset by infiniteTransition.animateFloat(
-                        initialValue = -10f,
-                        targetValue = 10f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(
-                                durationMillis = 1300,
-                                easing = LinearEasing
-                            ),
-                            repeatMode = RepeatMode.Reverse
-                        )
-                    )
-
-                    Image(
-                        painter = rememberAsyncImagePainter(
-                            model = currentProduct.imagePath,
-                            error = painterResource(id = R.drawable.ic_placeholder)
-                        ),
-                        contentDescription = "Product Image",
-                        contentScale = ContentScale.Inside,
-                        modifier = Modifier
-                            .offset { IntOffset(y = animatedOffset.toInt(), x = 0) }
-                            .fillMaxSize()
-                            .padding(16.dp)
-                            .rotate(-(40f))
-                    )
-                }
-
-                // Product description
+                val scrollState = rememberScrollState()
+                
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                        .padding(horizontal = 16.dp)
-                        .align(Alignment.Center)
-                        .offset(y = 160.dp)
-                        .background(MaterialTheme.colors.background.copy(alpha = 0.9f), RoundedCornerShape(12.dp))
-                        .border(1.dp, MaterialTheme.colors.primary.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-                        .padding(16.dp)
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        text = "Mô tả sản phẩm",
-                        style = MaterialTheme.typography.h6,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                    product?.let { currentProduct ->
+                        // Product Image
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(300.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0xFFF5F5F5))
+                        ) {
+                            Image(
+                                painter = rememberAsyncImagePainter(
+                                    model = currentProduct.imagePath,
+                                    error = painterResource(id = R.drawable.ic_placeholder)
+                                ),
+                                contentDescription = "Product Image",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
+                            )
+                        }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(MaterialTheme.colors.primary.copy(alpha = 0.5f))
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    val scrollState = rememberScrollState()
-                    Text(
-                        text = currentProduct.description,
-                        style = MaterialTheme.typography.body1,
-                        modifier = Modifier
-                            .weight(1f)
-                            .verticalScroll(scrollState)
-                    )
-                }
-            }
-
-            /** Sizes section */
-            currentProduct.sizes?.let { sizes ->
-                if (sizes.isNotEmpty()) {
-                    SizesSection(
-                        modifier = Modifier
-                            .align(Alignment.Start)
-                            .addMoveAnimation(
-                                orientation = Orientation.Horizontal,
-                                from = (-60).dp,
-                                to = 0.dp,
-                                duration = 700,
-                            ),
-                        sizes = sizes.map { it.size },
-                        pickedSizeProvider = { selectedSize },
-                        onSizePicked = productDetailsViewModel::updateSelectedSize,
-                    )
-                }
-            }
-
-            /** Price and quantity section */
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .addMoveAnimation(
-                        orientation = Orientation.Vertical,
-                        from = 200.dp,
-                        to = 0.dp,
-                        duration = 700,
-                    ),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "${PriceFormatter.formatPrice(currentProduct.price)} VND",
-                    style = MaterialTheme.typography.h4,
-                )
-
-                Row(
-                    modifier = Modifier
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colors.primary,
-                            shape = RoundedCornerShape(8.dp)
+                        // Product Name
+                        Text(
+                            text = currentProduct.name,
+                            style = MaterialTheme.typography.h5.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(vertical = 8.dp)
                         )
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "-",
-                        style = MaterialTheme.typography.h6,
-                        modifier = Modifier
-                            .clickable { productDetailsViewModel.decreaseQuantity() }
-                            .padding(horizontal = 8.dp)
-                    )
 
-                    Text(
-                        text = "$quantity",
-                        style = MaterialTheme.typography.h6,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
+                        // Price
+                        Text(
+                            text = "${PriceFormatter.formatPrice(currentProduct.price)} VND",
+                            style = MaterialTheme.typography.h4.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colors.primary
+                            ),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
 
-                    Text(
-                        text = "+",
-                        style = MaterialTheme.typography.h6,
-                        modifier = Modifier
-                            .clickable { productDetailsViewModel.increaseQuantity() }
-                            .padding(horizontal = 8.dp)
-                    )
+                        // Description
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            elevation = 2.dp,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Mô tả sản phẩm",
+                                    style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                Text(
+                                    text = currentProduct.description,
+                                    style = MaterialTheme.typography.body1
+                                )
+                            }
+                        }
+
+                        // Sizes Section
+                        currentProduct.sizes?.let { sizes ->
+                            if (sizes.isNotEmpty()) {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    elevation = 2.dp,
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp)
+                                    ) {
+                                        Text(
+                                            text = "Kích thước",
+                                            style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+                                            modifier = Modifier.padding(bottom = 8.dp)
+                                        )
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            sizes.forEach { size ->
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(40.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(
+                                                            if (selectedSize == size.size) 
+                                                                MaterialTheme.colors.primary 
+                                                            else 
+                                                                Color(0xFFF5F5F5)
+                                                        )
+                                                        .clickable { 
+                                                            productDetailsViewModel.updateSelectedSize(size.size)
+                                                        },
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text(
+                                                        text = "${size.size}",
+                                                        color = if (selectedSize == size.size) 
+                                                            Color.White 
+                                                        else 
+                                                            Color.Black
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Quantity Section
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            elevation = 2.dp,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Số lượng",
+                                    style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .border(
+                                            width = 1.dp,
+                                            color = MaterialTheme.colors.primary,
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    IconButton(
+                                        onClick = { productDetailsViewModel.decreaseQuantity() },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Text(
+                                            text = "-",
+                                            style = MaterialTheme.typography.h6
+                                        )
+                                    }
+                                    Text(
+                                        text = "$quantity",
+                                        style = MaterialTheme.typography.h6
+                                    )
+                                    IconButton(
+                                        onClick = { productDetailsViewModel.increaseQuantity() },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Text(
+                                            text = "+",
+                                            style = MaterialTheme.typography.h6
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
-            /** Add to cart button */
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp),
-                onClick = {
-                    productDetailsViewModel.addToCart(
-                        productId = productId,
-                        size = selectedSize.toString(),
-                        color = selectedColor,
-                        context = context
-                    )
-                    showAddedDialog = true
-                },
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.primary,
-                    contentColor = MaterialTheme.colors.onPrimary
-                )
-            ) {
-                Text(
-                    text = "Add to cart",
-                    style = MaterialTheme.typography.button
-                )
-            }
-
-            /** Compare button */
-            Button(
+            // Bottom Buttons
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
-                onClick = {
-                    navController.navigate("product-selection/$productId")
-                },
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.secondary,
-                    contentColor = MaterialTheme.colors.onSecondary
-                )
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "So sánh",
-                    style = MaterialTheme.typography.button
-                )
+                Button(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    onClick = {
+                        productDetailsViewModel.addToCart(
+                            productId = productId,
+                            size = selectedSize.toString(),
+                            color = selectedColor,
+                            context = context
+                        )
+                        showAddedDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = MaterialTheme.colors.primary,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "Thêm vào giỏ hàng",
+                        style = MaterialTheme.typography.button
+                    )
+                }
+
+                Button(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    onClick = {
+                        navController.navigate("product-selection/$productId")
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = MaterialTheme.colors.secondary,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "So sánh",
+                        style = MaterialTheme.typography.button
+                    )
+                }
             }
         }
 
@@ -330,7 +360,6 @@ fun DetailsHeader(
     modifier: Modifier = Modifier,
     cartItemsCount: Int,
     onBackRequested: () -> Unit,
-    // Xóa tham số isOnBookmarks và onBookmarkChange
     onNavigateToCartRequested: () -> Unit = {}
 ) {
     Row(
@@ -354,8 +383,6 @@ fun DetailsHeader(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Xóa nút bookmark
-            
             // Giỏ hàng
             Box {
                 DrawableButton(

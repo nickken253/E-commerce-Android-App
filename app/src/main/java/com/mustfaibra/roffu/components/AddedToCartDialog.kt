@@ -35,7 +35,7 @@ fun AddedToCartDialog(
                 .width(340.dp)
         ) {
             Text(
-                "Added to your cart!",
+                "Đã thêm vào giỏ hàng!",
                 style = MaterialTheme.typography.h6.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                 color = Color.White,
                 fontSize = 22.sp
@@ -86,7 +86,7 @@ fun AddedToCartDialog(
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF44454C))
                 ) {
-                    Text("Continue Shopping", color = Color.White)
+                    Text("Tiếp tục mua sắm", color = Color.White)
                 }
                 Spacer(Modifier.width(12.dp))
                 Button(
@@ -96,7 +96,7 @@ fun AddedToCartDialog(
                         backgroundColor = Color(0xFF3A8DFF)
                     )
                 ) {
-                    Text("View My Cart", color = Color.White)
+                    Text("Xem giỏ hàng", color = Color.White)
                 }
             }
         }
