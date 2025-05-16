@@ -79,7 +79,7 @@ fun LoginScreen(
     ) {
         /** Logo ứng dụng */
         Text(
-            text = "Mapa.",
+            text = "Roffu",
             style = MaterialTheme.typography.h4.copy(
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.SansSerif
