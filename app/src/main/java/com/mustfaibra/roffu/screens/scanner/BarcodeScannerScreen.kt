@@ -84,52 +84,70 @@ fun BarcodeScannerScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        CameraPreview(
-            modifier = Modifier.weight(1f),
-            imageAnalyzer = BarcodeAnalyzer { barcode ->
-                viewModel.getProductByBarcode(barcode)
-            }
-        )
-
-        val scannedProduct by viewModel.scannedProduct.collectAsState()
-        val uiState by viewModel.uiState.collectAsState()
-
-        when (uiState) {
-            is UiState.Loading -> {
-                Text(
-                    text = "Đang quét...",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-            is UiState.Success -> {
-                scannedProduct?.let { product ->
-                    ProductDisplay(
-                        product = product,
-                        onProductClicked = {
-                            navController.navigate(
-                                Screen.ProductDetails.route.replace("{productId}", "${product.id}")
-                            )
-                        }
-                    )
+        // Vùng camera preview
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
+            CameraPreview(
+                modifier = Modifier.fillMaxSize(),
+                imageAnalyzer = BarcodeAnalyzer { barcode ->
+                    viewModel.getProductByBarcode(barcode)
                 }
-            }
-            is UiState.Error -> {
-                Text(
-                    text = "Lỗi: ${(uiState as UiState.Error).error.message}",
-                    modifier = Modifier.padding(16.dp),
-                    color = Color.Red
-                )
-            }
-            is UiState.Idle -> {
-                Text(
-                    text = "Quét mã vạch để bắt đầu",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
+            )
+            
+            // Vùng hiển thị trạng thái quét
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                val uiState by viewModel.uiState.collectAsState()
+                when (uiState) {
+                    is UiState.Loading -> {
+                        Text(
+                            text = "Đang quét...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White
+                        )
+                    }
+                    is UiState.Error -> {
+                        Text(
+                            text = "Lỗi: ${(uiState as UiState.Error).error.message}",
+                            color = Color.Red
+                        )
+                    }
+                    is UiState.Idle -> {
+                        Text(
+                            text = "Quét mã vạch để bắt đầu",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White
+                        )
+                    }
+                    else -> {}
+                }
             }
         }
 
+        // Vùng hiển thị sản phẩm
+        val scannedProduct by viewModel.scannedProduct.collectAsState()
+        val uiState by viewModel.uiState.collectAsState()
+        
+        if (uiState is UiState.Success && scannedProduct != null) {
+            ProductDisplay(
+                product = scannedProduct!!,
+                onProductClicked = {
+                    navController.navigate(
+                        Screen.ProductDetails.route.replace("{productId}", "${scannedProduct!!.id}")
+                    )
+                }
+            )
+        }
+
+        // Vùng nút điều khiển
         Row(
             modifier = Modifier
                 .fillMaxWidth()

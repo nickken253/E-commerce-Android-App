@@ -21,8 +21,16 @@ class BarcodeScannerViewModel @Inject constructor() : ViewModel() {
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState
 
+    private var lastScannedBarcode: String? = null
+
     fun getProductByBarcode(barcode: String) {
+        if (barcode == lastScannedBarcode) {
+            return
+        }
+        
+        lastScannedBarcode = barcode
         _uiState.value = UiState.Loading
+        
         viewModelScope.launch {
             try {
                 val product = RetrofitClient.productApiService.getProductByBarcode(barcode)
@@ -35,5 +43,11 @@ class BarcodeScannerViewModel @Inject constructor() : ViewModel() {
                 _scannedProduct.value = null
             }
         }
+    }
+
+    fun resetScanner() {
+        lastScannedBarcode = null
+        _scannedProduct.value = null
+        _uiState.value = UiState.Idle
     }
 }

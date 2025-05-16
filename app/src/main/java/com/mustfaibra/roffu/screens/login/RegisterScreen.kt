@@ -90,6 +90,87 @@ fun ManHinhDangKy(
     val provinceList = LocationData.provinces.keys.toList()
     val districtList = LocationData.provinces[selectedProvince.value] ?: emptyList()
 
+    // Thêm state mới để lưu username đã chuyển đổi
+    val convertedUsername = remember { mutableStateOf("") }
+
+    // Thêm state để theo dõi focus
+    val isNameFieldFocused = remember { mutableStateOf(false) }
+
+    // Thêm hàm chuyển đổi họ tên thành username
+    fun convertToUsername(fullName: String): String {
+        return fullName.lowercase()
+            .trim()
+            .replace(" ", "")
+            .replace("đ", "d")
+            .replace("Đ", "d")
+            .replace("á", "a")
+            .replace("à", "a")
+            .replace("ả", "a")
+            .replace("ã", "a")
+            .replace("ạ", "a")
+            .replace("ă", "a")
+            .replace("ắ", "a")
+            .replace("ằ", "a")
+            .replace("ẳ", "a")
+            .replace("ẵ", "a")
+            .replace("ặ", "a")
+            .replace("â", "a")
+            .replace("ấ", "a")
+            .replace("ầ", "a")
+            .replace("ẩ", "a")
+            .replace("ẫ", "a")
+            .replace("ậ", "a")
+            .replace("é", "e")
+            .replace("è", "e")
+            .replace("ẻ", "e")
+            .replace("ẽ", "e")
+            .replace("ẹ", "e")
+            .replace("ê", "e")
+            .replace("ế", "e")
+            .replace("ề", "e")
+            .replace("ể", "e")
+            .replace("ễ", "e")
+            .replace("ệ", "e")
+            .replace("í", "i")
+            .replace("ì", "i")
+            .replace("ỉ", "i")
+            .replace("ĩ", "i")
+            .replace("ị", "i")
+            .replace("ó", "o")
+            .replace("ò", "o")
+            .replace("ỏ", "o")
+            .replace("õ", "o")
+            .replace("ọ", "o")
+            .replace("ô", "o")
+            .replace("ố", "o")
+            .replace("ồ", "o")
+            .replace("ổ", "o")
+            .replace("ỗ", "o")
+            .replace("ộ", "o")
+            .replace("ơ", "o")
+            .replace("ớ", "o")
+            .replace("ờ", "o")
+            .replace("ở", "o")
+            .replace("ỡ", "o")
+            .replace("ợ", "o")
+            .replace("ú", "u")
+            .replace("ù", "u")
+            .replace("ủ", "u")
+            .replace("ũ", "u")
+            .replace("ụ", "u")
+            .replace("ư", "u")
+            .replace("ứ", "u")
+            .replace("ừ", "u")
+            .replace("ử", "u")
+            .replace("ữ", "u")
+            .replace("ự", "u")
+            .replace("ý", "y")
+            .replace("ỳ", "y")
+            .replace("ỷ", "y")
+            .replace("ỹ", "y")
+            .replace("ỵ", "y")
+    }
+
     // Hàm kiểm tra mật khẩu hợp lệ
     fun isValidPassword(password: String): Boolean {
         val passwordRegex = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,20}$"
@@ -142,6 +223,7 @@ fun ManHinhDangKy(
                 value = tenNguoiDung.value,
                 onValueChange = {
                     tenNguoiDung.value = it
+                    convertedUsername.value = convertToUsername(it)
                     errorTenNguoiDung.value = null
                 },
                 placeholder = "Nhập họ và tên",
@@ -151,13 +233,26 @@ fun ManHinhDangKy(
                 textColor = MaterialTheme.colors.onBackground,
                 imeAction = ImeAction.Next,
                 shape = RoundedCornerShape(8.dp),
-                onFocusChange = {},
+                onFocusChange = { isFocused ->
+                    isNameFieldFocused.value = isFocused
+                    if (isFocused) {
+                        convertedUsername.value = convertToUsername(tenNguoiDung.value)
+                    }
+                },
                 onKeyboardActionClicked = {},
             )
             errorTenNguoiDung.value?.let {
                 Text(
                     text = it,
                     color = Color.Red,
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            if (isNameFieldFocused.value || convertedUsername.value.isNotEmpty()) {
+                Text(
+                    text = "Username của bạn sẽ là: ${convertedUsername.value}",
+                    color = MaterialTheme.colors.primary,
                     style = MaterialTheme.typography.caption,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -694,7 +789,7 @@ fun ManHinhDangKy(
                 if (!hasError) {
                     val fullEmail = "$rawEmail@gmail.com"
                     loginViewModel.registerUser(
-                        username = tenNguoiDung.value,
+                        username = convertedUsername.value,
                         email = fullEmail,
                         password = password,
                         confirmPassword = matKhauXacNhan.value,
